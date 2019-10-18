@@ -9,9 +9,9 @@ namespace JACL{
 
 class PhysicalParameter{
 public:
-    PhysicalParameter()
-        : nominal(.0)
-        , perturbed(.0){}
+    PhysicalParameter(double _nominal)
+        : nominal(_nominal)
+        , perturbed(nominal){}
 
     ~PhysicalParameter(){}
 

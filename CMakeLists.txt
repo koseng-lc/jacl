@@ -45,16 +45,10 @@ include_directories(
 
 # Python Binder
 
-add_library(hello_ext SHARED src/hello.cpp)
-
-target_link_libraries(hello_ext boost_python-py35)
-set_target_properties(hello_ext PROPERTIES SUFFIX .so)
-set_target_properties(hello_ext PROPERTIES PREFIX "")
-
 add_library(simulator SHARED include/simulator.h)
 
 target_link_libraries(simulator
-    Boost::system Boost::python Boost::numpy
+    Boost::system Boost::python ${PYTHON_LIBRARIES}
     ${PYTHON_LIBRARIES}
 )
 set_target_properties(simulator PROPERTIES SUFFIX .so)
@@ -76,23 +70,36 @@ add_library(jacl include/jacl)
 set_target_properties(jacl PROPERTIES LINKER_LANGUAGE CXX)
 target_link_libraries(jacl state_space transfer_matrix simulator)
 
+# Test
+
+add_library(hello_ext SHARED src/hello.cpp)
+
+target_link_libraries(hello_ext Boost::python)
+set_target_properties(hello_ext PROPERTIES SUFFIX .so)
+set_target_properties(hello_ext PROPERTIES PREFIX "")
+
+add_executable(embed_test src/embed_test.cpp)
+target_link_libraries(embed_test Boost::system Boost::python ${PYTHON_LIBRARIES})
+
 # Main Program
 
 set(CMAKE_AUTOMOC on)
 set(CMAKE_AUTOUIC on)
 
 add_executable(${PROJECT_NAME}
+        # Header
 	include/mainwindow.h
-
+        # Source
 	src/main.cpp
 	src/mainwindow.cpp
 	src/mainwindow.ui
 )
 
 target_link_libraries(${PROJECT_NAME}
+        # Qt
 	Qt5::Core
 	Qt5::Gui
         Qt5::Widgets
-
+        # JACL
         jacl
 )

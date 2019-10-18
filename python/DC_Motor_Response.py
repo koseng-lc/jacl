@@ -8,7 +8,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 from scipy.linalg import expm
-from scipy import signal
 
 class DCMotorOpenLoop:
     def __init__(self, Bm, Jm, Ki, La, Kb, Ra):
@@ -210,7 +209,6 @@ class LuenbergerObserver:
         self.y_hat = 0
 
 def ssSimulation(title, _A, _B, _C, _D, _u):
-    i = 0
     x = [0]
     y1 = [0]
     y2 = [0]

@@ -43,6 +43,7 @@ private:
     QGridLayout* command_gl_;
     QPushButton* perturb_pb_;
     QPushButton* reset_pb_;
+    QPushButton* simulate_pb_;
 
     void setupWidgets();
     void setupActions();
@@ -76,6 +77,11 @@ private:
 
     SS ss_;
 
-//    JACL::Simulator* sim_;
+    JACL::Simulator sim_;
+
+private Q_SLOTS:
+    void perturbAct();
+    void resetAct();
+    void simulateAct();
 
 };
