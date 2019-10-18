@@ -56,20 +56,24 @@ public:
         return params_[_index].perturbed;
     }
 
-    void setA(Formulas f){
-        fA_ = f;
+    void setA(const Formulas& f){
+        fA_.clear();
+        fA_.insert(fA_.end(), f.begin(), f.end());
     }
 
-    void setB(Formulas f){
-        fB_ = f;
+    void setB(const Formulas& f){
+        fB_.clear();
+        fB_.insert(fB_.end(), f.begin(), f.end());
     }
 
-    void setC(Formulas f){
-        fC_ = f;
+    void setC(const Formulas& f){
+        fC_.clear();
+        fC_.insert(fC_.end(), f.begin(), f.end());
     }
 
-    void setD(Formulas f){
-        fD_ = f;
+    void setD(const Formulas& f){
+        fD_.clear();
+        fD_.insert(fD_.end(), f.begin(), f.end());
     }
 
     void formulaToMat();
@@ -88,11 +92,12 @@ private:
     Mat C_;
     Mat D_;
 
-    void push(PhysicalParameter _param){
+    void push(T _param){
         params_.push_back(_param);
     }
 
-    void push(PhysicalParameter _param, Args... _rest){
+    template <class ...Rest>
+    void push(T _param, Rest... _rest){
         push(_param);
         push(_rest...);
     }
@@ -101,6 +106,8 @@ private:
 
 template<int num_states, int num_inputs, int num_outputs, class T, class ...Args>
 StateSpace<num_states, num_inputs, num_outputs, T, Args...>::StateSpace(T _param, Args... _rest){
+
+//    std::cout << sizeof...(Args) << std::endl;
 
     push(_param, _rest...);
 

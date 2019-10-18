@@ -13,6 +13,8 @@ public:
         : nominal(.0)
         , perturbed(.0){}
 
+    ~PhysicalParameter(){}
+
     double nominal;
     double perturbed;
 };

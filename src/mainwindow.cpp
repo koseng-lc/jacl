@@ -9,12 +9,15 @@
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
-    , ss_(bm, jm){
+    , ss_(bm, jm, ki, la, kb, ra){
 
     ui->setupUi(this);
 
     this->removeToolBar(ui->mainToolBar);
 
+    /*
+     * Notice ! : ss keyword is preserved variable name
+     */
     SS::Formulas fA{
         JACL_CONST_SS(.0),                    JACL_CONST_SS(1.0),                     JACL_CONST_SS(.0),
         JACL_CONST_SS(.0), JACL_SS(-ss.param(iBm)/ss.param(iJm)),  JACL_SS(ss.param(iKi)/ss.param(iJm)),
@@ -153,6 +156,8 @@ void MainWindow::setupWidgets(){
     main_widget_->setLayout(main_layout_);
 
     this->setCentralWidget(main_widget_);
+    this->adjustSize();
+    this->layout()->setSizeConstraint(QLayout::SetFixedSize);
 
 }
 

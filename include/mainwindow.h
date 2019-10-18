@@ -58,15 +58,21 @@ private:
         iRa  // Armature Resistance (Ohm)
     };
 
-//    class Bm:public JACL::PhysicalParameter{} bm;
-    using Bm = JACL::PhysicalParameter;
-    Bm bm;
 
-//    class Jm:public JACL::PhysicalParameter{} jm;
-    using Jm = JACL::PhysicalParameter;
-    Jm jm;
+    JACL::PhysicalParameter bm;
+    JACL::PhysicalParameter jm;
+    JACL::PhysicalParameter ki;
+    JACL::PhysicalParameter la;
+    JACL::PhysicalParameter kb;
+    JACL::PhysicalParameter ra;
 
-    using SS = JACL::StateSpace<3, 2, 2, Bm, Jm>;
+    using SS = JACL::StateSpace<3, 2, 2,
+                                JACL::PhysicalParameter,
+                                JACL::PhysicalParameter,
+                                JACL::PhysicalParameter,
+                                JACL::PhysicalParameter,
+                                JACL::PhysicalParameter,
+                                JACL::PhysicalParameter>;
 
     SS ss_;
 

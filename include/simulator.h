@@ -5,12 +5,10 @@
 
 #pragma once
 
-//-- prevent collapse between Qt Keywords
-#pragma push_macro("slots")
-#undef slots
 #include <boost/python.hpp>
 #include <boost/python/numpy.hpp>
-#pragma pop_macro("slots")
+
+#include <cassert>
 
 #include <armadillo>
 
@@ -139,14 +137,14 @@ private:
 
 };
 
-BOOST_PYTHON_MODULE(simulator){
+//BOOST_PYTHON_MODULE(simulator){
 
-    py::class_<Simulator>("Simulator")
-            .def("getA", &Simulator::getA)
-            .def("getB", &Simulator::getB)
-            .def("getC", &Simulator::getC)
-            .def("getD", &Simulator::getD)
-            ;
-}
+//    py::class_<Simulator>("Simulator")
+//            .def("getA", &Simulator::getA)
+//            .def("getB", &Simulator::getB)
+//            .def("getC", &Simulator::getC)
+//            .def("getD", &Simulator::getD)
+//            ;
+//}
 
 }
