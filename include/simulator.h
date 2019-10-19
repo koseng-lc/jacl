@@ -11,6 +11,9 @@
 #include <numpy/ndarrayobject.h>
 
 #include <cassert>
+#include <map>
+#include <initializer_list>
+#include <sstream>
 
 #include <armadillo>
 
@@ -183,6 +186,24 @@ public:
         title_ = _title;
     }
 
+    void setPlotName(std::initializer_list<std::string> _plot_name){
+        plot_name_.clear();
+        plot_name_.insert(plot_name_.end(), _plot_name.begin(), _plot_name.end());
+
+        try{
+            py::dict plot_name_dict;
+            for(std::size_t i(0); i < plot_name_.size(); i++){
+                std::stringstream ss;
+                ss << "signal" << i;
+                plot_name_dict[ss.str().c_str()] = plot_name_[i];
+
+                sim_.attr("setPlotName")(plot_name_dict);
+            }
+        }catch(py::error_already_set){
+            PyErr_Print();
+        }
+    }
+
 private:
 
     py::object sim_;
@@ -200,6 +221,7 @@ private:
 
     double delay_;
     std::string title_;
+    std::vector<std::string> plot_name_;
 
 
 };

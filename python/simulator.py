@@ -67,6 +67,9 @@ class Simulator:
     def setTitle(self, _title):
         self.title = _title
 
+    def setPlotName(self, _plot_name):
+        self.plot_name = _plot_name
+
     def setDelay(self, _delay):
         self.delay = _delay
 
@@ -106,15 +109,12 @@ class Simulator:
 
         signal_data = []
 
-        # state_data = []
         for i in range(0, self.n_states):
             signal_data.append([state[i]])
         
-        # input_data = []
         for i in range(0, self.n_inputs):
             signal_data.append([self.u[i]])
 
-        # output_data = []
         for i in range(0, self.n_outputs):
             signal_data.append([output[i]])
         
@@ -124,8 +124,8 @@ class Simulator:
         total_signal = np.zeros(self.n_states + self.n_inputs + self.n_outputs)
         
         # Plotter setup
-        plt.clf()
-
+        # plt.subplots_adjust(left=.0,bottom=.0,right=.1,top=1.0)
+        
         fig = plt.figure()
         fig.canvas.set_window_title(self.title)    
         fig.canvas.mpl_connect('close_event', self.pltCloseHandle)
@@ -136,8 +136,13 @@ class Simulator:
         plot = []
         for i in range(0, n_signals):
             sp.append(fig.add_subplot(n_sp_rows, n_sp_cols, i+1))
+            sp[i].set_title(self.plot_name['signal{}'.format(i)])
+            sp[i].grid(True)
             line, = sp[i].plot(time_data, signal_data[i])
             plot.append(line)
+
+        plt.tight_layout()
+        plt.grid(True)
 
         fig.canvas.draw()
         fig.show()
@@ -169,7 +174,7 @@ class Simulator:
 
                 # Summing signal magnitude
                 # for calcuating their average
-                total_signal[i] += pres_signal[i]                
+                total_signal[i] += np.abs(pres_signal[i])
 
                 # Replace data
                 signal_data[i].append(pres_signal[i])
@@ -187,7 +192,7 @@ class Simulator:
                 signal_avg.append(total_signal[i] / time_data_len)
                 sp[i].set_ylim(bottom = -signal_avg[i] * 1.75, top = max(0.001, signal_avg[i] * 1.75))
 
-            fig.canvas.draw()
+            fig.canvas.draw_idle()
             fig.canvas.flush_events()
 
             t += self.d_time

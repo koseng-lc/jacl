@@ -60,9 +60,12 @@ MainWindow::MainWindow(QWidget *parent)
     ss_.setD(fD);
     ss_.formulaToMat();
 
+    sim_.init();
     sim_.setTitle("DC Motor Simulation");
     sim_.setDelay() = .0;
-    sim_.init();    
+    sim_.setPlotName({"Angular Position (rad)", "Angular Velocity", "Current (A)",
+                      "Torque In", "Voltage In",
+                      "Angular Position (rad)", "Angular Velocity"});
     sim_.setStateSpace(ss_.A(), ss_.B(), ss_.C(), ss_.D());
 
     setupWidgets();
