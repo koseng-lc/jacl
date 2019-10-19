@@ -6,7 +6,7 @@
 import time
 import numpy as np
 import signal
-from multiprocessing import Process
+from multiprocessing import Process, Manager, Array
 import matplotlib.pyplot as plt
 from scipy.linalg import expm
 
@@ -16,15 +16,27 @@ class Simulator:
         self.n_inputs = n_inputs
         self.n_outputs = n_outputs
 
-        self.u = np.zeros((self.n_inputs, 1))
-
-        self.A = np.zeros((n_states, n_states))
-        self.B = np.zeros((n_states, n_inputs))
-        self.C = np.zeros((n_outputs, n_states))
-        self.D = np.zeros((n_outputs, n_inputs))
-
         self.running = True
         self.d_time = 0.0001
+
+        self.sim_thread = Process(target = self.simulate, args = ())
+
+        # self.manager = Manager()
+        self.shared_A = Array('d', np.zeros(n_states ** 2))
+        self.shared_B = Array('d', np.zeros(n_states * n_inputs))
+        self.shared_C = Array('d', np.zeros(n_outputs * n_states))
+        self.shared_D = Array('d', np.zeros(n_outputs * n_inputs))
+        self.shared_u = Array('d', np.zeros(n_inputs))
+        self.shared_state_trans = Array('d', np.zeros(n_states ** 2))
+        self.shared_B_dt = Array('d', np.zeros(n_states * n_inputs))
+
+        self.A = np.frombuffer(self.shared_A.get_obj()).reshape((n_states, n_states))
+        self.B = np.frombuffer(self.shared_B.get_obj()).reshape((n_states, n_inputs))
+        self.C = np.frombuffer(self.shared_C.get_obj()).reshape((n_outputs, n_states))
+        self.D = np.frombuffer(self.shared_D.get_obj()).reshape((n_outputs, n_inputs))
+        self.u = np.frombuffer(self.shared_u.get_obj()).reshape((n_inputs, 1))
+        self.state_trans = np.frombuffer(self.shared_state_trans.get_obj()).reshape((n_states, n_states))
+        self.B_dt = np.frombuffer(self.shared_B_dt.get_obj()).reshape((n_states, n_inputs))
 
     def __del__(self):
         self.sim_thread.join()
@@ -35,7 +47,7 @@ class Simulator:
 
     def setInput(self, _u):
         assert _u.shape == (self.n_inputs, 1)
-        self.u = _u
+        np.copyto(self.u, _u)
 
     def setStateSpace(self, _A, _B, _C, _D):
         assert _A.shape == (self.n_states, self.n_states)
@@ -43,18 +55,14 @@ class Simulator:
         assert _C.shape == (self.n_outputs, self.n_states)
         assert _D.shape == (self.n_outputs, self.n_inputs)
 
-        self.A = _A
-        self.B = _B
-        self.C = _C
-        self.D = _D
+        np.copyto(self.A, _A)
+        np.copyto(self.B, _B)
+        np.copyto(self.C, _C)
+        np.copyto(self.D, _D)
 
         # State Transition Matrix
-        self.state_trans = expm(self.A * self.d_time)
-        self.B_dt = self.B * self.d_time
-        # print('A : {}'.format(self.A))
-        # print('B : {}'.format(self.B))
-        # print('C : {}'.format(self.C))
-        # print('D : {}'.format(self.D))
+        np.copyto(self.state_trans, expm(self.A * self.d_time))
+        np.copyto(self.B_dt, self.B * self.d_time)
 
     def setTitle(self, _title):
         self.title = _title
@@ -64,8 +72,7 @@ class Simulator:
 
     def beginSimulation(self):
         print('Starting simulation...')
-        signal.signal(signal.SIGINT, self.signalHandler)
-        self.sim_thread = Process(target = self.simulate, args = ())
+        signal.signal(signal.SIGINT, self.signalHandler)        
         self.sim_thread.start()
 
     def pltCloseHandle(self, event):
@@ -169,8 +176,8 @@ class Simulator:
             output_avg = total_output / len(time_data)
             state_avg = total_state / len(time_data)
 
-            sp1.set_ylim(bottom = -state_avg - state_avg * 0.75, top = state_avg + state_avg * 0.75)
-            sp2.set_ylim(bottom = -output_avg - output_avg * 0.75, top = output_avg + output_avg * 0.75)
+            sp1.set_ylim(bottom = -state_avg - state_avg * 0.75, top = max(0.001, state_avg + state_avg * 0.75))
+            sp2.set_ylim(bottom = -output_avg - output_avg * 0.75, top = max(0.001, output_avg + output_avg * 0.75))
 
             fig.canvas.draw()
             fig.canvas.flush_events()

@@ -44,6 +44,14 @@ private:
     QPushButton* perturb_pb_;
     QPushButton* reset_pb_;
     QPushButton* simulate_pb_;
+    QPushButton* set_input_pb_;
+
+    QGroupBox* input_gb_;
+    QGridLayout* input_gl_;
+    QLabel* torque_in_label_;
+    QDoubleSpinBox* torque_in_dsb_;
+    QLabel* voltage_in_label_;
+    QDoubleSpinBox* voltage_in_dsb_;
 
     void setupWidgets();
     void setupActions();
@@ -83,5 +91,6 @@ private Q_SLOTS:
     void perturbAct();
     void resetAct();
     void simulateAct();
+    void setInputAct();
 
 };

@@ -178,14 +178,53 @@ void MainWindow::setupWidgets(){
     simulate_pb_ = new QPushButton;
     simulate_pb_->setText(tr("Simulate"));
 
-    command_gl_->addWidget(perturb_pb_ , 0,0,1,1);
-    command_gl_->addWidget(reset_pb_   , 1,0,1,1);
-    command_gl_->addWidget(simulate_pb_, 2,0,1,1);
+    set_input_pb_ = new QPushButton;
+    set_input_pb_->setText(tr("Set Input"));
 
-    command_gl_->addItem(new QSpacerItem(0,0,QSizePolicy::Expanding,QSizePolicy::Expanding),3,1);
+    command_gl_->addWidget(perturb_pb_  , 0,0,1,1);
+    command_gl_->addWidget(reset_pb_    , 0,1,1,1);
+    command_gl_->addWidget(simulate_pb_ , 1,0,1,1);
+    command_gl_->addWidget(set_input_pb_, 1,1,1,1);
+
+    command_gl_->addItem(new QSpacerItem(0,0,QSizePolicy::Expanding,QSizePolicy::Expanding),2,2);
 
     command_gb_->setLayout(command_gl_);
     command_gb_->setTitle(tr("Command"));
+
+    //-- Input
+
+    input_gb_ = new QGroupBox;
+
+    input_gl_ = new QGridLayout;
+
+    torque_in_label_ = new QLabel;
+    torque_in_label_->setText(tr("Torque : "));
+    torque_in_dsb_ = new QDoubleSpinBox;
+    torque_in_dsb_->setSingleStep(1e-3);
+    torque_in_dsb_->setDecimals(3);
+    torque_in_dsb_->setMinimum(.0);
+    torque_in_dsb_->setMaximum(10.0);
+    torque_in_dsb_->setValue(.0);
+    torque_in_dsb_->adjustSize();
+
+    voltage_in_label_ = new QLabel;
+    voltage_in_label_->setText(tr("Voltage : "));
+    voltage_in_dsb_ = new QDoubleSpinBox;
+    voltage_in_dsb_->setSingleStep(1e-3);
+    voltage_in_dsb_->setDecimals(3);
+    voltage_in_dsb_->setMinimum(.0);
+    voltage_in_dsb_->setMaximum(24.0); // 24 volt
+    voltage_in_dsb_->setValue(.0);
+    voltage_in_dsb_->adjustSize();
+
+    input_gl_->addWidget(torque_in_label_,  0,0,1,1);
+    input_gl_->addWidget(torque_in_dsb_,    0,1,1,1);
+    input_gl_->addWidget(voltage_in_label_, 1,0,1,1);
+    input_gl_->addWidget(voltage_in_dsb_,   1,1,1,1);
+    input_gl_->addItem(new QSpacerItem(0,0,QSizePolicy::Ignored,QSizePolicy::Expanding),2,2);
+
+    input_gb_->setLayout(input_gl_);
+    input_gb_->setTitle(tr("Input"));
 
     //-- Main
 
@@ -194,9 +233,10 @@ void MainWindow::setupWidgets(){
     main_layout_ = new QGridLayout;
 
     main_layout_->addWidget(params_gb_,  0,0,2,1);
-    main_layout_->addWidget(command_gb_, 0,1,1,1);
+    main_layout_->addWidget(input_gb_,   0,1,1,1);
+    main_layout_->addWidget(command_gb_, 1,1,1,1);
 
-    main_layout_->addItem(new QSpacerItem(0,0,QSizePolicy::Expanding,QSizePolicy::Expanding),1,2);
+//    main_layout_->addItem(new QSpacerItem(0,0,QSizePolicy::Expanding,QSizePolicy::Expanding),1,2);
     main_layout_->addItem(new QSpacerItem(0,0,QSizePolicy::Expanding,QSizePolicy::Expanding),2,2);
 
     main_widget_->setLayout(main_layout_);
@@ -213,6 +253,7 @@ void MainWindow::setupActions(){
     connect(perturb_pb_, SIGNAL(clicked()), this, SLOT(perturbAct()));
     connect(reset_pb_, SIGNAL(clicked()), this, SLOT(resetAct()));
     connect(simulate_pb_, SIGNAL(clicked()), this, SLOT(simulateAct()));
+    connect(set_input_pb_, SIGNAL(clicked()), this, SLOT(setInputAct()));
 }
 
 void MainWindow::perturbAct(){
@@ -240,4 +281,11 @@ void MainWindow::resetAct(){
 void MainWindow::simulateAct(){
 
     sim_.simulate();
+}
+
+void MainWindow::setInputAct(){
+    JACL::Mat in(2, 1);
+    in(0) = torque_in_dsb_->value();
+    in(1) = voltage_in_dsb_->value();
+    sim_.setInput(in);
 }

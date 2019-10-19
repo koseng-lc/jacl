@@ -49,6 +49,32 @@ public:
         return 0;
     }
 
+    void setInput(const arma::mat& _input){
+
+        assert(_input.n_rows == n_inputs_);
+        assert(_input.n_cols == 1);
+
+        input_.clear();
+
+        for(int i(0); i < n_inputs_; i++){
+            std::vector<double> temp;
+            temp = arma::conv_to<std::vector<double> >::from(_input.row(i));
+            input_.insert(input_.end(), temp.begin(), temp.end());
+        }
+
+        try{
+
+            Py_intptr_t input_shape[2] = {n_inputs_, 1};
+            PyObject* np_input = PyArray_SimpleNewFromData(2, input_shape, NPY_FLOAT64, reinterpret_cast<void*>(input_.data()));
+            py::handle<> np_input_handle(np_input);
+            py::object input_obj(np_input_handle);
+
+            sim_.attr("setInput")(input_obj);
+        }catch(py::error_already_set){
+            PyErr_Print();
+        }
+    }
+
     void setStateSpace(const arma::mat& _A, const arma::mat& _B, const arma::mat& _C, const arma::mat& _D){
 
         //-- A must be square matrix and remain the same
@@ -169,6 +195,8 @@ private:
     std::vector<double> B_;
     std::vector<double> C_;
     std::vector<double> D_;
+
+    std::vector<double> input_;
 
     double delay_;
     std::string title_;
