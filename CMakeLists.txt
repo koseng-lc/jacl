@@ -25,6 +25,7 @@ find_package(Boost 1.7.0 REQUIRED COMPONENTS
     system
     python
     numpy
+    thread
 )
 
 # Main Program

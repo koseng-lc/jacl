@@ -6,7 +6,7 @@
 import time
 import numpy as np
 import signal
-import threading
+from multiprocessing import Process
 import matplotlib.pyplot as plt
 from scipy.linalg import expm
 
@@ -16,25 +16,45 @@ class Simulator:
         self.n_inputs = n_inputs
         self.n_outputs = n_outputs
 
+        self.u = np.zeros((self.n_inputs, 1))
+
         self.A = np.zeros((n_states, n_states))
         self.B = np.zeros((n_states, n_inputs))
         self.C = np.zeros((n_outputs, n_states))
         self.D = np.zeros((n_outputs, n_inputs))
 
         self.running = True
+        self.d_time = 0.0001
 
     def __del__(self):
-        plt.close()
-        # self.sim_thread.join()
+        self.sim_thread.join()
 
     def signalHandler(self, sig, frame):
         self.running = False
+        # self.sim_thread.join()
+
+    def setInput(self, _u):
+        assert _u.shape == (self.n_inputs, 1)
+        self.u = _u
 
     def setStateSpace(self, _A, _B, _C, _D):
+        assert _A.shape == (self.n_states, self.n_states)
+        assert _B.shape == (self.n_states, self.n_inputs)
+        assert _C.shape == (self.n_outputs, self.n_states)
+        assert _D.shape == (self.n_outputs, self.n_inputs)
+
         self.A = _A
         self.B = _B
         self.C = _C
         self.D = _D
+
+        # State Transition Matrix
+        self.state_trans = expm(self.A * self.d_time)
+        self.B_dt = self.B * self.d_time
+        # print('A : {}'.format(self.A))
+        # print('B : {}'.format(self.B))
+        # print('C : {}'.format(self.C))
+        # print('D : {}'.format(self.D))
 
     def setTitle(self, _title):
         self.title = _title
@@ -45,23 +65,22 @@ class Simulator:
     def beginSimulation(self):
         print('Starting simulation...')
         signal.signal(signal.SIGINT, self.signalHandler)
-        # self.sim_thread = threading.Thread(target=self.simulate, args=())
-        # self.sim_thread.start()   
-        self.simulate() 
+        self.sim_thread = Process(target = self.simulate, args = ())
+        self.sim_thread.start()
+
+    def pltCloseHandle(self, event):
+        self.running = False
+        # self.sim_thread.join()
+        print('Plotter closed.')
 
     def simulate(self):        
 
-        # Time interval (seconds)
-        d_time = 0.0001
+        # Time interval (seconds) & Maximum data        
         view_interval = 0.01
-
-        max_data = view_interval / d_time
+        max_data = view_interval / self.d_time
 
         # Time
-        t = 0
-
-        # State Transition Matrix
-        state_trans = expm(self.A * d_time)
+        t = 0        
 
         # Initial State
         init_state = np.zeros((self.n_states, 1))
@@ -79,24 +98,22 @@ class Simulator:
         time_data = [0]
 
         # Other stuff
-        B_dt = self.B * d_time
+        
         total_state = 0
         total_output = 0
 
         # Input
-        u = np.ones((self.n_inputs, 1))
-        u[0] = 0.5 # Torque
-        u[1] = -12 # Voltage
-        last_u = np.zeros((self.n_inputs, 1))
+        last_u = self.u
         
         # Plotter setup
         plt.clf()
-        plt.title(self.title)
 
-        fig = plt.figure()    
+        fig = plt.figure()
+        fig.canvas.set_window_title(self.title)    
+        fig.canvas.mpl_connect('close_event', self.pltCloseHandle)
 
-        sp1 = fig.add_subplot(211)
-        sp2 = fig.add_subplot(212)
+        sp1 = fig.add_subplot(2,1,1)
+        sp2 = fig.add_subplot(2,1,2)
 
         line1, = sp1.plot(time_data, state_data, color='b')
         line2, = sp2.plot(time_data, output_data, color='r')
@@ -109,17 +126,17 @@ class Simulator:
 
         while self.running:
             # Approximation of State Space solution
-            term1 = np.dot(state_trans, last_state)
-            term2 = np.dot(B_dt, u)
-            term3 = np.dot(state_trans, np.dot(B_dt, last_u))
-            term4 = np.dot(state_trans, term2 + term3) * 0.5
+            term1 = np.dot(self.state_trans, last_state)
+            term2 = np.dot(self.B_dt, self.u)
+            term3 = np.dot(self.state_trans, np.dot(self.B_dt, last_u))
+            term4 = np.dot(self.state_trans, term2 + term3) * 0.5
 
             state = term1 + term4
 
             # Output calculation based on that state approximation
-            output = np.dot(self.C, state) + np.dot(self.D, u)
+            output = np.dot(self.C, state) + np.dot(self.D, self.u)
 
-            last_u = u
+            last_u = self.u
             last_state = state      
 
             # Calculating state and output value
@@ -158,7 +175,7 @@ class Simulator:
             fig.canvas.draw()
             fig.canvas.flush_events()
 
-            t += d_time
+            t += self.d_time
             
             time.sleep(self.delay)
 
@@ -170,7 +187,7 @@ class Simulator:
             # print('Output : {}'.format(output))
             # print('Time : {}'.format(t))            
 
-            # Remove unnecessary data
+            # Remove unnecessary old data
             if len(time_data) >= max_data:            
                 site = int(max_data * 0.25)
                 total_output -= output_avg * site

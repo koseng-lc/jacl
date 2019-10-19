@@ -366,7 +366,7 @@ if __name__ == "__main__":
 
     plant = DCMotorOpenLoop(Bm, Jm, Ki, La, Kb, Ra)
 
-    # bodePlot('DC Motor Response', plant.A(), plant.B(), plant.C(), plant.D())
+    bodePlot('DC Motor Response', plant.A(), plant.B(), plant.C(), plant.D())
 
     # Perturb from -100 % -> 100 %
     Bm_perturbation = Bm * (2 * random.random() - 1)
@@ -391,12 +391,12 @@ if __name__ == "__main__":
     plant.perturbKb(Kb_perturbation)
     plant.perturbRa(Ra_perturbation)
 
-    # bodePlot('Perturbed', plant.A(), plant.B(), plant.C(), plant.D()) 
-    plant.unperturbAll()
+    bodePlot('Perturbed', plant.A(), plant.B(), plant.C(), plant.D()) 
+    # plant.unperturbAll()
 
-    u = 1
+    # u = 1
 
-    ssSimulation('Motor DC Simulation', plant.A(), plant.B(), plant.C(), plant.D(), u)
+    # ssSimulation('Motor DC Simulation', plant.A(), plant.B(), plant.C(), plant.D(), u)
 
     # value = tf(1j, plant.A(), plant.B(), plant.C(), plant.D())
 

@@ -60,7 +60,9 @@ MainWindow::MainWindow(QWidget *parent)
     ss_.setD(fD);
     ss_.formulaToMat();
 
-    sim_.init();
+    sim_.setTitle("DC Motor Simulation");
+    sim_.setDelay() = .0;
+    sim_.init();    
     sim_.setStateSpace(ss_.A(), ss_.B(), ss_.C(), ss_.D());
 
     setupWidgets();
@@ -88,7 +90,7 @@ void MainWindow::setupWidgets(){
     params_dsb_[iBm]->setDecimals(6);
     params_dsb_[iBm]->setMaximum(1.0);
     params_dsb_[iBm]->setMinimum(.0);
-    params_dsb_[iBm]->setValue(.000048);    
+    params_dsb_[iBm]->setValue(bm.nominal);
     params_dsb_[iBm]->adjustSize();
 //    params_dsb_[iBm]->resize(params_dsb_[iBm]->minimumSizeHint().width(),
 //                params_dsb_[iBm]->minimumSizeHint().height());
@@ -96,11 +98,11 @@ void MainWindow::setupWidgets(){
     params_label_[iJm] = new QLabel;
     params_label_[iJm]->setText(tr("Rotor Inertia : "));
     params_dsb_[iJm] = new QDoubleSpinBox;
-    params_dsb_[iJm]->setSingleStep(1e-7);
-    params_dsb_[iJm]->setDecimals(7);
+    params_dsb_[iJm]->setSingleStep(1e-8);
+    params_dsb_[iJm]->setDecimals(8);
     params_dsb_[iJm]->setMaximum(1.0);
     params_dsb_[iJm]->setMinimum(.0);
-    params_dsb_[iJm]->setValue(.0000072);
+    params_dsb_[iJm]->setValue(jm.nominal);
     params_dsb_[iJm]->adjustSize();
 
     params_label_[iKi] = new QLabel;
@@ -110,7 +112,7 @@ void MainWindow::setupWidgets(){
     params_dsb_[iKi]->setDecimals(3);
     params_dsb_[iKi]->setMaximum(10.0);
     params_dsb_[iKi]->setMinimum(.0);
-    params_dsb_[iKi]->setValue(.052);
+    params_dsb_[iKi]->setValue(ki.nominal);
     params_dsb_[iKi]->adjustSize();
 
     params_label_[iLa] = new QLabel;
@@ -120,7 +122,7 @@ void MainWindow::setupWidgets(){
     params_dsb_[iLa]->setDecimals(5);
     params_dsb_[iLa]->setMaximum(10.0);
     params_dsb_[iLa]->setMinimum(.0);
-    params_dsb_[iLa]->setValue(.00062);
+    params_dsb_[iLa]->setValue(la.nominal);
     params_dsb_[iLa]->adjustSize();
 
     params_label_[iKb] = new QLabel;
@@ -130,7 +132,7 @@ void MainWindow::setupWidgets(){
     params_dsb_[iKb]->setDecimals(3);
     params_dsb_[iKb]->setMaximum(10.0);
     params_dsb_[iKb]->setMinimum(.0);
-    params_dsb_[iKb]->setValue(.052);
+    params_dsb_[iKb]->setValue(kb.nominal);
     params_dsb_[iKb]->adjustSize();
 
     params_label_[iRa] = new QLabel;
@@ -140,7 +142,7 @@ void MainWindow::setupWidgets(){
     params_dsb_[iRa]->setDecimals(2);
     params_dsb_[iRa]->setMaximum(50.0);
     params_dsb_[iRa]->setMinimum(.0);
-    params_dsb_[iRa]->setValue(2.07);
+    params_dsb_[iRa]->setValue(ra.nominal);
     params_dsb_[iRa]->adjustSize();
 
     params_gl_->addWidget(params_label_[iBm],0,0,1,1);

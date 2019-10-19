@@ -1,6 +1,6 @@
 /**
 *   @author : koseng (Lintang)
-*   @brief : Simulator
+*   @brief : JACL Simulator
 */
 
 #pragma once
@@ -39,7 +39,7 @@ public:
 
             sim_ = sim_module.attr("Simulator")(n_states_, n_inputs_, n_outputs_);
 
-            sim_.attr("setTitle")("Sim Test");
+            sim_.attr("setTitle")(title_.c_str());
 
         }catch(py::error_already_set){
             PyErr_Print();
@@ -123,6 +123,7 @@ public:
 
             sim_.attr("setStateSpace")(A_obj, B_obj, C_obj, D_obj);
         }catch(py::error_already_set){
+
             PyErr_Print();
         }
     }    
@@ -148,8 +149,12 @@ public:
 
     }
 
-    inline double& setDelay(){
+    double& setDelay(){
         return delay_;
+    }
+
+    void setTitle(std::string&& _title){
+        title_ = _title;
     }
 
 private:
@@ -166,6 +171,7 @@ private:
     std::vector<double> D_;
 
     double delay_;
+    std::string title_;
 
 
 };
