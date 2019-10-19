@@ -4,9 +4,10 @@
 '''
 
 import time
+import math
 import numpy as np
 import signal
-from multiprocessing import Process, Manager, Array
+from multiprocessing import Process, Array
 import matplotlib.pyplot as plt
 from scipy.linalg import expm
 
@@ -21,7 +22,6 @@ class Simulator:
 
         self.sim_thread = Process(target = self.simulate, args = ())
 
-        # self.manager = Manager()
         self.shared_A = Array('d', np.zeros(n_states ** 2))
         self.shared_B = Array('d', np.zeros(n_states * n_inputs))
         self.shared_C = Array('d', np.zeros(n_outputs * n_states))
@@ -96,21 +96,32 @@ class Simulator:
         state = init_state
         last_state = state
 
+        # Input
+        last_u = self.u
+
         # Output
-        output = np.zeros((self.n_outputs, 1))
+        output = np.zeros((self.n_outputs, 1))        
 
         # Data
-        state_data = [state[1]]
-        output_data = [output[1]]
+
+        signal_data = []
+
+        # state_data = []
+        for i in range(0, self.n_states):
+            signal_data.append([state[i]])
+        
+        # input_data = []
+        for i in range(0, self.n_inputs):
+            signal_data.append([self.u[i]])
+
+        # output_data = []
+        for i in range(0, self.n_outputs):
+            signal_data.append([output[i]])
+        
         time_data = [0]
 
         # Other stuff
-        
-        total_state = 0
-        total_output = 0
-
-        # Input
-        last_u = self.u
+        total_signal = np.zeros(self.n_states + self.n_inputs + self.n_outputs)
         
         # Plotter setup
         plt.clf()
@@ -119,17 +130,17 @@ class Simulator:
         fig.canvas.set_window_title(self.title)    
         fig.canvas.mpl_connect('close_event', self.pltCloseHandle)
 
-        sp1 = fig.add_subplot(2,1,1)
-        sp2 = fig.add_subplot(2,1,2)
-
-        line1, = sp1.plot(time_data, state_data, color='b')
-        line2, = sp2.plot(time_data, output_data, color='r')
+        n_signals = self.n_states + self.n_inputs + self.n_outputs
+        n_sp_rows, n_sp_cols = int(math.ceil(n_signals / 3)), min(3, n_signals)
+        sp = []
+        plot = []
+        for i in range(0, n_signals):
+            sp.append(fig.add_subplot(n_sp_rows, n_sp_cols, i+1))
+            line, = sp[i].plot(time_data, signal_data[i])
+            plot.append(line)
 
         fig.canvas.draw()
-        fig.show()    
-
-        sp1.set_ylim(bottom = -1.0, top = 1.0)
-        sp2.set_ylim(bottom = -1.0, top = 1.0)
+        fig.show()
 
         while self.running:
             # Approximation of State Space solution
@@ -144,40 +155,37 @@ class Simulator:
             output = np.dot(self.C, state) + np.dot(self.D, self.u)
 
             last_u = self.u
-            last_state = state      
+            last_state = state                  
 
-            # Calculating state and output value
-            # for calcuating their average
-            total_state += np.abs(state[1])
-            total_output += np.abs(output[1])
+            pres_signal = np.concatenate((state, np.concatenate((self.u, output), axis = 0)), axis = 0)
 
-            state_data.append(state[1])
-            output_data.append(output[1])
             time_data.append(t)
 
-            # Replace data
-            line1.set_ydata(state_data)
-            line1.set_xdata(time_data)
+            time_data_len = len(time_data)
 
-            line2.set_ydata(output_data)
-            line2.set_xdata(time_data)  
+            signal_avg = []
 
-            sp1.draw_artist(sp1.patch)
-            sp1.draw_artist(line1)
+            for i in range(0, n_signals):
 
-            sp2.draw_artist(sp2.patch)
-            sp2.draw_artist(line2)
+                # Summing signal magnitude
+                # for calcuating their average
+                total_signal[i] += pres_signal[i]                
 
-            # To maintain sight of signal in plotter
-            sp1.set_xlim(left = max(0, t - 0.75 * view_interval), right = max(view_interval, t + 0.25 * view_interval))
-            sp2.set_xlim(left = max(0, t - 0.75 * view_interval), right = max(view_interval, t + 0.25 * view_interval))    
+                # Replace data
+                signal_data[i].append(pres_signal[i])
+                plot[i].set_ydata(signal_data[i])
+                plot[i].set_xdata(time_data)
 
-            # To adjust the signal interval
-            output_avg = total_output / len(time_data)
-            state_avg = total_state / len(time_data)
+                # Draw into the figure
+                sp[i].draw_artist(sp[i].patch)
+                sp[i].draw_artist(plot[i])
 
-            sp1.set_ylim(bottom = -state_avg - state_avg * 0.75, top = max(0.001, state_avg + state_avg * 0.75))
-            sp2.set_ylim(bottom = -output_avg - output_avg * 0.75, top = max(0.001, output_avg + output_avg * 0.75))
+                # To maintain sight of signal in plotter
+                sp[i].set_xlim(left = max(0, t - 0.75 * view_interval), right = max(view_interval, t + 0.25 * view_interval))
+
+                # To adjust the signal interval
+                signal_avg.append(total_signal[i] / time_data_len)
+                sp[i].set_ylim(bottom = -signal_avg[i] * 1.75, top = max(0.001, signal_avg[i] * 1.75))
 
             fig.canvas.draw()
             fig.canvas.flush_events()
@@ -195,11 +203,14 @@ class Simulator:
             # print('Time : {}'.format(t))            
 
             # Remove unnecessary old data
-            if len(time_data) >= max_data:            
+            if len(time_data) >= max_data:
+
                 site = int(max_data * 0.25)
-                total_output -= output_avg * site
-                total_state -= state_avg * site
+
+                for i in range(0, n_signals):
+
+                    total_signal[i] -= signal_avg[i] * site
+                    del signal_data[i][0:site]
+
                 del time_data[0:site]
-                del state_data[0:site]
-                del output_data[0:site]
          
