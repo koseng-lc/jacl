@@ -10,7 +10,7 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
     , bm(.000048)
-    , jm(.00000072)
+    , jm(7.2e-6)
     , ki(.052)
     , la(.00062)
     , kb(.052)
@@ -63,9 +63,9 @@ MainWindow::MainWindow(QWidget *parent)
     sim_.init();
     sim_.setTitle("DC Motor Simulation");
     sim_.setDelay() = .0;
-    sim_.setPlotName({"Angular Position (rad)", "Angular Velocity", "Current (A)",
+    sim_.setPlotName({"Angular Position", "Angular Velocity", "Current",
                       "Torque In", "Voltage In",
-                      "Angular Position (rad)", "Angular Velocity"});
+                      "Angular Position", "Angular Velocity"});
     sim_.setStateSpace(ss_.A(), ss_.B(), ss_.C(), ss_.D());
 
     setupWidgets();
@@ -101,8 +101,8 @@ void MainWindow::setupWidgets(){
     params_label_[iJm] = new QLabel;
     params_label_[iJm]->setText(tr("Rotor Inertia : "));
     params_dsb_[iJm] = new QDoubleSpinBox;
-    params_dsb_[iJm]->setSingleStep(1e-8);
-    params_dsb_[iJm]->setDecimals(8);
+    params_dsb_[iJm]->setSingleStep(1e-7);
+    params_dsb_[iJm]->setDecimals(7);
     params_dsb_[iJm]->setMaximum(1.0);
     params_dsb_[iJm]->setMinimum(.0);
     params_dsb_[iJm]->setValue(jm.nominal);

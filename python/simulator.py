@@ -38,6 +38,9 @@ class Simulator:
         self.state_trans = np.frombuffer(self.shared_state_trans.get_obj()).reshape((n_states, n_states))
         self.B_dt = np.frombuffer(self.shared_B_dt.get_obj()).reshape((n_states, n_inputs))
 
+        # Default window name
+        self.title = "Simulator"
+
     def __del__(self):
         self.sim_thread.join()
 
@@ -134,11 +137,20 @@ class Simulator:
         n_sp_rows, n_sp_cols = int(math.ceil(n_signals / 3)), min(3, n_signals)
         sp = []
         plot = []
+
         for i in range(0, n_signals):
             sp.append(fig.add_subplot(n_sp_rows, n_sp_cols, i+1))
             sp[i].set_title(self.plot_name['signal{}'.format(i)])
+            sp[i].set_xlabel('Time (s)')
             sp[i].grid(True)
-            line, = sp[i].plot(time_data, signal_data[i])
+
+            color = 'b'
+            if i < self.n_states:
+                color = 'r'
+            elif i < self.n_states + self.n_inputs:
+                color = 'g'
+
+            line, = sp[i].plot(time_data, signal_data[i], color=color)
             plot.append(line)
 
         plt.tight_layout()
@@ -190,7 +202,7 @@ class Simulator:
 
                 # To adjust the signal interval
                 signal_avg.append(total_signal[i] / time_data_len)
-                sp[i].set_ylim(bottom = -signal_avg[i] * 1.75, top = max(0.001, signal_avg[i] * 1.75))
+                sp[i].set_ylim(bottom = min(-0.001, -signal_avg[i] * 1.75), top = max(0.001, signal_avg[i] * 1.75))
 
             fig.canvas.draw_idle()
             fig.canvas.flush_events()

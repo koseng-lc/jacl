@@ -42,8 +42,6 @@ public:
 
             sim_ = sim_module.attr("Simulator")(n_states_, n_inputs_, n_outputs_);
 
-            sim_.attr("setTitle")(title_.c_str());
-
         }catch(py::error_already_set){
             PyErr_Print();
             return 1;
