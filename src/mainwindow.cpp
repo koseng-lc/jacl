@@ -215,7 +215,7 @@ void MainWindow::setupWidgets(){
     voltage_in_dsb_ = new QDoubleSpinBox;
     voltage_in_dsb_->setSingleStep(1e-3);
     voltage_in_dsb_->setDecimals(3);
-    voltage_in_dsb_->setMinimum(.0);
+    voltage_in_dsb_->setMinimum(-24.0);
     voltage_in_dsb_->setMaximum(24.0); // 24 volt
     voltage_in_dsb_->setValue(.0);
     voltage_in_dsb_->adjustSize();

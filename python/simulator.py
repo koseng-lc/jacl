@@ -109,7 +109,6 @@ class Simulator:
         output = np.zeros((self.n_outputs, 1))        
 
         # Data
-
         signal_data = []
 
         for i in range(0, self.n_states):
@@ -127,9 +126,7 @@ class Simulator:
         total_signal = np.zeros(self.n_states + self.n_inputs + self.n_outputs)
         
         # Plotter setup
-        # plt.subplots_adjust(left=.0,bottom=.0,right=.1,top=1.0)
-        
-        fig = plt.figure()
+        fig = plt.figure(facecolor='black', edgecolor='white')
         fig.canvas.set_window_title(self.title)    
         fig.canvas.mpl_connect('close_event', self.pltCloseHandle)
 
@@ -140,9 +137,13 @@ class Simulator:
 
         for i in range(0, n_signals):
             sp.append(fig.add_subplot(n_sp_rows, n_sp_cols, i+1))
-            sp[i].set_title(self.plot_name['signal{}'.format(i)])
+            sp[i].set_title(self.plot_name['signal{}'.format(i)], color='white')
             sp[i].set_xlabel('Time (s)')
             sp[i].grid(True)
+            sp[i].set_facecolor((0.294117647, 0.294117647, 0.294117647)) # Gray
+            sp[i].tick_params(color='white', labelcolor='white')
+            for spine in sp[i].spines.values():
+                spine.set_edgecolor('white')
 
             color = 'b'
             if i < self.n_states:
@@ -154,6 +155,10 @@ class Simulator:
             plot.append(line)
 
         plt.tight_layout()
+
+        # Manual adjustment
+        plt.subplots_adjust(left=0.05,bottom=0.05,right=0.99,top=0.96,wspace=0.21,hspace=0.3)
+
         plt.grid(True)
 
         fig.canvas.draw()
