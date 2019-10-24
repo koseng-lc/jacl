@@ -44,10 +44,6 @@ class Plotter:
 
         np.copyto(self.signal_data, _signal_data)
         np.copyto(self.time_data, _time_data)
-        # print('CUY')
-        print('Signal Data Shape : {}'.format(_signal_data.shape))
-        print('Time Data Shape : {}'.format(_time_data.shape))
-        # print('WADIDAW')
 
     def setTitle(self, _title):
         self.title = _title
@@ -69,9 +65,6 @@ class Plotter:
         print('Plotter closed.')
 
     def simulate(self):        
-
-        # Other stuff
-        total_signal = np.zeros(self.n_signals)
         
         # Plotter setup
         fig = plt.figure(facecolor='black', edgecolor='white')
@@ -98,7 +91,7 @@ class Plotter:
         plt.tight_layout()
 
         # Manual adjustment
-        # plt.subplots_adjust(left=0.05,bottom=0.05,right=0.99,top=0.96,wspace=0.21,hspace=0.3)
+        plt.subplots_adjust(left=0.05,bottom=0.05,right=0.99,top=0.96,wspace=0.21,hspace=0.3)
 
         plt.grid(True)
 
@@ -111,7 +104,7 @@ class Plotter:
 
             n_data += 1
 
-            total_signal += np.abs(self.signal_data[-1])
+            total_signal = np.array([np.sum(np.abs(self.signal_data[:,i])) for i in range(0, self.n_signals)])
             signal_avg = total_signal / min(n_data, self.max_data)
 
             for i in range(0, self.n_signals):

@@ -31,6 +31,7 @@ namespace np = boost::python::numpy;
 template <class SSpace>
 class Simulator2{
 public:
+
     Simulator2(SSpace *_ss);
     ~Simulator2();
 
@@ -51,6 +52,7 @@ public:
     void setPlotName(std::initializer_list<std::string> _plot_name);
 
     void updateVariables();
+
 private:
 
     boost::thread process_thread_;
@@ -88,6 +90,8 @@ private:
     // State Transition + Identity
     Mat st_I_;
 
+
+    // more safe with RAII
     class AcquireGIL{
     public:
         AcquireGIL():state(PyGILState_Ensure()){}
@@ -178,7 +182,7 @@ void Simulator2<SSpace>::updateVariables(){
 template <class SSpace>
 void Simulator2<SSpace>::setInput(const Mat& _input){
 
-    setData();
+//    setData();
     u_ = _input;
 }
 
@@ -220,10 +224,6 @@ void Simulator2<SSpace>::process(){
 
         prev_state = state;
         prev_u = u_;        
-        std::cout << "Process : " << boost::this_thread::get_id() << std::endl;
-//        setData();
-
-//        AcquireGIL lk;
 
         try{
 
@@ -247,7 +247,6 @@ void Simulator2<SSpace>::process(){
             py::object time_obj(time_handle);
 
             sim_.attr("setData")(signals_obj, time_obj);
-            std::cout << "setData : " << boost::this_thread::get_id() << std::endl;
 
         }catch(py::error_already_set){
             PyErr_Print();
@@ -261,7 +260,8 @@ void Simulator2<SSpace>::process(){
 }
 
 template <class SSpace>
-void Simulator2<SSpace>::simulate(){    
+void Simulator2<SSpace>::simulate(){
+
     AcquireGIL lk;
     try{
 
@@ -280,6 +280,7 @@ void Simulator2<SSpace>::simulate(){
 
 template <class SSpace>
 void Simulator2<SSpace>::setPlotName(std::initializer_list<std::string> _plot_name){
+
     plot_name_.clear();
     plot_name_.insert(plot_name_.end(), _plot_name.begin(), _plot_name.end());
     AcquireGIL lk;
@@ -299,6 +300,5 @@ void Simulator2<SSpace>::setPlotName(std::initializer_list<std::string> _plot_na
         PyErr_Print();
     }
 }
-
 
 }
