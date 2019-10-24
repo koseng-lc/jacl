@@ -1,6 +1,6 @@
 '''
     author : koseng (Lintang)
-    brief : JACL LTI System Simulator
+    brief : Full-Order Observer Simulator
 '''
 
 import time
@@ -11,7 +11,7 @@ from multiprocessing import Process, Array
 import matplotlib.pyplot as plt
 from scipy.linalg import expm
 
-class Simulator:
+class ObserverSimulator:
     def __init__(self, n_states, n_inputs, n_outputs):
         self.n_states = n_states
         self.n_inputs = n_inputs
@@ -22,24 +22,28 @@ class Simulator:
 
         self.sim_thread = Process(target = self.simulate, args = ())
 
-        self.shared_A = Array('d', np.zeros(n_states ** 2))
-        self.shared_B = Array('d', np.zeros(n_states * n_inputs))
+        self.shared_A_hat = Array('d', np.zeros(n_states ** 2))
+        self.shared_K = Array('d', np.zeros(n_states * n_outputs))
+        self.shared_H = Array('d', np.zeros(n_states * n_inputs))
         self.shared_C = Array('d', np.zeros(n_outputs * n_states))
         self.shared_D = Array('d', np.zeros(n_outputs * n_inputs))
         self.shared_u = Array('d', np.zeros(n_inputs))
         self.shared_state_trans = Array('d', np.zeros(n_states ** 2))
-        self.shared_B_dt = Array('d', np.zeros(n_states * n_inputs))
+        
+        # Shared (State Transition Matrix + I (Identity)) * d_time
+        self.shared_st_I_dt = Array('d', np.zeros(n_states ** 2))
 
-        self.A = np.frombuffer(self.shared_A.get_obj()).reshape((n_states, n_states))
-        self.B = np.frombuffer(self.shared_B.get_obj()).reshape((n_states, n_inputs))
+        self.A_hat = np.frombuffer(self.shared_A_hat.get_obj()).reshape((n_states, n_states))
+        self.K = np.frombuffer(self.shared_K.get_obj()).reshape((n_states, n_outputs))
+        self.H = np.frombuffer(self.shared_H.get_obj()).reshape((n_states, n_inputs))
         self.C = np.frombuffer(self.shared_C.get_obj()).reshape((n_outputs, n_states))
         self.D = np.frombuffer(self.shared_D.get_obj()).reshape((n_outputs, n_inputs))
         self.u = np.frombuffer(self.shared_u.get_obj()).reshape((n_inputs, 1))
         self.state_trans = np.frombuffer(self.shared_state_trans.get_obj()).reshape((n_states, n_states))
-        self.B_dt = np.frombuffer(self.shared_B_dt.get_obj()).reshape((n_states, n_inputs))
+        self.st_I_dt = np.frombuffer(self.shared_st_I_dt.get_obj()).reshape((n_states, n_states))
 
         # Default window name
-        self.title = "Simulator"
+        self.title = "Observer Simulator"
 
     def __del__(self):
         self.sim_thread.join()
@@ -52,20 +56,22 @@ class Simulator:
         assert _u.shape == (self.n_inputs, 1)
         np.copyto(self.u, _u)
 
-    def setStateSpace(self, _A, _B, _C, _D):
-        assert _A.shape == (self.n_states, self.n_states)
-        assert _B.shape == (self.n_states, self.n_inputs)
+    def setStateSpace(self, _A_hat, _K, _H, _C, _D):
+        assert _A_hat.shape == (self.n_states, self.n_states)
+        assert _K.shape == (self.n_states, self.n_outputs)
+        assert _H.shape == (self.n_states, self.n_inputs)
         assert _C.shape == (self.n_outputs, self.n_states)
         assert _D.shape == (self.n_outputs, self.n_inputs)
 
-        np.copyto(self.A, _A)
-        np.copyto(self.B, _B)
+        np.copyto(self.A_hat, _A_hat)
+        np.copyto(self.K, _K)
+        np.copyto(self.H, _H)
         np.copyto(self.C, _C)
         np.copyto(self.D, _D)
 
         # State Transition Matrix
-        np.copyto(self.state_trans, expm(self.A * self.d_time))
-        np.copyto(self.B_dt, self.B * self.d_time)
+        np.copyto(self.state_trans, expm(self.A_hat * self.d_time))
+        np.copyto(self.st_I_dt, (np.eye(self.n_states) + self.state_trans) * self.d_time)
 
     def setTitle(self, _title):
         self.title = _title
@@ -77,7 +83,7 @@ class Simulator:
         self.delay = _delay
 
     def beginSimulation(self):
-        print('Starting simulation...')
+        print('Starting Observer simulation...')
         signal.signal(signal.SIGINT, self.signalHandler)        
         self.sim_thread.start()
 
@@ -165,12 +171,12 @@ class Simulator:
         fig.show()
 
         while self.running:
-
+            
             # Approximation of State Space solution
             term1 = np.dot(self.state_trans, last_state)
-            term2 = np.dot(self.B_dt, self.u)
-            term3 = np.dot(self.state_trans, np.dot(self.B_dt, last_u))
-            term4 = np.dot(self.state_trans, term2 + term3) * 0.5
+            term2 = np.dot(self.K, output)
+            term3 = np.dot(self.H, self.u)
+            term4 = np.dot(self.st_I_dt, term2 + term3) * .5
 
             state = term1 + term4
 

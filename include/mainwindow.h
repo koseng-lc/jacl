@@ -85,7 +85,11 @@ private:
 
     SS ss_;
 
+    JACL::Mat::fixed<3,2> obs_gain_;
+    JACL::Observer<SS> obs_;
+
     JACL::Simulator sim_;
+    JACL::Simulator2<SS> sim2_;
 
 private Q_SLOTS:
     void perturbAct();

@@ -11,3 +11,6 @@
 #include "state_space.h"
 #include "physical_parameter.h"
 #include "simulator.h"
+#include "observer.h"
+
+#include "simulator2.h"

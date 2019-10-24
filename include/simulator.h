@@ -33,7 +33,8 @@ public:
 
     int init(){
         Py_Initialize();
-        import_array();
+        int ret;
+        import_array1(ret);
         try{
             py::object sys = py::import("sys");
             sys.attr("path").attr("append")("../python");
