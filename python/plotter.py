@@ -38,15 +38,16 @@ class Plotter:
         # self.sim_thread.join()
     
     def setData(self, _signal_data, _time_data):
-        # print(_signal_data)
-        print(_time_data)
-        print('Signal Data Shape : {}'.format(_signal_data.shape))
-        print('Time Data Shape : {}'.format(_time_data.shape))
+        
         assert _signal_data.shape == (self.max_data, self.n_signals)
         assert _time_data.shape == (self.max_data, )
 
         np.copyto(self.signal_data, _signal_data)
         np.copyto(self.time_data, _time_data)
+        # print('CUY')
+        print('Signal Data Shape : {}'.format(_signal_data.shape))
+        print('Time Data Shape : {}'.format(_time_data.shape))
+        # print('WADIDAW')
 
     def setTitle(self, _title):
         self.title = _title
@@ -61,7 +62,6 @@ class Plotter:
         print('Starting simulation...')
         signal.signal(signal.SIGINT, self.signalHandler)        
         self.sim_thread.start()
-        print('TEST')
 
     def pltCloseHandle(self, event):
         self.running = False

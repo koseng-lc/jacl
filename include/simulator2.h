@@ -53,16 +53,11 @@ public:
     void updateVariables();
 private:
 
-//    std::thread* process_thread2_;
     boost::thread process_thread_;
     boost::mutex data_mtx_;
     void process();
     boost::mutex running_mtx_;
     bool running_;
-
-//    PyThreadState *py_state_;
-//    PyThreadState* py_state_;
-//    PyInterpreterState* py_interpreter_;
 
     void setData();
 
@@ -91,7 +86,18 @@ private:
     Mat state_transition_;
 
     // State Transition + Identity
-    Mat st_I_;   
+    Mat st_I_;
+
+    class AcquireGIL{
+    public:
+        AcquireGIL():state(PyGILState_Ensure()){}
+        ~AcquireGIL(){PyGILState_Release(state);}
+    private:
+        PyGILState_STATE state;
+
+    };
+
+    PyThreadState *py_state_;
 
 };
 
@@ -122,32 +128,37 @@ Simulator2<SSpace>::Simulator2(SSpace* _ss)
 
 template <class SSpace>
 Simulator2<SSpace>::~Simulator2(){
-    boost::mutex::scoped_lock lk(running_mtx_);
-    running_ = false;
 
-//    process_thread2_->join();
-//    delete process_thread2_;
+    boost::mutex::scoped_lock lk(running_mtx_);
+    running_ = false;    
     process_thread_.join();
+
+    PyThreadState_Swap(py_state_);
+
 }
 
 template <class SSpace>
 int Simulator2<SSpace>::init(){
+
     Py_Initialize();
+
+    // idk why its automatically locked, contrary with common article
+    py_state_ = PyEval_SaveThread();
+
+    AcquireGIL lk;
+
     int ret;
     import_array1(ret);
-//    PyEval_I
-//    PyEval_InitThreads();
-//    py_state_ = new PyThreadState_Get();
-//    py_interpreter_ = py_state_->interp;
+
     try{
-//        PyThreadState* state = PyEval_SaveThread();
+
         py::object sys = py::import("sys");
         sys.attr("path").attr("append")("../python");
 
         py::object sim_module = py::import("plotter");
 
         sim_ = sim_module.attr("Plotter")(n_signals_, d_time_, view_interval_);
-//        PyEval_RestoreThread(state);
+
     }catch(py::error_already_set){
         PyErr_Print();
         return 1;
@@ -166,49 +177,14 @@ void Simulator2<SSpace>::updateVariables(){
 
 template <class SSpace>
 void Simulator2<SSpace>::setInput(const Mat& _input){
+
     setData();
     u_ = _input;
 }
 
 template <class SSpace>
 void Simulator2<SSpace>::setData(){
-    try{
-        std::vector<double> temp_signal_data;
-        std::vector<double> temp_time_data;
 
-        for(std::size_t i(0); i < signal_data_.size(); i++)
-            temp_signal_data.push_back(signal_data_[i]);
-
-        for(std::size_t i(0); i < time_data_.size(); i++)
-            temp_time_data.push_back(time_data_[i]);
-
-//        std::cout << (int)signal_data_.front().size() << std::endl;
-//        std::cout << (int)temp_signal_data_.size() << " ; " << n_signals_ << std::endl;
-
-        Py_intptr_t signal_shape[2] = {(int)max_data_, n_signals_};
-        PyObject* np_signals = PyArray_SimpleNewFromData(2, signal_shape, NPY_FLOAT64, reinterpret_cast<void*>(temp_signal_data.data()));
-        py::handle<> signals_handle(np_signals);
-        py::object signals_obj(signals_handle);
-
-        Py_intptr_t time_shape[1] = {(int)max_data_};
-        PyObject* np_time = PyArray_SimpleNewFromData(1, time_shape, NPY_FLOAT64, reinterpret_cast<void*>(temp_time_data.data()));
-        py::handle<> time_handle(np_time);
-        py::object time_obj(time_handle);
-
-        // Using GIL State
-        PyGILState_STATE gstate;
-        gstate = PyGILState_Ensure();
-        sim_.attr("setData")(signals_obj, time_obj);
-        PyGILState_Release(gstate);
-
-        // Concurrency style more safe
-//        py_state_ = PyEval_SaveThread();
-//        sim_.attr("setData")(signals_obj, time_obj);
-//        PyEval_RestoreThread(py_state_);
-
-    }catch(py::error_already_set){
-        PyErr_Print();
-    }
 }
 
 template <class SSpace>
@@ -220,7 +196,9 @@ void Simulator2<SSpace>::process(){
     Mat prev_state(state);
     Mat output;
     Mat pres_signal;
-    auto t(.0);
+    auto t(.0);    
+
+    AcquireGIL lk;
 
     while(running_){
 
@@ -242,27 +220,56 @@ void Simulator2<SSpace>::process(){
 
         prev_state = state;
         prev_u = u_;        
+        std::cout << "Process : " << boost::this_thread::get_id() << std::endl;
+//        setData();
 
-        setData();
+//        AcquireGIL lk;
+
+        try{
+
+            std::vector<double> temp_signal_data;
+            std::vector<double> temp_time_data;
+
+            for(std::size_t i(0); i < signal_data_.size(); i++)
+                temp_signal_data.push_back(signal_data_[i]);
+
+            for(std::size_t i(0); i < time_data_.size(); i++)
+                temp_time_data.push_back(time_data_[i]);
+
+            Py_intptr_t signal_shape[2] = {(int)max_data_, n_signals_};
+            PyObject* np_signals = PyArray_SimpleNewFromData(2, signal_shape, NPY_FLOAT64, reinterpret_cast<void*>(temp_signal_data.data()));
+            py::handle<> signals_handle(np_signals);
+            py::object signals_obj(signals_handle);
+
+            Py_intptr_t time_shape[1] = {(int)max_data_};
+            PyObject* np_time = PyArray_SimpleNewFromData(1, time_shape, NPY_FLOAT64, reinterpret_cast<void*>(temp_time_data.data()));
+            py::handle<> time_handle(np_time);
+            py::object time_obj(time_handle);
+
+            sim_.attr("setData")(signals_obj, time_obj);
+            std::cout << "setData : " << boost::this_thread::get_id() << std::endl;
+
+        }catch(py::error_already_set){
+            PyErr_Print();
+        }
         boost::this_thread::sleep_for(boost::chrono::milliseconds{100});
 
         t += d_time_;
 
     }
+
 }
 
 template <class SSpace>
-void Simulator2<SSpace>::simulate(){
-
+void Simulator2<SSpace>::simulate(){    
+    AcquireGIL lk;
     try{
 
         process_thread_ = boost::thread(boost::bind(&Simulator2<SSpace>::process, this));
-//        process_thread_ = new boost::thread(&Simulator2<SSpace>::process, this);
-//        process_thread2_ = new std::thread(&Simulator2<SSpace>::process, this);
-//        PyThreadState* state = PyEval_SaveThread();
+
         sim_.attr("setDelay")(delay_);
         sim_.attr("beginSimulation")();
-//        PyEval_RestoreThread(state);
+
     }catch(py::error_already_set){
 
         PyErr_Print();
@@ -275,19 +282,20 @@ template <class SSpace>
 void Simulator2<SSpace>::setPlotName(std::initializer_list<std::string> _plot_name){
     plot_name_.clear();
     plot_name_.insert(plot_name_.end(), _plot_name.begin(), _plot_name.end());
-
+    AcquireGIL lk;
     try{
+
         py::dict plot_name_dict;
         for(std::size_t i(0); i < plot_name_.size(); i++){
             std::stringstream ss;
             ss << "signal" << i;
             plot_name_dict[ss.str().c_str()] = plot_name_[i];
 
-//            PyThreadState* state = PyEval_SaveThread();
             sim_.attr("setPlotName")(plot_name_dict);
-//            PyEval_RestoreThread(state);
+
         }
     }catch(py::error_already_set){
+
         PyErr_Print();
     }
 }

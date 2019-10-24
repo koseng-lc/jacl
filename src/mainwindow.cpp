@@ -71,13 +71,13 @@ MainWindow::MainWindow(QWidget *parent)
                        "Angular Position", "Angular Velocity"});
     sim2_.updateVariables();
 
-    sim_.init();
-    sim_.setTitle("DC Motor Simulation");
-    sim_.setDelay() = .0;
-    sim_.setPlotName({"Angular Position", "Angular Velocity", "Current",
-                      "Torque In", "Voltage In",
-                      "Angular Position", "Angular Velocity"});
-    sim_.setStateSpace(ss_.A(), ss_.B(), ss_.C(), ss_.D());
+//    sim_.init();
+//    sim_.setTitle("DC Motor Simulation");
+//    sim_.setDelay() = .0;
+//    sim_.setPlotName({"Angular Position", "Angular Velocity", "Current",
+//                      "Torque In", "Voltage In",
+//                      "Angular Position", "Angular Velocity"});
+//    sim_.setStateSpace(ss_.A(), ss_.B(), ss_.C(), ss_.D());
 
     setupWidgets();
     setupActions();
@@ -275,9 +275,9 @@ void MainWindow::perturbAct(){
     for(int idx(iBm); idx <= iRa; idx++)
         ss_.param(idx) = params_dsb_[idx]->value();
 
-    ss_.formulaToMat();
+//    ss_.formulaToMat();
     sim2_.updateVariables();
-    sim_.setStateSpace(ss_.A(), ss_.B(), ss_.C(), ss_.D());
+//    sim_.setStateSpace(ss_.A(), ss_.B(), ss_.C(), ss_.D());
 }
 
 void MainWindow::resetAct(){
@@ -302,6 +302,6 @@ void MainWindow::setInputAct(){
     JACL::Mat in(2, 1);
     in(0) = torque_in_dsb_->value();
     in(1) = voltage_in_dsb_->value();
-    sim_.setInput(in);
+//    sim_.setInput(in);
     sim2_.setInput(in);
 }
