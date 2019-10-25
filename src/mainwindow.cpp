@@ -93,7 +93,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow(){
 
-    delete ui;
+    delete ui;    
 }
 
 void MainWindow::setupWidgets(){
