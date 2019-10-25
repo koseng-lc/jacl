@@ -1,6 +1,6 @@
 '''
     author : koseng (Lintang)
-    brief : Plotter
+    brief : JACL Plotter
 '''
 
 import time
@@ -91,7 +91,7 @@ class Plotter:
         plt.tight_layout()
 
         # Manual adjustment
-        plt.subplots_adjust(left=0.05,bottom=0.05,right=0.99,top=0.96,wspace=0.21,hspace=0.3)
+        # plt.subplots_adjust(left=0.05,bottom=0.05,right=0.99,top=0.96,wspace=0.21,hspace=0.3)
 
         plt.grid(True)
 

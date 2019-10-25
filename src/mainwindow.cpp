@@ -17,9 +17,9 @@ MainWindow::MainWindow(QWidget *parent)
     , ra(2.07)
     , ss_(bm, jm, ki, la, kb, ra)
     , obs_gain_({1.0,1.0,1.0,1.0,1.0,1.0})
-    , obs_(&ss_, obs_gain_)
-    , sim_(3,2,2)
-    , sim2_(&ss_){
+//    , sim_(3,2,2)
+    , system_sim_(&ss_)
+    , observer_sim_(&ss_, obs_gain_){
 
     ui->setupUi(this);
 
@@ -63,13 +63,20 @@ MainWindow::MainWindow(QWidget *parent)
     ss_.setD(fD);
     ss_.formulaToMat();
 
-    sim2_.init();
-    sim2_.setTitle("DC Motor Sim");
-    sim2_.setDelay() = .01;
-    sim2_.setPlotName({"Angular Position", "Angular Velocity", "Current",
+    system_sim_.init();
+    system_sim_.setTitle("DC Motor Sim");
+    system_sim_.setDelay() = .0;
+    system_sim_.setPlotName({"Angular Position", "Angular Velocity", "Current",
                        "Torque In", "Voltage In",
                        "Angular Position", "Angular Velocity"});
-    sim2_.updateVariables();
+    system_sim_.updateVariables();
+
+    observer_sim_.init();
+    observer_sim_.setTitle("Full-order Luenberger Observer of DC Motor");
+    observer_sim_.setDelay() = .0;
+    observer_sim_.setPlotName({"Est. Position", "Est. Velocity", "Est. Current"
+                              ,"Est. Out Position", "Est. Out Velocity"});
+    observer_sim_.updateVariables();
 
 //    sim_.init();
 //    sim_.setTitle("DC Motor Simulation");
@@ -275,8 +282,9 @@ void MainWindow::perturbAct(){
     for(int idx(iBm); idx <= iRa; idx++)
         ss_.param(idx) = params_dsb_[idx]->value();
 
-//    ss_.formulaToMat();
-    sim2_.updateVariables();
+    ss_.formulaToMat();
+    system_sim_.updateVariables();
+    observer_sim_.updateVariables();
 //    sim_.setStateSpace(ss_.A(), ss_.B(), ss_.C(), ss_.D());
 }
 
@@ -295,7 +303,8 @@ void MainWindow::resetAct(){
 void MainWindow::simulateAct(){
 
 //    sim_.simulate();
-    sim2_.simulate();
+    system_sim_.simulate();
+    observer_sim_.simulate();
 }
 
 void MainWindow::setInputAct(){
@@ -303,5 +312,6 @@ void MainWindow::setInputAct(){
     in(0) = torque_in_dsb_->value();
     in(1) = voltage_in_dsb_->value();
 //    sim_.setInput(in);
-    sim2_.setInput(in);
+    system_sim_.setInput(in);
+    observer_sim_.setInput(in);
 }

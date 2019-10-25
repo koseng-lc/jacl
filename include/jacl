@@ -13,4 +13,6 @@
 #include "simulator.h"
 #include "observer.h"
 
-#include "simulator2.h"
+// Example use of JACL
+#include "observer_sim.h"
+#include "system_sim.h"

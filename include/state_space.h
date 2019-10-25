@@ -85,6 +85,7 @@ private:
     Formulas fC_;
     Formulas fD_;
 
+    // TODO : change the arguement to pointer
     std::vector<PhysicalParameter > params_;
 
     Mat A_;

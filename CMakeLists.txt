@@ -70,19 +70,38 @@ add_library(transfer_matrix include/transfer_matrix.h src/transfer_matrix.cpp)
 
 add_library(observer include/observer.h src/observer.cpp)
 
-add_library(simulator2 SHARED include/simulator2.h)
-
-target_link_libraries(simulator2
+add_library(sim SHARED include/sim.h)
+target_link_libraries(sim
     Boost::system Boost::python Boost::thread Boost::chrono
     ${PYTHON_LIBRARIES}
     state_space
 )
+set_target_properties(sim PROPERTIES LINKER_LANGUAGE CXX)
 
-set_target_properties(simulator2 PROPERTIES LINKER_LANGUAGE CXX)
+add_library(observer_sim include/observer_sim.h)
+target_link_libraries(observer_sim
+    Boost::system Boost::python Boost::chrono
+    ${PYTHON_LIBRARIES}
+    state_space
+    sim
+    observer
+)
+set_target_properties(observer_sim PROPERTIES LINKER_LANGUAGE CXX)
 
+# System Simulator
+add_library(system_sim include/system_sim.h)
+target_link_libraries(system_sim
+    Boost::system Boost::python Boost::chrono
+    ${PYTHON_LIBRARIES}
+    state_space
+    sim
+)
+set_target_properties(system_sim PROPERTIES LINKER_LANGUAGE CXX)
+
+# JACL
 add_library(jacl include/jacl)
 set_target_properties(jacl PROPERTIES LINKER_LANGUAGE CXX)
-target_link_libraries(jacl state_space transfer_matrix simulator simulator2)
+target_link_libraries(jacl state_space transfer_matrix simulator sim)
 
 # Test
 

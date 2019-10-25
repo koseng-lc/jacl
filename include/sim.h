@@ -1,6 +1,6 @@
 /**
 *   @author : koseng (Lintang)
-*   @brief : JACL Simulator2
+*   @brief : JACL Sim
 */
 
 #pragma once
@@ -29,15 +29,13 @@ namespace py = boost::python;
 namespace np = boost::python::numpy;
 
 template <class SSpace>
-class Simulator2{
+class Sim{
 public:
 
-    Simulator2(SSpace *_ss);
-    ~Simulator2();
+    Sim(std::size_t _n_signals);
+    ~Sim();
 
     int init();
-
-    void setInput(const Mat& _input);
 
     void simulate();
 
@@ -49,30 +47,22 @@ public:
         title_ = _title;
     }
 
+    inline double timeStep() const{
+        return d_time_;
+    }
+
     void setPlotName(std::initializer_list<std::string> _plot_name);
 
-    void updateVariables();
-
-private:
+protected:
 
     boost::thread process_thread_;
-    boost::mutex data_mtx_;
     void process();
     boost::mutex running_mtx_;
     bool running_;
 
-    void setData();
-
     py::object sim_;
 
-    SSpace* ss_;
-
-    int n_states_;
-    int n_inputs_;
-    int n_outputs_;
-    int n_signals_;
-
-    Mat u_;
+    std::size_t n_signals_;
 
     double d_time_;
     double view_interval_;
@@ -85,13 +75,9 @@ private:
     std::string title_;
     std::vector<std::string> plot_name_;
 
-    Mat state_transition_;
+    virtual Mat signalCalc() = 0;
 
-    // State Transition + Identity
-    Mat st_I_;
-
-
-    // more safe with RAII
+    // more safe with RAII style
     class AcquireGIL{
     public:
         AcquireGIL():state(PyGILState_Ensure()){}
@@ -101,19 +87,15 @@ private:
 
     };
 
+    // to save the released thread state
     PyThreadState *py_state_;
 
 };
 
 template <class SSpace>
-Simulator2<SSpace>::Simulator2(SSpace* _ss)
+Sim<SSpace>::Sim(std::size_t _n_signals)
     : running_(true)
-    , ss_(_ss)
-    , n_states_(ss_->A().n_rows)
-    , n_inputs_(ss_->B().n_cols)
-    , n_outputs_(ss_->C().n_rows)
-    , n_signals_(n_states_ + n_inputs_ + n_outputs_)
-    , u_(n_inputs_, 1, arma::fill::zeros)
+    , n_signals_(_n_signals)
     , d_time_(1e-4)
     , view_interval_(0.01)
     , max_data_(static_cast<std::size_t>(view_interval_/d_time_))
@@ -131,7 +113,7 @@ Simulator2<SSpace>::Simulator2(SSpace* _ss)
 }
 
 template <class SSpace>
-Simulator2<SSpace>::~Simulator2(){
+Sim<SSpace>::~Sim(){
 
     boost::mutex::scoped_lock lk(running_mtx_);
     running_ = false;    
@@ -142,12 +124,18 @@ Simulator2<SSpace>::~Simulator2(){
 }
 
 template <class SSpace>
-int Simulator2<SSpace>::init(){
+int Sim<SSpace>::init(){
 
-    Py_Initialize();
+    if(!Py_IsInitialized())
+        Py_Initialize();
 
     // idk why its automatically locked, contrary with common article
-    py_state_ = PyEval_SaveThread();
+
+    if(PyGILState_Check()){
+        PyEval_InitThreads();
+        py_state_ = PyEval_SaveThread();
+
+    }
 
     AcquireGIL lk;
 
@@ -172,63 +160,29 @@ int Simulator2<SSpace>::init(){
 }
 
 template <class SSpace>
-void Simulator2<SSpace>::updateVariables(){
+void Sim<SSpace>::process(){
 
-    state_transition_ = arma::expmat(ss_->A());
-    Mat I(n_states_, n_states_, arma::fill::eye);
-    st_I_ = I + state_transition_;
-}
-
-template <class SSpace>
-void Simulator2<SSpace>::setInput(const Mat& _input){
-
-//    setData();
-    u_ = _input;
-}
-
-template <class SSpace>
-void Simulator2<SSpace>::setData(){
-
-}
-
-template <class SSpace>
-void Simulator2<SSpace>::process(){
-
-    Mat term1, term2, term3, term4;
-    Mat prev_u(u_);
-    Mat state(n_states_, 1, arma::fill::zeros);
-    Mat prev_state(state);
-    Mat output;
     Mat pres_signal;
     auto t(.0);    
+
+    std::vector<double> temp_signal_data;
+    std::vector<double> temp_time_data;
 
     AcquireGIL lk;
 
     while(running_){
 
-        term1 = state_transition_ * prev_state;
-        term2 = ss_->B() * (u_ + prev_u);
-        term3 = st_I_ * (d_time_ * .5);
+        pres_signal = signalCalc();
 
-        state = term1 + (term3 * term2);
-
-        term4 = ss_->C() * state;
-        output = term4 + (ss_->D() * u_);
-
-        pres_signal = arma::join_cols(arma::join_cols(state, u_), output);
-//        pres_signal.print("Sig : ");
         for(const auto s:pres_signal)
             signal_data_.push_back(s);
 
         time_data_.push_back(t);
 
-        prev_state = state;
-        prev_u = u_;        
-
         try{
 
-            std::vector<double> temp_signal_data;
-            std::vector<double> temp_time_data;
+            temp_signal_data.clear();
+            temp_time_data.clear();
 
             for(std::size_t i(0); i < signal_data_.size(); i++)
                 temp_signal_data.push_back(signal_data_[i]);
@@ -236,7 +190,7 @@ void Simulator2<SSpace>::process(){
             for(std::size_t i(0); i < time_data_.size(); i++)
                 temp_time_data.push_back(time_data_[i]);
 
-            Py_intptr_t signal_shape[2] = {(int)max_data_, n_signals_};
+            Py_intptr_t signal_shape[2] = {(int)max_data_, (int)n_signals_};
             PyObject* np_signals = PyArray_SimpleNewFromData(2, signal_shape, NPY_FLOAT64, reinterpret_cast<void*>(temp_signal_data.data()));
             py::handle<> signals_handle(np_signals);
             py::object signals_obj(signals_handle);
@@ -251,7 +205,7 @@ void Simulator2<SSpace>::process(){
         }catch(py::error_already_set){
             PyErr_Print();
         }
-        boost::this_thread::sleep_for(boost::chrono::milliseconds{100});
+        boost::this_thread::sleep_for(boost::chrono::milliseconds{10});
 
         t += d_time_;
 
@@ -260,12 +214,12 @@ void Simulator2<SSpace>::process(){
 }
 
 template <class SSpace>
-void Simulator2<SSpace>::simulate(){
+void Sim<SSpace>::simulate(){
 
     AcquireGIL lk;
     try{
 
-        process_thread_ = boost::thread(boost::bind(&Simulator2<SSpace>::process, this));
+        process_thread_ = boost::thread(boost::bind(&Sim<SSpace>::process, this));
 
         sim_.attr("setDelay")(delay_);
         sim_.attr("beginSimulation")();
@@ -279,10 +233,11 @@ void Simulator2<SSpace>::simulate(){
 }
 
 template <class SSpace>
-void Simulator2<SSpace>::setPlotName(std::initializer_list<std::string> _plot_name){
+void Sim<SSpace>::setPlotName(std::initializer_list<std::string> _plot_name){
 
     plot_name_.clear();
     plot_name_.insert(plot_name_.end(), _plot_name.begin(), _plot_name.end());
+
     AcquireGIL lk;
     try{
 
