@@ -1,4 +1,7 @@
-// TODO : Check the SSpace template argument are real StateSpace or not
+/**
+*   @author : koseng (Lintang)
+*   @brief : Simple Luenberger Full-Order Observer
+*/
 
 #pragma once
 
@@ -95,7 +98,7 @@ Observer<SSpace>::~Observer(){
 template <class SSpace>
 void Observer<SSpace>::calcState(){
 
-    Mat term1, term2, term3;
+    static Mat term1, term2, term3;
     term1 = state_trans_ * prev_state_;
     term2 = ss_->B() * (u_ + prev_u_);
     term3 = st_I_ * (dt_ * .5);
@@ -120,8 +123,8 @@ Mat Observer<SSpace>::calcStateEst(){
 
     calcState();
 
-    Mat term1, term2, term3, term4, term5, term6;
-    term1 = state_trans_ * prev_state_;
+    static Mat term1, term2, term3, term4, term5, term6;
+    term1 = state_trans_est_ * prev_state_est_;
     term2 = K_ * output_;
     term3 = H_ * u_;
     term4 = term2 + term3;

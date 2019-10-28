@@ -88,6 +88,9 @@ target_link_libraries(observer_sim
 )
 set_target_properties(observer_sim PROPERTIES LINKER_LANGUAGE CXX)
 
+add_library(pole_placement include/pole_placement.h)
+set_target_properties(pole_placement PROPERTIES LINKER_LANGUAGE CXX)
+
 # System Simulator
 add_library(system_sim include/system_sim.h)
 target_link_libraries(system_sim

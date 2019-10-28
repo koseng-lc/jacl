@@ -1,3 +1,8 @@
+/**
+*   @author : koseng (Lintang)
+*   @brief : Observer Simulator
+*/
+
 #pragma once
 
 #include "observer.h"

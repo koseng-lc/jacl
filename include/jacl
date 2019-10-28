@@ -12,6 +12,7 @@
 #include "physical_parameter.h"
 #include "simulator.h"
 #include "observer.h"
+#include "pole_placement.h"
 
 // Example use of JACL
 #include "observer_sim.h"

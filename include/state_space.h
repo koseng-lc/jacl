@@ -19,14 +19,14 @@ namespace JACL{
 
 using Mat = arma::mat;
 
-template<int num_states, int num_inputs, int num_outputs, class T, class ...Args>
+template<int num_states, int num_inputs, int num_outputs, class PhysicalParam, class ...Rest>
 class StateSpace{
 public:
     using Formula = std::function<double(StateSpace)>;
     using Formulas = std::vector<Formula>;
 
 public:
-    StateSpace(T _param, Args... _rest);
+    StateSpace(PhysicalParam _param, Rest... _rest);
     ~StateSpace();
 
     Mat A() const{
@@ -93,22 +93,22 @@ private:
     Mat C_;
     Mat D_;
 
-    void push(T _param){
+    void push(PhysicalParam _param){
         params_.push_back(_param);
     }
 
-    template <class ...Rest>
-    void push(T _param, Rest... _rest){
+    template <class ...PhysicalParamRest>
+    void push(PhysicalParam _param, PhysicalParamRest... _rest){
         push(_param);
         push(_rest...);
     }
 
 };
 
-template<int num_states, int num_inputs, int num_outputs, class T, class ...Args>
-StateSpace<num_states, num_inputs, num_outputs, T, Args...>::StateSpace(T _param, Args... _rest){
+template<int num_states, int num_inputs, int num_outputs, class PhysicalParam, class ...Rest>
+StateSpace<num_states, num_inputs, num_outputs, PhysicalParam, Rest...>::StateSpace(PhysicalParam _param, Rest... _rest){
 
-//    std::cout << sizeof...(Args) << std::endl;
+//    std::cout << sizeof...(Rest) << std::endl;
 
     push(_param, _rest...);
 
@@ -119,23 +119,23 @@ StateSpace<num_states, num_inputs, num_outputs, T, Args...>::StateSpace(T _param
 
 }
 
-template<int num_states, int num_inputs, int num_outputs, class T, class ...Args>
-StateSpace<num_states, num_inputs, num_outputs, T, Args...>::~StateSpace(){
+template<int num_states, int num_inputs, int num_outputs, class PhysicalParam, class ...Rest>
+StateSpace<num_states, num_inputs, num_outputs, PhysicalParam, Rest...>::~StateSpace(){
 
 }
 
-template<int num_states, int num_inputs, int num_outputs, class T, class ...Args>
-bool StateSpace<num_states, num_inputs, num_outputs, T, Args...>::controlable(){
+template<int num_states, int num_inputs, int num_outputs, class PhysicalParam, class ...Rest>
+bool StateSpace<num_states, num_inputs, num_outputs, PhysicalParam, Rest...>::controlable(){
 
 }
 
-template<int num_states, int num_inputs, int num_outputs, class T, class ...Args>
-bool StateSpace<num_states, num_inputs, num_outputs, T, Args...>::observable(){
+template<int num_states, int num_inputs, int num_outputs, class PhysicalParam, class ...Rest>
+bool StateSpace<num_states, num_inputs, num_outputs, PhysicalParam, Rest...>::observable(){
 
 }
 
-template<int num_states, int num_inputs, int num_outputs, class T, class ...Args>
-void StateSpace<num_states, num_inputs, num_outputs, T, Args...>::formulaToMat(){
+template<int num_states, int num_inputs, int num_outputs, class PhysicalParam, class ...Rest>
+void StateSpace<num_states, num_inputs, num_outputs, PhysicalParam, Rest...>::formulaToMat(){
 
     assert(fA_.size () > 0 && fB_.size() > 0 && fC_.size() > 0 && fD_.size() > 0);
 

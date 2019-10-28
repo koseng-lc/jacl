@@ -16,7 +16,9 @@ MainWindow::MainWindow(QWidget *parent)
     , kb(.052)
     , ra(2.07)
     , ss_(bm, jm, ki, la, kb, ra)
-    , obs_gain_({1.0,1.0,1.0,1.0,1.0,1.0})
+    , obs_gain_({101,1.0,
+                 1.0,1.0,
+                 1.0,1.0})
 //    , sim_(3,2,2)
     , system_sim_(&ss_)
     , observer_sim_(&ss_, obs_gain_){
@@ -36,7 +38,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     SS::Formulas fB{
                  JACL_CONST_SS(.0),           JACL_CONST_SS(.0),
-                 JACL_CONST_SS(.0), JACL_SS(-1.0/ss.param(iJm)),
+                 JACL_CONST_SS(.0), JACL_SS(-   1.0/ss.param(iJm)),
         JACL_SS(1.0/ss.param(iLa)),           JACL_CONST_SS(.0)
     };
 
@@ -63,6 +65,12 @@ MainWindow::MainWindow(QWidget *parent)
     ss_.setD(fD);
     ss_.formulaToMat();
 
+    std::cout << "Preparing system ..." << std::endl;
+    ss_.A().print("A : ");
+    ss_.B().print("B : ");
+    ss_.C().print("C : ");
+    ss_.D().print("D : ");
+
     system_sim_.init();
     system_sim_.setTitle("DC Motor Sim");
     system_sim_.setDelay() = .0;
@@ -85,6 +93,13 @@ MainWindow::MainWindow(QWidget *parent)
 //                      "Torque In", "Voltage In",
 //                      "Angular Position", "Angular Velocity"});
 //    sim_.setStateSpace(ss_.A(), ss_.B(), ss_.C(), ss_.D());
+
+    // Test KautskyNichols
+    JACL::Mat observer_K;
+    JACL::Mat poles{-10,-5,-3};
+    JACL::PolePlacement::KautskyNichols(&ss_, poles, &observer_K);
+
+    observer_K.print("Observer Gain : ");
 
     setupWidgets();
     setupActions();
@@ -309,8 +324,8 @@ void MainWindow::simulateAct(){
 
 void MainWindow::setInputAct(){
     JACL::Mat in(2, 1);
-    in(0) = torque_in_dsb_->value();
-    in(1) = voltage_in_dsb_->value();
+    in(0) = voltage_in_dsb_->value();
+    in(1) = torque_in_dsb_->value();
 //    sim_.setInput(in);
     system_sim_.setInput(in);
     observer_sim_.setInput(in);

@@ -1,3 +1,8 @@
+/**
+*   @author : koseng (Lintang)
+*   @brief : Open-Loop System Simulator
+*/
+
 #pragma once
 
 #include "sim.h"
