@@ -45,6 +45,13 @@ public:
 
     void setTitle(std::string&& _title){
         title_ = _title;
+
+//        try{
+
+//        }catch(py::error_already_set){
+
+//            PyErr_Print();
+//        }
     }
 
     inline double timeStep() const{
@@ -222,6 +229,7 @@ void Sim<SSpace>::simulate(){
 
         process_thread_ = boost::thread(boost::bind(&Sim<SSpace>::process, this));
 
+        sim_.attr("setTitle")(title_.c_str());
         sim_.attr("setDelay")(delay_);
         sim_.attr("beginSimulation")();
 

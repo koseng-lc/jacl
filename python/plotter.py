@@ -67,7 +67,8 @@ class Plotter:
     def simulate(self):
         # Plotter setup
         fig = plt.figure(facecolor='black', edgecolor='white')
-        fig.canvas.set_window_title(self.title)    
+        fig.canvas.set_window_title(self.title)
+        print(self.title)
         fig.canvas.mpl_connect('close_event', self.pltCloseHandle)
 
         n_sp_rows, n_sp_cols = int(math.ceil(self.n_signals / 3)), min(3, self.n_signals)
@@ -92,7 +93,7 @@ class Plotter:
         # Manual adjustment
         # plt.subplots_adjust(left=0.05,bottom=0.05,right=0.99,top=0.96,wspace=0.21,hspace=0.3)
 
-        plt.grid(True)
+        plt.grid(True)        
 
         fig.canvas.draw()
         fig.show()
