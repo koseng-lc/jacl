@@ -30,6 +30,11 @@ MainWindow::MainWindow(QWidget *parent)
 
     this->removeToolBar(ui->mainToolBar);
 
+    QFile style_file("../gui/dark_style_lintang.qss");
+    style_file.open(QFile::ReadOnly);
+    QString style_sheet(style_file.readAll());
+    this->setStyleSheet(style_sheet);
+
     /*
      * Notice ! : ss keyword is preserved variable name
      */
@@ -227,7 +232,7 @@ void MainWindow::setupWidgets(){
     command_gl_->addWidget(simulate_pb_ , 1,0,1,1);
     command_gl_->addWidget(set_input_pb_, 1,1,1,1);
 
-    command_gl_->addItem(new QSpacerItem(0,0,QSizePolicy::Expanding,QSizePolicy::Expanding),2,2);
+    command_gl_->addItem(new QSpacerItem(0,0,QSizePolicy::Ignored,QSizePolicy::Expanding),2,2);
 
     command_gb_->setLayout(command_gl_);
     command_gb_->setTitle(tr("Command"));
@@ -267,18 +272,88 @@ void MainWindow::setupWidgets(){
     input_gb_->setLayout(input_gl_);
     input_gb_->setTitle(tr("Input"));
 
+    //-- Fault
+
+    fault_gb_ = new QGroupBox;
+
+    fault_gl_ = new QGridLayout;
+
+    bias_label_ = new QLabel;
+    bias_label_->setText(tr("Bias : "));
+    bias_dsb_ =  new QDoubleSpinBox;
+    // Settings DSB params
+    bias_dsb_->setValue(.0);
+    bias_dial_ = new QDial;
+
+    scale_label_ = new QLabel;
+    scale_label_->setText(tr("Scale : "));
+    scale_dsb_ =  new QDoubleSpinBox;
+    // Settings DSB params
+    scale_dsb_->setValue(.0);
+    scale_dial_ = new QDial;
+
+    dead_zone_label_ = new QLabel;
+    dead_zone_label_->setText(tr("Dead Zone : "));
+    dead_zone_dsb_ =  new QDoubleSpinBox;
+    // Settings DSB params
+    dead_zone_dsb_->setValue(.0);
+    dead_zone_dial_ = new QDial;
+
+    fault_gl_->addWidget(bias_label_,      0,0,1,1);
+    fault_gl_->addWidget(bias_dsb_,        0,1,1,1);
+    fault_gl_->addWidget(bias_dial_,       0,2,1,1);
+    fault_gl_->addWidget(scale_label_,     1,0,1,1);
+    fault_gl_->addWidget(scale_dsb_,       1,1,1,1);
+    fault_gl_->addWidget(scale_dial_,      1,2,1,1);
+    fault_gl_->addWidget(dead_zone_label_, 2,0,1,1);
+    fault_gl_->addWidget(dead_zone_dsb_,   2,1,1,1);
+    fault_gl_->addWidget(dead_zone_dial_,  2,2,1,1);
+    fault_gl_->addItem(new QSpacerItem(0,0,QSizePolicy::Expanding,QSizePolicy::Expanding),3,3);
+
+    fault_gb_->setLayout(fault_gl_);
+    fault_gb_->setTitle(tr("Fault"));
+
+    //-- Watermark
+
+    watermark_widget_ = new QWidget;
+
+    watermark_gl_ = new QGridLayout;
+
+    QImageReader image_reader("../gui/Logo_Universitas_Gadjah_Mada.png");
+    logo_image_ = new QImage;
+    *logo_image_ = image_reader.read().scaled(QSize(200,200), Qt::KeepAspectRatio);
+
+    logo_image_label_ = new QLabel;
+    logo_image_label_->setPixmap(QPixmap::fromImage(*logo_image_));
+
+    title_label_ = new QLabel;
+    title_label_->setText(tr("Control and Sensor Fault Isolation\n"
+                             "   Design on DC Motor along with\n"
+                             "           Remote Monitoring"));
+    title_label_->setStyleSheet("font: bold italic");
+
+    watermark_gl_->addItem(new QSpacerItem(0,0,QSizePolicy::Expanding,QSizePolicy::Expanding), 0,0);
+    watermark_gl_->addWidget(logo_image_label_, 1,0,1,1);
+    watermark_gl_->setAlignment(logo_image_label_, Qt::AlignCenter);
+    watermark_gl_->addWidget(title_label_,      2,0,1,1);
+    watermark_gl_->addItem(new QSpacerItem(0,0,QSizePolicy::Expanding,QSizePolicy::Expanding), 3,1);
+
+    watermark_widget_->setLayout(watermark_gl_);
+
     //-- Main
 
     main_widget_ = new QWidget;
 
     main_layout_ = new QGridLayout;
 
-    main_layout_->addWidget(params_gb_,  0,0,2,1);
-    main_layout_->addWidget(input_gb_,   0,1,1,1);
-    main_layout_->addWidget(command_gb_, 1,1,1,1);
+    main_layout_->addWidget(params_gb_,        0,0,2,1);
+    main_layout_->addWidget(input_gb_,         0,1,1,1);
+    main_layout_->addWidget(command_gb_,       1,1,1,1);
+    main_layout_->addWidget(fault_gb_,         2,0,1,1);
+    main_layout_->addWidget(watermark_widget_, 2,1,1,1);
 
 //    main_layout_->addItem(new QSpacerItem(0,0,QSizePolicy::Expanding,QSizePolicy::Expanding),1,2);
-    main_layout_->addItem(new QSpacerItem(0,0,QSizePolicy::Expanding,QSizePolicy::Expanding),2,2);
+    main_layout_->addItem(new QSpacerItem(0,0,QSizePolicy::Expanding,QSizePolicy::Expanding),3,2);
 
     main_widget_->setLayout(main_layout_);
 
@@ -295,6 +370,14 @@ void MainWindow::setupActions(){
     connect(reset_pb_, SIGNAL(clicked()), this, SLOT(resetAct()));
     connect(simulate_pb_, SIGNAL(clicked()), this, SLOT(simulateAct()));
     connect(set_input_pb_, SIGNAL(clicked()), this, SLOT(setInputAct()));
+
+    connect(bias_dsb_, SIGNAL(valueChanged(double)), this, SLOT(biasDialConv(double)));
+    connect(scale_dsb_, SIGNAL(valueChanged(double)), this, SLOT(scaleDialConv(double)));
+    connect(dead_zone_dsb_, SIGNAL(valueChanged(double)), this, SLOT(deadZoneDialConv(double)));
+
+    connect(bias_dial_, SIGNAL(valueChanged(int)), this, SLOT(biasDSBConv(int)));
+    connect(scale_dial_, SIGNAL(valueChanged(int)), this, SLOT(scaleDSBConv(int)));
+    connect(dead_zone_dial_, SIGNAL(valueChanged(int)), this, SLOT(deadZoneDSBConv(int)));
 }
 
 void MainWindow::perturbAct(){
@@ -334,4 +417,28 @@ void MainWindow::setInputAct(){
 //    sim_.setInput(in);
     system_sim_.setInput(in);
     observer_sim_.setInput(in);
+}
+
+void MainWindow::biasDialConv(double _val){
+    bias_dial_->setValue((int)_val);
+}
+
+void MainWindow::scaleDialConv(double _val){
+    scale_dial_->setValue((int)_val);
+}
+
+void MainWindow::deadZoneDialConv(double _val){
+    dead_zone_dial_->setValue((int)_val);
+}
+
+void MainWindow::biasDSBConv(int _val){
+    bias_dsb_->setValue((double)_val);
+}
+
+void MainWindow::scaleDSBConv(int _val){
+    scale_dsb_->setValue((double)_val);
+}
+
+void MainWindow::deadZoneDSBConv(int _val){
+    dead_zone_dsb_->setValue((double)_val);
 }

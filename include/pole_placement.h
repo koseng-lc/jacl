@@ -94,7 +94,9 @@ void KautskyNichols(SSpace *_ss, const Mat& _poles, Mat* _K = nullptr){
 //    X.print("X : ");
 
     do{
+
         int rows,cols;
+
         for(int i(0); i < _poles.n_elem; i++){
 
             // m x (n-1) size

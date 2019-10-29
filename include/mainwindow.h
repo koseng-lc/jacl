@@ -11,6 +11,10 @@
 #include <QDoubleSpinBox>
 #include <QGridLayout>
 #include <QPushButton>
+#include <QImage>
+#include <QImageReader>
+#include <QDial>
+#include <QFile>
 
 #include <jacl>
 
@@ -34,11 +38,13 @@ private:
     QWidget* main_widget_;
     QGridLayout* main_layout_;
 
+    //-- Params
     QGroupBox* params_gb_;
     QGridLayout* params_gl_;
     QLabel* params_label_[6];
     QDoubleSpinBox* params_dsb_[6];
 
+    //-- Command
     QGroupBox* command_gb_;
     QGridLayout* command_gl_;
     QPushButton* perturb_pb_;
@@ -46,12 +52,34 @@ private:
     QPushButton* simulate_pb_;
     QPushButton* set_input_pb_;
 
+    //-- Input
     QGroupBox* input_gb_;
     QGridLayout* input_gl_;
     QLabel* torque_in_label_;
     QDoubleSpinBox* torque_in_dsb_;
     QLabel* voltage_in_label_;
     QDoubleSpinBox* voltage_in_dsb_;
+
+    //-- Fault
+    QGroupBox* fault_gb_;
+    QGridLayout* fault_gl_;
+    QDial* bias_dial_;
+    QDoubleSpinBox* bias_dsb_;
+    QLabel* bias_label_;
+    QDial* scale_dial_;
+    QDoubleSpinBox* scale_dsb_;
+    QLabel* scale_label_;
+    QDial* dead_zone_dial_;
+    QDoubleSpinBox* dead_zone_dsb_;
+    QLabel* dead_zone_label_;
+
+    //-- Watermark
+    QWidget* watermark_widget_;
+    QGridLayout* watermark_gl_;
+    QImage* logo_image_;
+    QLabel* logo_image_label_;
+    QLabel* title_label_;
+    QLabel* author_label_;
 
     void setupWidgets();
     void setupActions();
@@ -97,5 +125,11 @@ private Q_SLOTS:
     void resetAct();
     void simulateAct();
     void setInputAct();
+    void biasDialConv(double _val);
+    void scaleDialConv(double _val);
+    void deadZoneDialConv(double _val);
+    void biasDSBConv(int _val);
+    void scaleDSBConv(int _val);
+    void deadZoneDSBConv(int _val);
 
 };

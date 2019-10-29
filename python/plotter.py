@@ -59,13 +59,12 @@ class Plotter:
         signal.signal(signal.SIGINT, self.signalHandler)        
         self.sim_thread.start()
 
-    def pltCloseHandle(self, event):
+    def pltCloseHandle(self, event):        
         self.running = False
         # self.sim_thread.join()
         print('Plotter closed.')
 
-    def simulate(self):        
-        
+    def simulate(self):
         # Plotter setup
         fig = plt.figure(facecolor='black', edgecolor='white')
         fig.canvas.set_window_title(self.title)    
