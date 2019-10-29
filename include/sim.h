@@ -30,7 +30,7 @@ namespace np = boost::python::numpy;
 
 template <class SSpace>
 class Sim{
-public:
+public:    
 
     Sim(std::size_t _n_signals);
     ~Sim();
@@ -82,6 +82,7 @@ protected:
     public:
         AcquireGIL():state(PyGILState_Ensure()){}
         ~AcquireGIL(){PyGILState_Release(state);}
+
     private:
         PyGILState_STATE state;
 
@@ -101,7 +102,7 @@ Sim<SSpace>::Sim(std::size_t _n_signals)
     , max_data_(static_cast<std::size_t>(view_interval_/d_time_))
     , signal_data_(n_signals_ * max_data_)
     , time_data_(max_data_)
-    , delay_(.0)
+    , delay_(.02)
     , title_("Simulation"){
 
     for(std::size_t i(0); i < max_data_; i++){

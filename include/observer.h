@@ -5,7 +5,6 @@
 
 #pragma once
 
-#include "defs.h"
 #include "state_space.h"
 
 namespace JACL{
@@ -28,7 +27,14 @@ public:
         dt_ = _time_step;
     }
 
+    void setGain(const Mat& _K){
+        assert(_K.n_rows == ss_->A().n_rows && _K.n_cols == ss_->C().n_rows);
+        K_ = _K;
+        updateVariables();
+    }
+
     void updateVariables();
+
 
 private:
 
@@ -48,8 +54,8 @@ private:
     Mat state_;
     Mat prev_state_;
     Mat state_trans_;
-    Mat st_I_;
     Mat output_;
+    Mat prev_output_;
 
     //-- Estimation Variable
     // State
@@ -59,13 +65,12 @@ private:
     Mat prev_state_est_;
     // State transition
     Mat state_trans_est_;
-    // State transition + Identity
-    Mat st_est_I_;
 
     void calcState();
     void calcOutput();
 
     double dt_;
+
 };
 
 template <class SSpace>
@@ -75,6 +80,8 @@ Observer<SSpace>::Observer(SSpace* _ss, const Mat& _K, double _time_step)
     , prev_u_(u_)
     , state_(_ss->A().n_rows, 1, arma::fill::zeros)
     , prev_state_(state_)
+    , output_(_ss->C().n_rows, 1, arma::fill::zeros)
+    , prev_output_(output_)
     , state_est_(state_)
     , prev_state_est_(state_)
     , dt_(_time_step){
@@ -98,22 +105,22 @@ Observer<SSpace>::~Observer(){
 template <class SSpace>
 void Observer<SSpace>::calcState(){
 
-    static Mat term1, term2, term3;
+    static Mat term1, term2, term3, term4;
+
     term1 = state_trans_ * prev_state_;
-    term2 = ss_->B() * (u_ + prev_u_);
-    term3 = st_I_ * (dt_ * .5);
+    term2 = ss_->B() * u_;
+    term3 = state_trans_ * ss_->B() * prev_u_;
+    term4 = (term2 + term3) * (dt_ * .5);
 
-    state_ = term1 + (term3 * term2);
+    state_ = term1 + term4;
 
-    calcOutput();
-
-    prev_state_ = state_;
-    prev_u_ = u_;
+    calcOutput();    
 
 }
 
 template <class SSpace>
 void Observer<SSpace>::calcOutput(){
+
     Mat term1 = ss_->C() * prev_state_;
     output_ = term1 + (ss_->D() * u_);
 }
@@ -123,19 +130,21 @@ Mat Observer<SSpace>::calcStateEst(){
 
     calcState();
 
-    static Mat term1, term2, term3, term4, term5, term6;
+    static Mat term1, term2, term3, term4, term5;
     term1 = state_trans_est_ * prev_state_est_;
-    term2 = K_ * output_;
-    term3 = H_ * u_;
-    term4 = term2 + term3;
-    term5 = st_est_I_ * (dt_ * .5);
-    term6 = term1 + (term5 * term4);
+    term2 = K_ * output_ + H_ * u_;
+    term3 = K_ * prev_output_ + H_ * prev_u_;
+    term4 = state_trans_ * term3;
+    term5 = (term2 + term4) * (dt_ * .5);
 
-    state_est_ = term1 + term6;
+    state_est_ = term1 + term5;
 
     calcOutputEst();
 
     prev_state_est_ = state_est_;
+    prev_state_ = state_;
+    prev_u_ = u_;
+    prev_output_ = output_;
 
     return arma::join_cols(state_est_, output_est_);
 
@@ -152,13 +161,12 @@ void Observer<SSpace>::updateVariables(){
 
     // system
     state_trans_ = arma::expmat(ss_->A() * dt_);
-    st_I_ = state_trans_ + Mat(arma::size(ss_->A()), arma::fill::eye);
 
     // for Full-order observer
+//    K_.print("K : ");
     A_hat_ = ss_->A() - (K_ * ss_->C());
     H_ = ss_->B();
     state_trans_est_ = arma::expmat(A_hat_ * dt_);
-    st_est_I_ = state_trans_est_ + Mat(arma::size(ss_->A()), arma::fill::eye);
 
 }
 

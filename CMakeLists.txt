@@ -89,6 +89,7 @@ target_link_libraries(observer_sim
 set_target_properties(observer_sim PROPERTIES LINKER_LANGUAGE CXX)
 
 add_library(pole_placement include/pole_placement.h)
+target_link_libraries(pole_placement Boost::system Boost::thread Boost::chrono)
 set_target_properties(pole_placement PROPERTIES LINKER_LANGUAGE CXX)
 
 # System Simulator

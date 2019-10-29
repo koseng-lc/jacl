@@ -16,9 +16,12 @@ MainWindow::MainWindow(QWidget *parent)
     , kb(.052)
     , ra(2.07)
     , ss_(bm, jm, ki, la, kb, ra)
-    , obs_gain_({101,1.0,
-                 1.0,1.0,
-                 1.0,1.0})
+//    , obs_gain_({{ 101.0,     1.0},
+//                 {-311.9, -3143.4},
+//                 { 139.8,  1367.6}})
+    , obs_gain_({{ .0, .0},
+                 { .0, .0},
+                 { .0, .0}})
 //    , sim_(3,2,2)
     , system_sim_(&ss_)
     , observer_sim_(&ss_, obs_gain_){
@@ -38,7 +41,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     SS::Formulas fB{
                  JACL_CONST_SS(.0),           JACL_CONST_SS(.0),
-                 JACL_CONST_SS(.0), JACL_SS(-   1.0/ss.param(iJm)),
+                 JACL_CONST_SS(.0), JACL_SS(-1.0/ss.param(iJm)),
         JACL_SS(1.0/ss.param(iLa)),           JACL_CONST_SS(.0)
     };
 
@@ -71,17 +74,26 @@ MainWindow::MainWindow(QWidget *parent)
     ss_.C().print("C : ");
     ss_.D().print("D : ");
 
+    // Test KautskyNichols
+    JACL::Mat observer_K;
+    JACL::Mat poles{-10,-9,-5};
+    JACL::PolePlacement::KautskyNichols(&ss_, poles, &observer_K);
+
+    observer_K.print("Observer Gain : ");
+
+    observer_sim_.setGain(observer_K.t());
+
     system_sim_.init();
     system_sim_.setTitle("DC Motor Sim");
-    system_sim_.setDelay() = .0;
+    system_sim_.setDelay() = .02;
     system_sim_.setPlotName({"Angular Position", "Angular Velocity", "Current",
-                       "Torque In", "Voltage In",
+                       "Voltage In", "Torque In",
                        "Angular Position", "Angular Velocity"});
     system_sim_.updateVariables();
 
     observer_sim_.init();
     observer_sim_.setTitle("Full-order Luenberger Observer of DC Motor");
-    observer_sim_.setDelay() = .0;
+    observer_sim_.setDelay() = .02;
     observer_sim_.setPlotName({"Est. Position", "Est. Velocity", "Est. Current"
                               ,"Est. Out Position", "Est. Out Velocity"});
     observer_sim_.updateVariables();
@@ -92,14 +104,7 @@ MainWindow::MainWindow(QWidget *parent)
 //    sim_.setPlotName({"Angular Position", "Angular Velocity", "Current",
 //                      "Torque In", "Voltage In",
 //                      "Angular Position", "Angular Velocity"});
-//    sim_.setStateSpace(ss_.A(), ss_.B(), ss_.C(), ss_.D());
-
-    // Test KautskyNichols
-    JACL::Mat observer_K;
-    JACL::Mat poles{-10,-5,-3};
-    JACL::PolePlacement::KautskyNichols(&ss_, poles, &observer_K);
-
-    observer_K.print("Observer Gain : ");
+//    sim_.setStateSpace(ss_.A(), ss_.B(), ss_.C(), ss_.D());    
 
     setupWidgets();
     setupActions();
@@ -233,16 +238,6 @@ void MainWindow::setupWidgets(){
 
     input_gl_ = new QGridLayout;
 
-    torque_in_label_ = new QLabel;
-    torque_in_label_->setText(tr("Torque : "));
-    torque_in_dsb_ = new QDoubleSpinBox;
-    torque_in_dsb_->setSingleStep(1e-3);
-    torque_in_dsb_->setDecimals(3);
-    torque_in_dsb_->setMinimum(.0);
-    torque_in_dsb_->setMaximum(10.0);
-    torque_in_dsb_->setValue(.0);
-    torque_in_dsb_->adjustSize();
-
     voltage_in_label_ = new QLabel;
     voltage_in_label_->setText(tr("Voltage : "));
     voltage_in_dsb_ = new QDoubleSpinBox;
@@ -253,10 +248,20 @@ void MainWindow::setupWidgets(){
     voltage_in_dsb_->setValue(.0);
     voltage_in_dsb_->adjustSize();
 
-    input_gl_->addWidget(torque_in_label_,  0,0,1,1);
-    input_gl_->addWidget(torque_in_dsb_,    0,1,1,1);
-    input_gl_->addWidget(voltage_in_label_, 1,0,1,1);
-    input_gl_->addWidget(voltage_in_dsb_,   1,1,1,1);
+    torque_in_label_ = new QLabel;
+    torque_in_label_->setText(tr("Torque : "));
+    torque_in_dsb_ = new QDoubleSpinBox;
+    torque_in_dsb_->setSingleStep(1e-3);
+    torque_in_dsb_->setDecimals(3);
+    torque_in_dsb_->setMinimum(.0);
+    torque_in_dsb_->setMaximum(10.0);
+    torque_in_dsb_->setValue(.0);
+    torque_in_dsb_->adjustSize();    
+
+    input_gl_->addWidget(voltage_in_label_, 0,0,1,1);
+    input_gl_->addWidget(voltage_in_dsb_,   0,1,1,1);
+    input_gl_->addWidget(torque_in_label_,  1,0,1,1);
+    input_gl_->addWidget(torque_in_dsb_,    1,1,1,1);
     input_gl_->addItem(new QSpacerItem(0,0,QSizePolicy::Ignored,QSizePolicy::Expanding),2,2);
 
     input_gb_->setLayout(input_gl_);

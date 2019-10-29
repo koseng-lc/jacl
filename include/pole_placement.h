@@ -1,6 +1,14 @@
+/**
+*   @author : koseng (Lintang)
+*   @brief : Simple implementation of Kautsky-Nichols Robust pole placement
+*/
+
 #pragma once
 
 #include <vector>
+#include <iomanip>
+
+#include <boost/thread.hpp>
 
 #include "state_space.h"
 
@@ -22,16 +30,16 @@ void KautskyNichols(SSpace *_ss, const Mat& _poles, Mat* _K = nullptr){
     int B_rows(_ss->B().n_rows);
     int B_cols(_ss->B().n_cols);
 
-    Q.print("Q : ");
-    R.print("R : ");
+//    Q.print("Q : ");
+//    R.print("R : ");
 
     U0 = Q.submat(0, 0, B_rows-1, B_cols-1);
     U1 = Q.submat(0, B_cols, B_rows-1, B_rows-1);
     Z = R.submat(0, 0, B_cols-1, B_cols-1);
 
-    U0.print("U0 : ");
-    U1.print("U1 : ");
-    Z.print("Z : ");
+//    U0.print("U0 : ");
+//    U1.print("U1 : ");
+//    Z.print("Z : ");
 
     //-- A Step
 
@@ -76,45 +84,50 @@ void KautskyNichols(SSpace *_ss, const Mat& _poles, Mat* _K = nullptr){
     Mat R_tilde;
 
     Mat Q1, R1;
-    std::cout << "S size : " << (int)S.size() << std::endl;
-    std::cout << "Poles size : " << _poles.n_elem << std::endl;
-    auto condition_number_tol(1e-4);
+
+    auto condition_number_tol(1e-3);
     auto norm(1e-6);
     auto cond(.0);
     auto prev_cond(cond);
     auto err(.0);
+
+//    X.print("X : ");
+
     do{
         int rows,cols;
         for(int i(0); i < _poles.n_elem; i++){
 
             // m x (n-1) size
             X_rest = X;
+            X_rest.print("X before rest span : ");
             X_rest.shed_col(i);
-//            X_rest.print("X rest span : ");
+            X_rest.print("X after rest span : ");
             rows = X_rest.n_rows;
             cols = X_rest.n_cols;
             arma::qr(Q1, R1, X_rest);
-//            Q1.print("Q1 : ");
-//            R1.print("R1 : ");
+            Q1.print("Q1 : ");
+            R1.print("R1 : ");
             Q_tilde = Q1.submat(0, 0, rows-1, cols-1);
             y_tilde = Q1.submat(0, cols, rows-1, rows-1);
             R_tilde = R1.submat(0, 0, cols-1, cols-1);
-//            Q_tilde.print("Q tilde : ");
-//            y_tilde.print("y tilde : ");
-//            R_tilde.print("R tilde : ");
+            Q_tilde.print("Q tilde : ");
+            y_tilde.print("y tilde : ");
+            R_tilde.print("R tilde : ");
             // reuse the temporary variable
 //            S[i].print("S : ");
             temp1 = S[i].t() * y_tilde;
             // calculate 2-norm
             norm = arma::norm(temp1, 2);
-            X.col(i) = S[i] * (temp1 / norm);
+            X.col(i) = (S[i] * temp1) / norm;
         }
+
+        X.print("X : ");
 
         cond = arma::cond(X);
         err = std::fabs(cond - prev_cond);
         prev_cond = cond;
         std::cout << "Error : " << err << std::endl;
-//        std::cout << "Condition Number : " << cond << std::endl;
+        std::cout << std::setprecision(6) << "Condition Number : " << cond << std::endl;
 
     }while(err > condition_number_tol);
 

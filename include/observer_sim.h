@@ -22,6 +22,10 @@ public:
         observer_.updateVariables();
     }
 
+    void setGain(const Mat& _K){
+        observer_.setGain(_K);
+    }
+
 protected:
     Mat signalCalc();
 
@@ -32,7 +36,7 @@ private:
 
 template <class SSpace>
 ObserverSim<SSpace>::ObserverSim(SSpace* _ss, const Mat& _K)
-    : Sim<SSpace >(_ss->A().n_rows + _ss->C().n_rows)
+    : Sim<SSpace >(_ss->A().n_rows + _ss->C().n_rows) // State and ouputs only
     , observer_(_ss, _K){
 
 }
