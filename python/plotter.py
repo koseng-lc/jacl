@@ -1,6 +1,6 @@
 '''
     author : koseng (Lintang)
-    brief : JACL Plotter
+    brief : JACL Matplotlib.PyPlot Wrapper
 '''
 
 import time
@@ -55,20 +55,19 @@ class Plotter:
         self.delay = _delay
 
     def beginSimulation(self):
-        print('Starting simulation...')
+        print('Starting {} simulation...'.format(self.title))
         signal.signal(signal.SIGINT, self.signalHandler)        
         self.sim_thread.start()
 
     def pltCloseHandle(self, event):        
         self.running = False
         # self.sim_thread.join()
-        print('Plotter closed.')
+        print('Plotter {} closed.'.format(self.title))
 
     def simulate(self):
         # Plotter setup
         fig = plt.figure(facecolor='black', edgecolor='white')
         fig.canvas.set_window_title(self.title)
-        print(self.title)
         fig.canvas.mpl_connect('close_event', self.pltCloseHandle)
 
         n_sp_rows, n_sp_cols = int(math.ceil(self.n_signals / 3)), min(3, self.n_signals)

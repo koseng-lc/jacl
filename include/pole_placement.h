@@ -8,6 +8,8 @@
 #include <vector>
 #include <iomanip>
 
+#include <type_traits>
+
 #include <boost/thread.hpp>
 
 #include "state_space.h"
@@ -16,9 +18,8 @@ namespace JACL{
 
 namespace PolePlacement{
 
-// TODO : change to template of StateSpace
 template <class SSpace>
-void KautskyNichols(SSpace *_ss, const Mat& _poles, Mat* _K = nullptr){
+void KautskyNichols(SSpace *_ss, const Mat& _poles, Mat* _K){
 
     assert(_poles.is_vec());
 
@@ -54,24 +55,32 @@ void KautskyNichols(SSpace *_ss, const Mat& _poles, Mat* _K = nullptr){
 
     for(auto p:_poles){
 
-        temp1 = U1.t();
+        temp1 = U1.t(); // place it in outer scope
         temp2 = Mat(arma::size(_ss->A()), arma::fill::eye) * p;
         temp3 = _ss->A() - temp2;
         temp4 = temp1 * temp3;
         temp4 = temp4.t();
 
-//        temp4.print("Temp : ");
+//        temp4.print("Temp4 : ");
 
         int rows(temp4.n_rows);
         int cols(temp4.n_cols);
 
         arma::qr(temp5, temp6, temp4);
+
+//        temp5.print("Temp5 : ");
+
         S_hat.push_back(temp5.submat(0, 0, rows-1, cols-1));
 //        S_hat.back().print("S_hat : ");
+
         S.push_back(temp5.submat(0, cols, rows-1, rows-1));
 //        S.back().print("S : ");
+
         another_R.push_back(temp6.submat(0, 0, cols-1, cols-1));
+//        another_R.back().print("R : ");
     }
+
+//    std::cout << "=======================================" << std::endl;
 
     //-- X Step
 
@@ -93,45 +102,46 @@ void KautskyNichols(SSpace *_ss, const Mat& _poles, Mat* _K = nullptr){
 
 //    X.print("X : ");
 
-    do{
+    int restX_span_cols = X.n_cols - 1;
+    int restX_span_rows = X.n_rows;
 
-        int rows,cols;
+    do{
 
         for(int i(0); i < _poles.n_elem; i++){
 
             // m x (n-1) size
             X_rest = X;
-            X_rest.print("X before rest span : ");
             X_rest.shed_col(i);
-            X_rest.print("X after rest span : ");
-            rows = X_rest.n_rows;
-            cols = X_rest.n_cols;
+
             arma::qr(Q1, R1, X_rest);
-            Q1.print("Q1 : ");
-            R1.print("R1 : ");
-            Q_tilde = Q1.submat(0, 0, rows-1, cols-1);
-            y_tilde = Q1.submat(0, cols, rows-1, rows-1);
-            R_tilde = R1.submat(0, 0, cols-1, cols-1);
-            Q_tilde.print("Q tilde : ");
-            y_tilde.print("y tilde : ");
-            R_tilde.print("R tilde : ");
+//            Q1.print("Q1 : ");
+//            R1.print("R1 : ");
+
+            Q_tilde = Q1.submat(0, 0, restX_span_rows-1, restX_span_cols-1);
+            y_tilde = Q1.submat(0, restX_span_cols, restX_span_rows-1, restX_span_rows-1);
+            R_tilde = R1.submat(0, 0, restX_span_cols-1, restX_span_cols-1);
+
+//            Q_tilde.print("Q tilde : ");
+//            y_tilde.print("y tilde : ");
+//            R_tilde.print("R tilde : ");
             // reuse the temporary variable
 //            S[i].print("S : ");
             temp1 = S[i].t() * y_tilde;
             // calculate 2-norm
-            norm = arma::norm(temp1, 2);
+            norm = arma::norm(temp1, 2);            
             X.col(i) = (S[i] * temp1) / norm;
+//            std::cout << "Norm : " << arma::norm(X.col(i), 2) << std::endl;
         }
 
-        X.print("X : ");
+//        X.print("X : ");
 
         cond = arma::cond(X);
         err = std::fabs(cond - prev_cond);
         prev_cond = cond;
-        std::cout << "Error : " << err << std::endl;
-        std::cout << std::setprecision(6) << "Condition Number : " << cond << std::endl;
+//        std::cout << "Error : " << err << std::endl;
+//        std::cout << std::setprecision(6) << "Condition Number : " << cond << std::endl;
 
-    }while(err > condition_number_tol);
+    }while(err > condition_number_tol); // iterate until well-conditioned
 
     //-- F Step
 

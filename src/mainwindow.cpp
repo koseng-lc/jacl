@@ -60,6 +60,7 @@ MainWindow::MainWindow(QWidget *parent)
         JACL_CONST_SS(.0), JACL_CONST_SS(.0)
     };
 
+
     ss_.param(iBm) = bm.nominal;
     ss_.param(iJm) = jm.nominal;
     ss_.param(iKi) = ki.nominal;
@@ -81,7 +82,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Test KautskyNichols
     JACL::Mat observer_K;
-    JACL::Mat poles{-10,-9,-5};
+//    JACL::Mat poles{-10,-9,-5};
+    JACL::Mat poles{-50,-51,-52};
     JACL::PolePlacement::KautskyNichols(&ss_, poles, &observer_K);
 
     observer_K.print("Observer Gain : ");
@@ -89,7 +91,7 @@ MainWindow::MainWindow(QWidget *parent)
     observer_sim_.setGain(observer_K.t());
 
     system_sim_.init();
-    system_sim_.setTitle("DC Motor Sim");
+    system_sim_.setTitle("DC Motor");
     system_sim_.setDelay() = .02;
     system_sim_.setPlotName({"Angular Position", "Angular Velocity", "Current",
                        "Voltage In", "Torque In",
@@ -113,6 +115,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     setupWidgets();
     setupActions();
+
+    JACL::StateSpace<12,4,4> another_ss;
 
 }
 
@@ -261,7 +265,7 @@ void MainWindow::setupWidgets(){
     torque_in_dsb_->setMinimum(.0);
     torque_in_dsb_->setMaximum(10.0);
     torque_in_dsb_->setValue(.0);
-    torque_in_dsb_->adjustSize();    
+    torque_in_dsb_->adjustSize();
 
     input_gl_->addWidget(voltage_in_label_, 0,0,1,1);
     input_gl_->addWidget(voltage_in_dsb_,   0,1,1,1);
@@ -277,6 +281,17 @@ void MainWindow::setupWidgets(){
     fault_gb_ = new QGroupBox;
 
     fault_gl_ = new QGridLayout;
+
+    target_label_ = new QLabel;
+    target_label_->setText(tr("Sensor : "));
+
+    target_cb_ = new QComboBox;
+    target_cb_->addItem(tr("Position"));
+    target_cb_->addItem(tr("Velocity"));
+    target_cb_->addItem(tr("Current"));
+
+    details_pb_ = new QPushButton;
+    details_pb_->setText(tr("Details"));
 
     bias_label_ = new QLabel;
     bias_label_->setText(tr("Bias : "));
@@ -299,16 +314,19 @@ void MainWindow::setupWidgets(){
     dead_zone_dsb_->setValue(.0);
     dead_zone_dial_ = new QDial;
 
-    fault_gl_->addWidget(bias_label_,      0,0,1,1);
-    fault_gl_->addWidget(bias_dsb_,        0,1,1,1);
-    fault_gl_->addWidget(bias_dial_,       0,2,1,1);
-    fault_gl_->addWidget(scale_label_,     1,0,1,1);
-    fault_gl_->addWidget(scale_dsb_,       1,1,1,1);
-    fault_gl_->addWidget(scale_dial_,      1,2,1,1);
-    fault_gl_->addWidget(dead_zone_label_, 2,0,1,1);
-    fault_gl_->addWidget(dead_zone_dsb_,   2,1,1,1);
-    fault_gl_->addWidget(dead_zone_dial_,  2,2,1,1);
-    fault_gl_->addItem(new QSpacerItem(0,0,QSizePolicy::Expanding,QSizePolicy::Expanding),3,3);
+    fault_gl_->addWidget(target_label_,    0,0,1,1);
+    fault_gl_->addWidget(target_cb_,       0,1,1,1);
+    fault_gl_->addWidget(details_pb_,      0,2,1,1);
+    fault_gl_->addWidget(bias_label_,      1,0,1,1);
+    fault_gl_->addWidget(bias_dsb_,        1,1,1,1);
+    fault_gl_->addWidget(bias_dial_,       1,2,1,1);
+    fault_gl_->addWidget(scale_label_,     2,0,1,1);
+    fault_gl_->addWidget(scale_dsb_,       2,1,1,1);
+    fault_gl_->addWidget(scale_dial_,      2,2,1,1);
+    fault_gl_->addWidget(dead_zone_label_, 3,0,1,1);
+    fault_gl_->addWidget(dead_zone_dsb_,   3,1,1,1);
+    fault_gl_->addWidget(dead_zone_dial_,  3,2,1,1);
+    fault_gl_->addItem(new QSpacerItem(0,0,QSizePolicy::Expanding,QSizePolicy::Expanding),4,3);
 
     fault_gb_->setLayout(fault_gl_);
     fault_gb_->setTitle(tr("Fault"));

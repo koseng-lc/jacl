@@ -1,6 +1,6 @@
 /**
 *   @author : koseng (Lintang)
-*   @brief : JACL Sim
+*   @brief : JACL Simulator / Plotter
 */
 
 #pragma once
@@ -127,7 +127,8 @@ Sim<SSpace>::~Sim(){
     running_ = false;    
     process_thread_.join();
 
-    PyThreadState_Swap(py_state_);
+    if(PyGILState_GetThisThreadState() == py_state_)
+        PyThreadState_Swap(py_state_);
 
 }
 

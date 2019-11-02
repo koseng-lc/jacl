@@ -15,6 +15,7 @@
 #include <QImageReader>
 #include <QDial>
 #include <QFile>
+#include <QComboBox>
 
 #include <jacl>
 
@@ -63,6 +64,9 @@ private:
     //-- Fault
     QGroupBox* fault_gb_;
     QGridLayout* fault_gl_;
+    QLabel* target_label_;
+    QComboBox* target_cb_;
+    QPushButton* details_pb_;
     QDial* bias_dial_;
     QDoubleSpinBox* bias_dsb_;
     QLabel* bias_label_;

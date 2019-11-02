@@ -7,6 +7,7 @@
 
 #include <functional>
 #include <vector>
+#include <type_traits>
 
 #include <boost/range/combine.hpp>
 #include <boost/tuple/tuple.hpp>
@@ -19,14 +20,29 @@ namespace JACL{
 
 using Mat = arma::mat;
 
-template<int num_states, int num_inputs, int num_outputs, class PhysicalParam, class ...Rest>
+template<int num_states, int num_inputs, int num_outputs, class PhysicalParam = int, class ...Rest>
 class StateSpace{
 public:
     using Formula = std::function<double(StateSpace)>;
     using Formulas = std::vector<Formula>;
 
 public:
-    StateSpace(PhysicalParam _param, Rest... _rest);
+    template <typename _PhysicalParam = PhysicalParam,
+              typename std::enable_if<
+                  std::is_same<typename std::decay<_PhysicalParam>::type,
+                               PhysicalParameter>::value, int>::type* = nullptr>
+    StateSpace(_PhysicalParam _param, Rest... _rest)
+        : A_(num_states, num_states)
+        , B_(num_states, num_inputs)
+        , C_(num_outputs, num_states)
+        , D_(num_outputs, num_inputs){
+
+    //    std::cout << sizeof...(Rest) << std::endl;
+
+        push(_param, _rest...);
+    }
+
+    StateSpace();
     ~StateSpace();
 
     Mat A() const{
@@ -93,30 +109,37 @@ private:
     Mat C_;
     Mat D_;
 
-    void push(PhysicalParam _param){
+    template <typename _PhysicalParam = PhysicalParam>
+    auto push(_PhysicalParam _param)
+    -> typename std::enable_if<
+    std::is_same<typename std::decay<_PhysicalParam>::type,
+                 PhysicalParameter>::value, void>::type{
         params_.push_back(_param);
     }
 
-    template <class ...PhysicalParamRest>
-    void push(PhysicalParam _param, PhysicalParamRest... _rest){
+    template <typename _PhysicalParam = PhysicalParam, class ...PhysicalParamRest>
+    auto push(_PhysicalParam _param, PhysicalParamRest... _rest)
+    -> typename std::enable_if<
+    std::is_same<typename std::decay<_PhysicalParam>::type,
+                 PhysicalParameter>::value, void>::type{
         push(_param);
         push(_rest...);
     }
 
 };
 
-template<int num_states, int num_inputs, int num_outputs, class PhysicalParam, class ...Rest>
-StateSpace<num_states, num_inputs, num_outputs, PhysicalParam, Rest...>::StateSpace(PhysicalParam _param, Rest... _rest){
+//template <int num_states, int num_inputs, int num_outputs, class PhysicalParam, class ...Rest>
+//StateSpace<num_states, num_inputs, num_outputs, PhysicalParam, Rest...>::StateSpace(PhysicalParam _param, Rest... _rest){
 
-//    std::cout << sizeof...(Rest) << std::endl;
 
-    push(_param, _rest...);
+//}
 
-    A_.resize(num_states, num_states);
-    B_.resize(num_states, num_inputs);
-    C_.resize(num_outputs, num_states);
-    D_.resize(num_outputs, num_inputs);
-
+template <int num_states, int num_inputs, int num_outputs, class PhysicalParam, class ...Rest>
+StateSpace<num_states, num_inputs, num_outputs, PhysicalParam, Rest...>::StateSpace()
+    : A_(num_states, num_states)
+    , B_(num_states, num_inputs)
+    , C_(num_outputs, num_states)
+    , D_(num_outputs, num_inputs){
 }
 
 template<int num_states, int num_inputs, int num_outputs, class PhysicalParam, class ...Rest>
