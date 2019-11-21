@@ -19,12 +19,13 @@ MainWindow::MainWindow(QWidget *parent)
 //    , obs_gain_({{ 101.0,     1.0},
 //                 {-311.9, -3143.4},
 //                 { 139.8,  1367.6}})
-    , obs_gain_({{ .0, .0},
-                 { .0, .0},
-                 { .0, .0}})
+    , obs_gain_({{ .0, .0, .0},
+                 { .0, .0, .0},
+                 { .0, .0, .0}})
 //    , sim_(3,2,2)
     , system_sim_(&ss_)
-    , observer_sim_(&ss_, obs_gain_){
+    , observer_sim_(&ss_, obs_gain_)
+    , h_inf_(&ss_){
 
     ui->setupUi(this);
 
@@ -35,44 +36,86 @@ MainWindow::MainWindow(QWidget *parent)
     QString style_sheet(style_file.readAll());
     this->setStyleSheet(style_sheet);
 
-    /*
-     * Notice ! : ss keyword is preserved variable name
-     */
-    SS::Formulas fA{
-        JACL_CONST_SS(.0),                    JACL_CONST_SS(1.0),                     JACL_CONST_SS(.0),
-        JACL_CONST_SS(.0), JACL_SS(-ss.param(iBm)/ss.param(iJm)),  JACL_SS(ss.param(iKi)/ss.param(iJm)),
-        JACL_CONST_SS(.0), JACL_SS(-ss.param(iKb)/ss.param(iLa)), JACL_SS(-ss.param(iRa)/ss.param(iLa))
-    };
+    {
+        StateSpace::Formula A11 = JC(ss_,.0);
+        StateSpace::Formula A12 = JC(ss_,1.0);
+        StateSpace::Formula A13 = JC(ss_,.0);
+        StateSpace::Formula A21 = JC(ss_,.0);
+        StateSpace::Formula A22 = JE(ss_,-ss_(iBm)/ss_(iJm));
+        StateSpace::Formula A23 = JE(ss_,ss_(iKi)/ss_(iJm));
+        StateSpace::Formula A31 = JC(ss_,.0);
+        StateSpace::Formula A32 = JE(ss_,-ss_(iKb)/ss_(iLa));
+        StateSpace::Formula A33 = JE(ss_,-ss_(iRa)/ss_(iLa));
 
-    SS::Formulas fB{
-                 JACL_CONST_SS(.0),           JACL_CONST_SS(.0),
-                 JACL_CONST_SS(.0), JACL_SS(-1.0/ss.param(iJm)),
-        JACL_SS(1.0/ss.param(iLa)),           JACL_CONST_SS(.0)
-    };
+        StateSpace::Formulas fA{
+            A11,A12,A13,
+            A21,A22,A23,
+            A31,A32,A33
+        };
 
-    SS::Formulas fC{
-        JACL_CONST_SS(1.0),  JACL_CONST_SS(.0), JACL_CONST_SS(.0),
-         JACL_CONST_SS(.0), JACL_CONST_SS(1.0), JACL_CONST_SS(.0)
-    };
+        StateSpace::Formula B11 = JC(ss_, .0);
+        StateSpace::Formula B12 = JC(ss_, .0);
+        StateSpace::Formula B21 = JC(ss_, .0);
+        StateSpace::Formula B22 = JE(ss_, -1.0/ss_(iJm));
+        StateSpace::Formula B31 = JE(ss_, 1.0/ss_(iLa));
+        StateSpace::Formula B32 = JC(ss_, .0);
 
-    SS::Formulas fD{
-        JACL_CONST_SS(.0), JACL_CONST_SS(.0),
-        JACL_CONST_SS(.0), JACL_CONST_SS(.0)
-    };
+        StateSpace::Formulas fB{
+            B11, B12,
+            B21, B22,
+            B31, B32
+        };
 
+        StateSpace::Formula C11 = JC(ss_, 1.0);
+        StateSpace::Formula C12 = JC(ss_, .0);
+        StateSpace::Formula C13 = JC(ss_, .0);
+        StateSpace::Formula C21 = JC(ss_, .0);
+        StateSpace::Formula C22 = JC(ss_, 1.0);
+        StateSpace::Formula C23 = JC(ss_, .0);
+        StateSpace::Formula C31 = JC(ss_, .0);
+        StateSpace::Formula C32 = JC(ss_, .0);
+        StateSpace::Formula C33 = JC(ss_, 1.0);
 
-    ss_.param(iBm) = bm.nominal;
-    ss_.param(iJm) = jm.nominal;
-    ss_.param(iKi) = ki.nominal;
-    ss_.param(iLa) = la.nominal;
-    ss_.param(iKb) = kb.nominal;
-    ss_.param(iRa) = ra.nominal;
+        StateSpace::Formulas fC{
+            C11, C12, C13,
+            C21, C22, C23,
+            C31, C32, C33
+        };
 
-    ss_.setA(fA);
-    ss_.setB(fB);
-    ss_.setC(fC);
-    ss_.setD(fD);
-    ss_.formulaToMat();
+        StateSpace::Formula D11 = JC(ss_, .0);
+        StateSpace::Formula D12 = JC(ss_, .0);
+        StateSpace::Formula D21 = JC(ss_, .0);
+        StateSpace::Formula D22 = JC(ss_, .0);
+        StateSpace::Formula D31 = JC(ss_, .0);
+        StateSpace::Formula D32 = JC(ss_, .0);
+
+        StateSpace::Formulas fD{
+            D11, D12,
+            D21, D22,
+            D31, D32,
+        };
+
+        ss_(iBm) = bm.nominal;
+        ss_(iJm) = jm.nominal;
+        ss_(iKi) = ki.nominal;
+        ss_(iLa) = la.nominal;
+        ss_(iKb) = kb.nominal;
+        ss_(iRa) = ra.nominal;
+
+        ss_.setA(fA);
+        ss_.setB(fB);
+        ss_.setC(fC);
+        ss_.setD(fD);
+        ss_.formulaToMat();
+    }
+
+    //-- Test
+    arma::mat T, U;
+    JACL::linear_algebra::QRAlgorithm(ss_.A(), &T, &U);
+    T.print("T : ");
+    U.print("U : ");
+
+//    h_inf_.init();
 
     std::cout << "Preparing system ..." << std::endl;
     ss_.A().print("A : ");
@@ -81,10 +124,10 @@ MainWindow::MainWindow(QWidget *parent)
     ss_.D().print("D : ");
 
     // Test KautskyNichols
-    JACL::Mat observer_K;
+    arma::mat observer_K;
 //    JACL::Mat poles{-10,-9,-5};
-    JACL::Mat poles{-50,-51,-52};
-    JACL::PolePlacement::KautskyNichols(&ss_, poles, &observer_K);
+    arma::mat poles{-50,-51,-52};
+    JACL::pole_placement::KautskyNichols(&ss_, poles, &observer_K, JACL::pole_placement::Observer);
 
     observer_K.print("Observer Gain : ");
 
@@ -95,14 +138,14 @@ MainWindow::MainWindow(QWidget *parent)
     system_sim_.setDelay() = .02;
     system_sim_.setPlotName({"Angular Position", "Angular Velocity", "Current",
                        "Voltage In", "Torque In",
-                       "Angular Position", "Angular Velocity"});
+                       "Angular Position", "Angular Velocity", "Current"});
     system_sim_.updateVariables();
 
     observer_sim_.init();
     observer_sim_.setTitle("Full-order Luenberger Observer of DC Motor");
     observer_sim_.setDelay() = .02;
     observer_sim_.setPlotName({"Est. Position", "Est. Velocity", "Est. Current"
-                              ,"Est. Out Position", "Est. Out Velocity"});
+                              ,"Est. Out Position", "Est. Out Velocity", "Est. Out Current"});
     observer_sim_.updateVariables();
 
 //    sim_.init();
@@ -429,7 +472,7 @@ void MainWindow::simulateAct(){
 }
 
 void MainWindow::setInputAct(){
-    JACL::Mat in(2, 1);
+    arma::mat in(2, 1);
     in(0) = voltage_in_dsb_->value();
     in(1) = torque_in_dsb_->value();
 //    sim_.setInput(in);

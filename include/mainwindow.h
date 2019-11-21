@@ -107,7 +107,7 @@ private:
     JACL::PhysicalParameter kb;
     JACL::PhysicalParameter ra;
 
-    using SS = JACL::StateSpace<3, 2, 2,
+    using StateSpace = JACL::StateSpace<3, 2, 3,
                                 JACL::PhysicalParameter,
                                 JACL::PhysicalParameter,
                                 JACL::PhysicalParameter,
@@ -115,14 +115,16 @@ private:
                                 JACL::PhysicalParameter,
                                 JACL::PhysicalParameter>;
 
-    SS ss_;
+    StateSpace ss_;
 
-    JACL::Mat::fixed<3,2> obs_gain_;
+    arma::mat::fixed<3,3> obs_gain_;
 
 //    JACL::Simulator sim_;
 
-    JACL::SystemSim<SS> system_sim_;
-    JACL::ObserverSim<SS> observer_sim_;
+    JACL::SystemSim<StateSpace> system_sim_;
+    JACL::ObserverSim<StateSpace> observer_sim_;
+
+    JACL::synthesis::Hinf<StateSpace,1> h_inf_;
 
 private Q_SLOTS:
     void perturbAct();

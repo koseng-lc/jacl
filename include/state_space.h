@@ -15,10 +15,13 @@
 #include <armadillo>
 
 #include "physical_parameter.h"
+#include "linear_algebra.h"
 
 namespace JACL{
 
-using Mat = arma::mat;
+namespace{
+    namespace linalg = linear_algebra;
+}
 
 template<int num_states, int num_inputs, int num_outputs, class PhysicalParam = int, class ...Rest>
 class StateSpace{
@@ -45,26 +48,26 @@ public:
     StateSpace();
     ~StateSpace();
 
-    Mat A() const{
+    arma::mat const& A() const{
         return A_;
     }
 
-    Mat B() const{
+    arma::mat const& B() const{
         return B_;
     }
 
-    Mat C() const{
+    arma::mat const& C() const{
         return C_;
     }
 
-    Mat D() const{
+    arma::mat const& D() const{
         return D_;
     }
 
     bool controlable();
     bool observable();
 
-    double param(int _index) const{
+    double const& param(int _index) const{
         return params_[_index].perturbed;
     }
 
@@ -72,27 +75,55 @@ public:
         return params_[_index].perturbed;
     }
 
-    void setA(const Formulas& f){
+    auto setA(const Formulas& f) -> void{
         fA_.clear();
         fA_.insert(fA_.end(), f.begin(), f.end());
     }
 
-    void setB(const Formulas& f){
+    auto setB(const Formulas& f) -> void{
         fB_.clear();
         fB_.insert(fB_.end(), f.begin(), f.end());
     }
 
-    void setC(const Formulas& f){
+    auto setC(const Formulas& f) -> void{
         fC_.clear();
         fC_.insert(fC_.end(), f.begin(), f.end());
     }
 
-    void setD(const Formulas& f){
+    auto setD(const Formulas& f) -> void{
         fD_.clear();
         fD_.insert(fD_.end(), f.begin(), f.end());
     }
 
     void formulaToMat();
+
+    inline int numStates() const{
+        return num_states;
+    }
+
+    inline int numInputs() const{
+        return num_inputs;
+    }
+
+    inline int numOutputs() const{
+        return num_outputs;
+    }
+
+    inline double const& operator () (int _index) const{
+        return param(_index);
+    }
+
+    inline double operator () (double _constant){
+        return _constant;
+    }
+
+    inline double& operator () (int _index){
+        return param(_index);
+    }
+
+//    struct Forml{
+
+//    };
 
 private:
 
@@ -101,13 +132,13 @@ private:
     Formulas fC_;
     Formulas fD_;
 
-    // TODO : change the arguement to pointer
+    // TODO : change the arguement to pointer to prevent object slicing
     std::vector<PhysicalParameter > params_;
 
-    Mat A_;
-    Mat B_;
-    Mat C_;
-    Mat D_;
+    arma::mat A_;
+    arma::mat B_;
+    arma::mat C_;
+    arma::mat D_;
 
     template <typename _PhysicalParam = PhysicalParam>
     auto push(_PhysicalParam _param)

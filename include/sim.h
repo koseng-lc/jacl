@@ -82,7 +82,7 @@ protected:
     std::string title_;
     std::vector<std::string> plot_name_;
 
-    virtual Mat signalCalc() = 0;
+    virtual arma::mat signalCalc() = 0;
 
     // more safe with RAII style
     class AcquireGIL{
@@ -171,7 +171,7 @@ int Sim<SSpace>::init(){
 template <class SSpace>
 void Sim<SSpace>::process(){
 
-    Mat pres_signal;
+    arma::mat pres_signal;
     auto t(.0);    
 
     std::vector<double> temp_signal_data;
@@ -214,7 +214,8 @@ void Sim<SSpace>::process(){
         }catch(py::error_already_set){
             PyErr_Print();
         }
-        boost::this_thread::sleep_for(boost::chrono::milliseconds{10});
+
+        boost::this_thread::sleep_for(boost::chrono::milliseconds((int)delay_*1000)); // 60 - Hz
 
         t += d_time_;
 

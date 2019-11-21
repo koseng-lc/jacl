@@ -16,27 +16,55 @@
 
 namespace JACL{
 
-namespace PolePlacement{
+namespace pole_placement{
+
+namespace{
+    namespace linalg = linear_algebra;
+}
+
+enum Type{
+    Controller,
+    Observer
+};
 
 template <class SSpace>
-void KautskyNichols(SSpace *_ss, const Mat& _poles, Mat* _K){
+void KautskyNichols(SSpace *_ss, const arma::mat& _poles, arma::mat* _K, Type _type = Controller){
 
     assert(_poles.is_vec());
 
-    Mat Q, R;
-    Mat U0, U1, Z;
+    arma::mat Q, R;
+    arma::mat U0, U1, Z;    
 
-    arma::qr(Q, R, _ss->B());
+    arma::mat T; //type
+    if(_type == Controller)
+        T = _ss->B();
+    else if(_type == Observer)
+        T = _ss->C();
+    else
+        assert(_type == Observer || _type == Controller);
 
-    int B_rows(_ss->B().n_rows);
-    int B_cols(_ss->B().n_cols);
+    arma::qr(Q, R, T);
+
+    int T_rows(T.n_rows);
+    int T_cols(T.n_cols);
 
 //    Q.print("Q : ");
 //    R.print("R : ");
 
-    U0 = Q.submat(0, 0, B_rows-1, B_cols-1);
-    U1 = Q.submat(0, B_cols, B_rows-1, B_rows-1);
-    Z = R.submat(0, 0, B_cols-1, B_cols-1);
+    //-- special treatment
+    //-- due to the one of the span from orthogonal by QR of T is empty
+    //-- with assumption that T is invertible
+    if(T_rows == T_cols){
+        arma::mat inv_T(arma::inv(T));
+        arma::mat P(arma::diagmat(_poles));
+//        P.print("P : ");
+        *_K = (_ss->A() - P) * inv_T;
+        return;
+    }
+
+    U0 = Q.submat(0, 0, T_rows-1, T_cols-1);
+    U1 = Q.submat(0, T_cols, T_rows-1, T_rows-1);
+    Z = R.submat(0, 0, T_cols-1, T_cols-1);
 
 //    U0.print("U0 : ");
 //    U1.print("U1 : ");
@@ -44,19 +72,19 @@ void KautskyNichols(SSpace *_ss, const Mat& _poles, Mat* _K){
 
     //-- A Step
 
-    std::vector<Mat> S_hat;
-    std::vector<Mat> S;
-    std::vector<Mat> another_R;
+    std::vector<arma::mat> S_hat;
+    std::vector<arma::mat> S;
+    std::vector<arma::mat> another_R;
 
-    Mat temp1, temp2, temp3, temp4;
-    Mat temp5, temp6;
+    arma::mat temp1, temp2, temp3, temp4;
+    arma::mat temp5, temp6;
 
 //    _poles.print("Poles : ");
 
     for(auto p:_poles){
 
         temp1 = U1.t(); // place it in outer scope
-        temp2 = Mat(arma::size(_ss->A()), arma::fill::eye) * p;
+        temp2 = arma::mat(arma::size(_ss->A()), arma::fill::eye) * p;
         temp3 = _ss->A() - temp2;
         temp4 = temp1 * temp3;
         temp4 = temp4.t();
@@ -85,14 +113,14 @@ void KautskyNichols(SSpace *_ss, const Mat& _poles, Mat* _K){
     //-- X Step
 
     // initialize X matrix
-    Mat X(arma::size(_ss->A()), arma::fill::eye);
-    Mat X_rest;
+    arma::mat X(arma::size(_ss->A()), arma::fill::eye);
+    arma::mat X_rest;
 
-    Mat Q_tilde;
-    Mat y_tilde;
-    Mat R_tilde;
+    arma::mat Q_tilde;
+    arma::mat y_tilde;
+    arma::mat R_tilde;
 
-    Mat Q1, R1;
+    arma::mat Q1, R1;
 
     auto condition_number_tol(1e-3);
     auto norm(1e-6);
@@ -145,10 +173,10 @@ void KautskyNichols(SSpace *_ss, const Mat& _poles, Mat* _K){
 
     //-- F Step
 
-    Mat eigenvalue_diag(arma::diagmat(_poles));
+    arma::mat eigenvalue_diag(arma::diagmat(_poles));
     temp1 = arma::inv(X);
     temp2 = eigenvalue_diag * temp1;
-    Mat M(X * temp2);
+    arma::mat M(X * temp2);
 
     temp3 = U0.t();
     temp4 = M - _ss->A();

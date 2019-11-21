@@ -17,25 +17,25 @@ public:
     SystemSim(SSpace* _ss, double _time_step = 1e-4);
     ~SystemSim();
 
-    void setInput(const Mat& _in);
+    void setInput(const arma::mat& _in);
     void updateVariables();
 
 protected:
 
-    Mat signalCalc();
+    arma::mat signalCalc();
 
 private:
 
     SSpace* ss_;
 
-    Mat u_;
-    Mat prev_u_;
+    arma::mat u_;
+    arma::mat prev_u_;
 
     //-- System Variable
-    Mat state_;
-    Mat prev_state_;
-    Mat state_trans_;
-    Mat output_;
+    arma::mat state_;
+    arma::mat prev_state_;
+    arma::mat state_trans_;
+    arma::mat output_;
 
     void calcState();
     void calcOutput();
@@ -64,7 +64,7 @@ SystemSim<SSpace>::~SystemSim(){
 }
 
 template <class SSpace>
-void SystemSim<SSpace>::setInput(const Mat& _in){
+void SystemSim<SSpace>::setInput(const arma::mat& _in){
 
     u_ = _in;
 }
@@ -76,8 +76,8 @@ void SystemSim<SSpace>::updateVariables(){
 }
 
 template <class SSpace>
-Mat SystemSim<SSpace>::signalCalc(){
-    static Mat term1, term2, term3, term4, term5;
+arma::mat SystemSim<SSpace>::signalCalc(){
+    static arma::mat term1, term2, term3, term4, term5;
 
     term1 = state_trans_ * prev_state_;
     term2 = ss_->B() * u_;

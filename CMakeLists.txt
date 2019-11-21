@@ -68,6 +68,10 @@ target_link_libraries(state_space armadillo physical_parameter)
 
 add_library(transfer_matrix include/transfer_matrix.h src/transfer_matrix.cpp)
 
+add_library(linear_algebra include/linear_algebra.h)
+target_link_libraries(linear_algebra armadillo)
+set_target_properties(linear_algebra PROPERTIES LINKER_LANGUAGE CXX)
+
 add_library(observer include/observer.h src/observer.cpp)
 
 add_library(sim SHARED include/sim.h)
@@ -91,6 +95,14 @@ set_target_properties(observer_sim PROPERTIES LINKER_LANGUAGE CXX)
 add_library(pole_placement include/pole_placement.h)
 target_link_libraries(pole_placement Boost::system Boost::thread Boost::chrono)
 set_target_properties(pole_placement PROPERTIES LINKER_LANGUAGE CXX)
+
+add_library(are include/are.h)
+target_link_libraries(are state_space)
+set_target_properties(are PROPERTIES LINKER_LANGUAGE CXX)
+
+add_library(h_infinity_synthesis include/h_infinity_synthesis.h)
+target_link_libraries(h_infinity_synthesis state_space)
+set_target_properties(h_infinity_synthesis PROPERTIES LINKER_LANGUAGE CXX)
 
 # System Simulator
 add_library(system_sim include/system_sim.h)
