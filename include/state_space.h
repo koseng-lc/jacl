@@ -26,10 +26,10 @@ namespace{
 template<int num_states, int num_inputs, int num_outputs, class PhysicalParam = int, class ...Rest>
 class StateSpace{
 public:
-    using Formula = std::function<double(StateSpace)>;
-    using Formulas = std::vector<Formula>;
+    typedef std::function<double(StateSpace)> Formula;
+    typedef std::vector<Formula> Formulas;
 
-public:
+public:    
     template <typename _PhysicalParam = PhysicalParam,
               typename std::enable_if<
                   std::is_same<typename std::decay<_PhysicalParam>::type,
@@ -122,8 +122,7 @@ public:
 
 //    };
 
-private:
-
+protected:
     Formulas fA_;
     Formulas fB_;
     Formulas fC_;

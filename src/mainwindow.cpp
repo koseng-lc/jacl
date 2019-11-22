@@ -19,11 +19,12 @@ MainWindow::MainWindow(QWidget *parent)
 //    , obs_gain_({{ 101.0,     1.0},
 //                 {-311.9, -3143.4},
 //                 { 139.8,  1367.6}})
+    , G_(&bm, &jm, &ki, &la, &kb, &ra)
+//    , sim_(3,2,2)
+    , system_sim_(&ss_)
     , obs_gain_({{ .0, .0, .0},
                  { .0, .0, .0},
                  { .0, .0, .0}})
-//    , sim_(3,2,2)
-    , system_sim_(&ss_)
     , observer_sim_(&ss_, obs_gain_)
     , h_inf_(&ss_){
 
@@ -36,15 +37,13 @@ MainWindow::MainWindow(QWidget *parent)
     QString style_sheet(style_file.readAll());
     this->setStyleSheet(style_sheet);
 
+    //-- DC Motor Open-Loop
+    std::cout << "Preparing system ..." << std::endl;
     {
-        StateSpace::Formula A11 = JC(ss_,.0);
-        StateSpace::Formula A12 = JC(ss_,1.0);
-        StateSpace::Formula A13 = JC(ss_,.0);
-        StateSpace::Formula A21 = JC(ss_,.0);
-        StateSpace::Formula A22 = JE(ss_,-ss_(iBm)/ss_(iJm));
-        StateSpace::Formula A23 = JE(ss_,ss_(iKi)/ss_(iJm));
-        StateSpace::Formula A31 = JC(ss_,.0);
-        StateSpace::Formula A32 = JE(ss_,-ss_(iKb)/ss_(iLa));
+        StateSpace::Formula A11 = JC(ss_,.0); StateSpace::Formula A12 = JC(ss_,1.0);
+        StateSpace::Formula A13 = JC(ss_,.0); StateSpace::Formula A21 = JC(ss_,.0);
+        StateSpace::Formula A22 = JE(ss_,-ss_(iBm)/ss_(iJm)); StateSpace::Formula A23 = JE(ss_,ss_(iKi)/ss_(iJm));
+        StateSpace::Formula A31 = JC(ss_,.0); StateSpace::Formula A32 = JE(ss_,-ss_(iKb)/ss_(iLa));
         StateSpace::Formula A33 = JE(ss_,-ss_(iRa)/ss_(iLa));
 
         StateSpace::Formulas fA{
@@ -53,12 +52,9 @@ MainWindow::MainWindow(QWidget *parent)
             A31,A32,A33
         };
 
-        StateSpace::Formula B11 = JC(ss_, .0);
-        StateSpace::Formula B12 = JC(ss_, .0);
-        StateSpace::Formula B21 = JC(ss_, .0);
-        StateSpace::Formula B22 = JE(ss_, -1.0/ss_(iJm));
-        StateSpace::Formula B31 = JE(ss_, 1.0/ss_(iLa));
-        StateSpace::Formula B32 = JC(ss_, .0);
+        StateSpace::Formula B11 = JC(ss_, .0); StateSpace::Formula B12 = JC(ss_, .0);
+        StateSpace::Formula B21 = JC(ss_, .0); StateSpace::Formula B22 = JE(ss_, -1.0/ss_(iJm));
+        StateSpace::Formula B31 = JE(ss_, 1.0/ss_(iLa)); StateSpace::Formula B32 = JC(ss_, .0);
 
         StateSpace::Formulas fB{
             B11, B12,
@@ -66,14 +62,10 @@ MainWindow::MainWindow(QWidget *parent)
             B31, B32
         };
 
-        StateSpace::Formula C11 = JC(ss_, 1.0);
-        StateSpace::Formula C12 = JC(ss_, .0);
-        StateSpace::Formula C13 = JC(ss_, .0);
-        StateSpace::Formula C21 = JC(ss_, .0);
-        StateSpace::Formula C22 = JC(ss_, 1.0);
-        StateSpace::Formula C23 = JC(ss_, .0);
-        StateSpace::Formula C31 = JC(ss_, .0);
-        StateSpace::Formula C32 = JC(ss_, .0);
+        StateSpace::Formula C11 = JC(ss_, 1.0); StateSpace::Formula C12 = JC(ss_, .0);
+        StateSpace::Formula C13 = JC(ss_, .0); StateSpace::Formula C21 = JC(ss_, .0);
+        StateSpace::Formula C22 = JC(ss_, 1.0); StateSpace::Formula C23 = JC(ss_, .0);
+        StateSpace::Formula C31 = JC(ss_, .0); StateSpace::Formula C32 = JC(ss_, .0);
         StateSpace::Formula C33 = JC(ss_, 1.0);
 
         StateSpace::Formulas fC{
@@ -82,25 +74,15 @@ MainWindow::MainWindow(QWidget *parent)
             C31, C32, C33
         };
 
-        StateSpace::Formula D11 = JC(ss_, .0);
-        StateSpace::Formula D12 = JC(ss_, .0);
-        StateSpace::Formula D21 = JC(ss_, .0);
-        StateSpace::Formula D22 = JC(ss_, .0);
-        StateSpace::Formula D31 = JC(ss_, .0);
-        StateSpace::Formula D32 = JC(ss_, .0);
+        StateSpace::Formula D11 = JC(ss_, .0); StateSpace::Formula D12 = JC(ss_, .0);
+        StateSpace::Formula D21 = JC(ss_, .0); StateSpace::Formula D22 = JC(ss_, .0);
+        StateSpace::Formula D31 = JC(ss_, .0); StateSpace::Formula D32 = JC(ss_, .0);
 
         StateSpace::Formulas fD{
             D11, D12,
             D21, D22,
             D31, D32,
         };
-
-//        ss_(iBm) = bm.nominal;
-//        ss_(iJm) = jm.nominal;
-//        ss_(iKi) = ki.nominal;
-//        ss_(iLa) = la.nominal;
-//        ss_(iKb) = kb.nominal;
-//        ss_(iRa) = ra.nominal;
 
         ss_.setA(fA);
         ss_.setB(fB);
@@ -109,27 +91,119 @@ MainWindow::MainWindow(QWidget *parent)
         ss_.formulaToMat();
     }
 
-    //-- Test
-    arma::mat T, U;
-    jacl::linear_algebra::QRAlgorithm(ss_.A(), &T, &U);
-    T.print("T : ");
-    U.print("U : ");
-
-//    h_inf_.init();
-
-    std::cout << "Preparing system ..." << std::endl;
     ss_.A().print("A : ");
     ss_.B().print("B : ");
     ss_.C().print("C : ");
     ss_.D().print("D : ");
 
-    // Test KautskyNichols
+    //-- G Realization
+    {
+        GRealization::Formula A11, A12, A13;
+        A11 = JC(G_, .0); A12 = JC(G_, 1.0); A13 = JC(G_, .0);
+        GRealization::Formula A21, A22, A23;
+        A21 = JC(G_, .0); A22 = JE(G_, -G_(iBm)/G_(iJm)); A23 = JE(G_, G_(iKi)/G_(iJm));
+        GRealization::Formula A31, A32, A33;
+        A31 = JC(G_, .0); A32 = JE(G_, -G_(iKb)/G_(iLa)); A33 = JE(G_, -G_(iRa)/G_(iLa));
+
+        GRealization::Formula B11, B12, B13, B14, B15, B16, B17, B18;
+        B11 = B12 = B13 = B14 = B15 = B16 = B17 = B18 = JC(G_, .0);
+        GRealization::Formula B21, B22, B23, B24, B25, B26, B27, B28;
+        B21 = B22 = B23 = JE(G_, -1.0/G_(iJm)); B24 = B25 = B26 = JC(G_, .0); B27 = JE(G_, -1.0/G_(iJm)); B28 = JC(G_, .0);
+        GRealization::Formula B31, B32, B33, B34, B35, B36, B37, B38;
+        B31 = B32 = B33 = JC(G_, .0); B34 = B35 = B36 = JE(G_, -1.0/G_(iLa)); B37 = JC(G_, .0); B38 = JE(G_, -1.0/G_(iLa));
+
+        GRealization::Formula C11, C12, C13;
+        C11 = JC(G_, .0); C12 = JC(G_, 1.0); C13 = JC(G_, .0);
+        GRealization::Formula C21, C22, C23;
+        C21 = JC(G_, .0); C22 = JE(G_, -G_(iBm)/G_(iJm)); C23 = JE(G_, G_(iKi)/G_(iJm));
+        GRealization::Formula C31, C32, C33;
+        C31 = JC(G_, .0); C32 = JC(G_, .0); C33 = JC(G_, 1.0);
+        GRealization::Formula C41, C42, C43;
+        C41 = JC(G_, .0); C42 = JE(G_, -G_(iKb)/G_(iLa)); C43 = JE(G_, -G_(iRa)/G_(iLa));
+        GRealization::Formula C51, C52, C53;
+        C51 = JC(G_, .0); C52 = JC(G_, 1.0); C53 = JC(G_, .0);
+        GRealization::Formula C61, C62, C63;
+        C61 = JC(G_, .0); C62 = JC(G_, .0); C63 = JC(G_, 1.0);
+        GRealization::Formula C71, C72, C73;
+        C71 = JC(G_, 1.0); C72 = JC(G_, .0); C73 = JC(G_, .0);
+        GRealization::Formula C81, C82, C83;
+        C81 = JC(G_, .0); C82 = JC(G_, 1.0); C83 = JC(G_, .0);
+        GRealization::Formula C91, C92, C93;
+        C91 = JC(G_, .0); C92 = JC(G_, .0); C93 = JC(G_, 1.0);
+
+        GRealization::Formula D11, D12, D13, D14, D15, D16, D17, D18;
+        D11 = D12 = D13 = D14 = D15 = D16 = D17 = D18 = JC(G_, .0);
+        GRealization::Formula D21, D22, D23, D24, D25, D26, D27, D28;
+        D21 = D22 = D23 = JE(G_, -1/G_(iJm)); D24 = D25 = D26 = JC(G_, .0); D27 = JE(G_, -1/G_(iJm)); D28 = JC(G_, .0);
+        GRealization::Formula D31, D32, D33, D34, D35, D36, D37, D38;
+        D31 = D32 = D33 = D34 = D35 = D36 = D37 = D38 = JC(G_, .0);
+        GRealization::Formula D41, D42, D43, D44, D45, D46, D47, D48;
+        D41 = D42 = D43 = JC(G_, .0); D44 = D45 = D46 = JE(G_, -1/G_(iLa)); D47 = JC(G_, .0); D48 = JE(G_, -1/G_(iLa));
+        GRealization::Formula D51, D52, D53, D54, D55, D56, D57, D58;
+        D51 = D52 = D53 = D54 = D55 = D56 = D57 = D58 = JC(G_, .0);
+        GRealization::Formula D61, D62, D63, D64, D65, D66, D67, D68;
+        D61 = D62 = D63 = D64 = D65 = D66 = D67 = D68 = JC(G_, .0);
+        GRealization::Formula D71, D72, D73, D74, D75, D76, D77, D78;
+        D71 = D72 = D73 = D74 = D75 = D76 = D77 = D78 = JC(G_, .0);
+        GRealization::Formula D81, D82, D83, D84, D85, D86, D87, D88;
+        D81 = D82 = D83 = D84 = D85 = D86 = D87 = D88 = JC(G_, .0);
+        GRealization::Formula D91, D92, D93, D94, D95, D96, D97, D98;
+        D91 = D92 = D93 = D94 = D95 = D96 = D97 = D98 = JC(G_, .0);
+
+        GRealization::Formulas fA{
+            A11, A12, A13,
+            A21, A22, A23,
+            A31, A32, A33
+        };
+
+        GRealization::Formulas fB{
+            B11, B12, B13, B14, B15, B16, B17, B18,
+            B21, B22, B23, B24, B25, B26, B27, B28,
+            B31, B32, B33, B34, B35, B36, B37, B38
+        };
+
+        GRealization::Formulas fC{
+            C11, C12, C13,
+            C21, C22, C23,
+            C31, C32, C33,
+            C41, C42, C43,
+            C51, C52, C53,
+            C61, C62, C63,
+            C71, C72, C73,
+            C81, C82, C83,
+            C91, C92, C93,
+        };
+
+        GRealization::Formulas fD{
+            D11, D12, D13, D14, D15, D16, D17, D18,
+            D21, D22, D23, D24, D25, D26, D27, D28,
+            D31, D32, D33, D34, D35, D36, D37, D38,
+            D41, D42, D43, D44, D45, D46, D47, D48,
+            D51, D52, D53, D54, D55, D56, D57, D58,
+            D61, D62, D63, D64, D65, D66, D67, D68,
+            D71, D72, D73, D74, D75, D76, D77, D78,
+            D81, D82, D83, D84, D85, D86, D87, D88,
+            D91, D92, D93, D94, D95, D96, D97, D98,
+        };
+
+        G_.setA(fA); // use A from Plant
+        G_.setB(fB);
+        G_.setC(fC);
+        G_.setD(fD);
+        G_.formulaToMat();
+    }
+
+    G_.A().print("\nGA : ");
+    G_.B().print("GB : ");
+    G_.C().print("GC : ");
+    G_.D().print("GD : ");
+
+    //-- Test KautskyNichols
     arma::mat observer_K;
-//    jacl::Mat poles{-10,-9,-5};
     arma::mat poles{-50,-51,-52};
     jacl::pole_placement::KautskyNichols(&ss_, poles, &observer_K, jacl::pole_placement::Observer);
 
-    observer_K.print("Observer Gain : ");
+    observer_K.print("\nObserver Gain : ");
 
     observer_sim_.setGain(observer_K.t());
 

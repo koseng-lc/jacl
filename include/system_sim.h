@@ -13,7 +13,6 @@ namespace jacl{
 template <class SSpace>
 class SystemSim: public Sim<SSpace>{
 public:
-
     SystemSim(SSpace* _ss, double _time_step = 1e-4);
     ~SystemSim();
 
@@ -21,11 +20,9 @@ public:
     void updateVariables();
 
 protected:
-
     arma::mat signalCalc();
 
 private:
-
     SSpace* ss_;
 
     arma::mat u_;

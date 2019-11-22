@@ -16,7 +16,6 @@ namespace{
 template <class SSpace>
 class Observer{
 public:
-
     Observer(SSpace* _ss, const arma::mat& _K, double _time_step = 1e-4);
     ~Observer();
 
@@ -41,7 +40,6 @@ public:
 
 
 private:
-
     SSpace* ss_;
 
     // Observer Gain

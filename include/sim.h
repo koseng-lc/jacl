@@ -31,7 +31,6 @@ namespace np = boost::python::numpy;
 template <class SSpace>
 class Sim{
 public:    
-
     Sim(std::size_t _n_signals);
     ~Sim();
 
@@ -61,7 +60,6 @@ public:
     void setPlotName(std::initializer_list<std::string> _plot_name);
 
 protected:
-
     boost::thread process_thread_;
     void process();
     boost::mutex running_mtx_;

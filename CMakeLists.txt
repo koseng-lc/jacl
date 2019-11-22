@@ -58,7 +58,6 @@ set_target_properties(simulator PROPERTIES PREFIX "")
 set_target_properties(simulator PROPERTIES LINKER_LANGUAGE CXX)
 
 # JACL Lib
-
 add_library(physical_parameter include/physical_parameter.h)
 set_target_properties(physical_parameter PROPERTIES LINKER_LANGUAGE CXX)
 
@@ -106,6 +105,11 @@ set_target_properties(observer_sim PROPERTIES LINKER_LANGUAGE CXX)
 add_library(lft include/lft.h)
 target_link_libraries(lft state_space)
 set_target_properties(lft PROPERTIES LINKER_LANGUAGE CXX)
+
+# Upper LFT
+add_library(upper_lft include/upper_lft.h)
+target_link_libraries(upper_lft PUBLIC state_space lft)
+set_target_properties(upper_lft PROPERTIES LINKER_LANGUAGE CXX)
 
 # Pole Placement
 add_library(pole_placement include/pole_placement.h)

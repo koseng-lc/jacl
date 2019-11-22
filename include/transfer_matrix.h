@@ -12,7 +12,6 @@
 namespace jacl{
 
 class TransferMatrix{
-
 public:
     typedef std::complex<double > S;
     typedef std::function<S(S) > TransferFunction;

@@ -31,7 +31,6 @@ public:
     ~MainWindow();
 
 private:
-
     //-- GUI stuff
 
     Ui::MainWindow *ui;
@@ -106,21 +105,31 @@ private:
     jacl::PhysicalParameter kb;
     jacl::PhysicalParameter ra;
 
-    using StateSpace = jacl::StateSpace<3, 2, 3,
-                                jacl::PhysicalParameter,
-                                jacl::PhysicalParameter,
-                                jacl::PhysicalParameter,
-                                jacl::PhysicalParameter,
-                                jacl::PhysicalParameter,
-                                jacl::PhysicalParameter>;
+    using StateSpace =
+        jacl::StateSpace<3, 2, 3,
+                         jacl::PhysicalParameter,
+                         jacl::PhysicalParameter,
+                         jacl::PhysicalParameter,
+                         jacl::PhysicalParameter,
+                         jacl::PhysicalParameter,
+                         jacl::PhysicalParameter>;
 
     StateSpace ss_;
+//    jacl::Simulator sim_;
+    jacl::SystemSim<StateSpace> system_sim_;
+
+    using GRealization =
+        jacl::StateSpace<3, 8, 9,
+                         jacl::PhysicalParameter,
+                         jacl::PhysicalParameter,
+                         jacl::PhysicalParameter,
+                         jacl::PhysicalParameter,
+                         jacl::PhysicalParameter,
+                         jacl::PhysicalParameter>;
+
+    GRealization G_;
 
     arma::mat::fixed<3, 3> obs_gain_;
-
-//    jacl::Simulator sim_;
-
-    jacl::SystemSim<StateSpace> system_sim_;
     jacl::ObserverSim<StateSpace> observer_sim_;
 
     jacl::synthesis::Hinf<StateSpace, 1> h_inf_;
