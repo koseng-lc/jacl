@@ -1,6 +1,6 @@
 /**
 *   @author : koseng (Lintang)
-*   @brief : JACL Transfer Matrix module
+*   @brief : jacl Transfer Matrix module
 */
 
 #pragma once
@@ -9,7 +9,7 @@
 #include <complex>
 #include <vector>
 
-namespace JACL{
+namespace jacl{
 
 class TransferMatrix{
 

@@ -3,7 +3,7 @@
 #include "linear_algebra.h"
 #include "are.h"
 
-namespace JACL{
+namespace jacl{
 
 namespace synthesis{
 
@@ -14,18 +14,18 @@ namespace{
 template <class SSpace, int num_perturbation = 0>
 class Hinf{
 public:
-
     Hinf(SSpace* _ss);
     ~Hinf();
 
     void init();
+
 private:
     SSpace* ss_;
 
     ARE<SSpace> are_solver1_;
     ARE<SSpace> are_solver2_;
 
-    //-- Partitioning Realization
+    //-- Partitioning Realization of Interconnection Matrix
     arma::mat A;
     arma::mat B1;
     arma::mat B2;
@@ -43,7 +43,6 @@ Hinf<SSpace, num_perturbation>::Hinf(SSpace* _ss)
     : ss_(_ss)
     , are_solver1_(ss_)
     , are_solver2_(ss_){
-
 
 }
 

@@ -3,7 +3,7 @@
 #include "state_space.h"
 #include "linear_algebra.h"
 
-namespace JACL{
+namespace jacl{
 
 namespace{
     namespace linalg = linear_algebra;

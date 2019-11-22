@@ -15,7 +15,7 @@ MainWindow::MainWindow(QWidget *parent)
     , la(.00062)
     , kb(.052)
     , ra(2.07)
-    , ss_(bm, jm, ki, la, kb, ra)
+    , ss_(&bm, &jm, &ki, &la, &kb, &ra)
 //    , obs_gain_({{ 101.0,     1.0},
 //                 {-311.9, -3143.4},
 //                 { 139.8,  1367.6}})
@@ -95,12 +95,12 @@ MainWindow::MainWindow(QWidget *parent)
             D31, D32,
         };
 
-        ss_(iBm) = bm.nominal;
-        ss_(iJm) = jm.nominal;
-        ss_(iKi) = ki.nominal;
-        ss_(iLa) = la.nominal;
-        ss_(iKb) = kb.nominal;
-        ss_(iRa) = ra.nominal;
+//        ss_(iBm) = bm.nominal;
+//        ss_(iJm) = jm.nominal;
+//        ss_(iKi) = ki.nominal;
+//        ss_(iLa) = la.nominal;
+//        ss_(iKb) = kb.nominal;
+//        ss_(iRa) = ra.nominal;
 
         ss_.setA(fA);
         ss_.setB(fB);
@@ -111,7 +111,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     //-- Test
     arma::mat T, U;
-    JACL::linear_algebra::QRAlgorithm(ss_.A(), &T, &U);
+    jacl::linear_algebra::QRAlgorithm(ss_.A(), &T, &U);
     T.print("T : ");
     U.print("U : ");
 
@@ -125,9 +125,9 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Test KautskyNichols
     arma::mat observer_K;
-//    JACL::Mat poles{-10,-9,-5};
+//    jacl::Mat poles{-10,-9,-5};
     arma::mat poles{-50,-51,-52};
-    JACL::pole_placement::KautskyNichols(&ss_, poles, &observer_K, JACL::pole_placement::Observer);
+    jacl::pole_placement::KautskyNichols(&ss_, poles, &observer_K, jacl::pole_placement::Observer);
 
     observer_K.print("Observer Gain : ");
 
@@ -159,7 +159,7 @@ MainWindow::MainWindow(QWidget *parent)
     setupWidgets();
     setupActions();
 
-    JACL::StateSpace<12,4,4> another_ss;
+    jacl::StateSpace<12,4,4> another_ss;
 
 }
 
@@ -443,8 +443,19 @@ void MainWindow::setupActions(){
 
 void MainWindow::perturbAct(){
 
-    for(int idx(iBm); idx <= iRa; idx++)
-        ss_.param(idx) = params_dsb_[idx]->value();
+//    for(int idx(iBm); idx <= iRa; idx++)
+//        ss_.param(idx) = params_dsb_[idx]->value();
+
+//    &bm, &jm, &ki, &la, &kb, &ra
+    for(auto &pair:{std::pair<std::decay<jacl::PhysicalParameter>::type*, QDoubleSpinBox*>
+                        {&bm,params_dsb_[iBm]},
+                        {&jm,params_dsb_[iJm]},
+                        {&ki,params_dsb_[iKi]},
+                        {&la,params_dsb_[iLa]},
+                        {&kb,params_dsb_[iKb]},
+                        {&ra,params_dsb_[iRa]}})
+        pair.first->perturbed = pair.second->value();
+
 
     ss_.formulaToMat();
     system_sim_.updateVariables();

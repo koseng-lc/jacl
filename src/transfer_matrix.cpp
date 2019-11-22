@@ -1,6 +1,6 @@
 #include "transfer_matrix.h"
 
-using namespace JACL;
+using namespace jacl;
 
 TransferMatrix::TransferMatrix(int _rows, int _cols)
     : rows_(_rows)

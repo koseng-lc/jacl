@@ -125,6 +125,6 @@ class Plotter:
             fig.canvas.draw_idle()
             fig.canvas.flush_events()
 
-            time.sleep(self.delay)
+            #time.sleep(self.delay)
 
          

@@ -99,32 +99,31 @@ private:
         iRa  // Armature Resistance (Ohm)
     };
 
+    jacl::PhysicalParameter bm;
+    jacl::PhysicalParameter jm;
+    jacl::PhysicalParameter ki;
+    jacl::PhysicalParameter la;
+    jacl::PhysicalParameter kb;
+    jacl::PhysicalParameter ra;
 
-    JACL::PhysicalParameter bm;
-    JACL::PhysicalParameter jm;
-    JACL::PhysicalParameter ki;
-    JACL::PhysicalParameter la;
-    JACL::PhysicalParameter kb;
-    JACL::PhysicalParameter ra;
-
-    using StateSpace = JACL::StateSpace<3, 2, 3,
-                                JACL::PhysicalParameter,
-                                JACL::PhysicalParameter,
-                                JACL::PhysicalParameter,
-                                JACL::PhysicalParameter,
-                                JACL::PhysicalParameter,
-                                JACL::PhysicalParameter>;
+    using StateSpace = jacl::StateSpace<3, 2, 3,
+                                jacl::PhysicalParameter,
+                                jacl::PhysicalParameter,
+                                jacl::PhysicalParameter,
+                                jacl::PhysicalParameter,
+                                jacl::PhysicalParameter,
+                                jacl::PhysicalParameter>;
 
     StateSpace ss_;
 
-    arma::mat::fixed<3,3> obs_gain_;
+    arma::mat::fixed<3, 3> obs_gain_;
 
-//    JACL::Simulator sim_;
+//    jacl::Simulator sim_;
 
-    JACL::SystemSim<StateSpace> system_sim_;
-    JACL::ObserverSim<StateSpace> observer_sim_;
+    jacl::SystemSim<StateSpace> system_sim_;
+    jacl::ObserverSim<StateSpace> observer_sim_;
 
-    JACL::synthesis::Hinf<StateSpace,1> h_inf_;
+    jacl::synthesis::Hinf<StateSpace, 1> h_inf_;
 
 private Q_SLOTS:
     void perturbAct();

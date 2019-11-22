@@ -8,7 +8,7 @@
 #include "sim.h"
 #include "state_space.h"
 
-namespace JACL{
+namespace jacl{
 
 template <class SSpace>
 class SystemSim: public Sim<SSpace>{

@@ -1,6 +1,6 @@
 /**
 *   @author : koseng (Lintang)
-*   @brief : JACL Simulator / Plotter
+*   @brief : jacl Simulator / Plotter
 */
 
 #pragma once
@@ -23,7 +23,7 @@
 
 #include "state_space.h"
 
-namespace JACL{
+namespace jacl{
 
 namespace py = boost::python;
 namespace np = boost::python::numpy;
@@ -215,7 +215,7 @@ void Sim<SSpace>::process(){
             PyErr_Print();
         }
 
-        boost::this_thread::sleep_for(boost::chrono::milliseconds((int)delay_*1000)); // 60 - Hz
+        boost::this_thread::sleep_for(boost::chrono::milliseconds((int)(delay_ * 1000.))); // 60 - Hz
 
         t += d_time_;
 

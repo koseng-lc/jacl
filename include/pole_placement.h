@@ -14,7 +14,7 @@
 
 #include "state_space.h"
 
-namespace JACL{
+namespace jacl{
 
 namespace pole_placement{
 

@@ -8,7 +8,7 @@
 #include "observer.h"
 #include "sim.h"
 
-namespace JACL{
+namespace jacl{
 
 template <class SSpace>
 class ObserverSim: public Sim<SSpace>{

@@ -1,6 +1,6 @@
 /**
 *   @author : koseng (Lintang)
-*   @brief : JACL Simulator
+*   @brief : jacl Simulator
 */
 
 #pragma once
@@ -17,7 +17,7 @@
 
 #include <armadillo>
 
-namespace JACL{
+namespace jacl{
 
 namespace py = boost::python;
 namespace np = boost::python::numpy;

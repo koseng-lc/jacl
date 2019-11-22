@@ -62,18 +62,27 @@ set_target_properties(simulator PROPERTIES LINKER_LANGUAGE CXX)
 add_library(physical_parameter include/physical_parameter.h)
 set_target_properties(physical_parameter PROPERTIES LINKER_LANGUAGE CXX)
 
+# State Space
 add_library(state_space include/state_space.h)
 set_target_properties(state_space PROPERTIES LINKER_LANGUAGE CXX)
 target_link_libraries(state_space armadillo physical_parameter)
 
+# Transfer Matrix
 add_library(transfer_matrix include/transfer_matrix.h src/transfer_matrix.cpp)
 
+# Linear Algebra
 add_library(linear_algebra include/linear_algebra.h)
 target_link_libraries(linear_algebra armadillo)
 set_target_properties(linear_algebra PROPERTIES LINKER_LANGUAGE CXX)
 
+add_library(lti_common include/lti_common.h)
+target_link_libraries(lti_common state_space)
+set_target_properties(lti_common PROPERTIES LINKER_LANGUAGE CXX)
+
+# Observer
 add_library(observer include/observer.h src/observer.cpp)
 
+# Simulator(more precisely is plotter)
 add_library(sim SHARED include/sim.h)
 target_link_libraries(sim
     Boost::system Boost::python Boost::thread Boost::chrono
@@ -82,6 +91,7 @@ target_link_libraries(sim
 )
 set_target_properties(sim PROPERTIES LINKER_LANGUAGE CXX)
 
+# Observer Simulator
 add_library(observer_sim include/observer_sim.h)
 target_link_libraries(observer_sim
     Boost::system Boost::python Boost::chrono
@@ -92,14 +102,22 @@ target_link_libraries(observer_sim
 )
 set_target_properties(observer_sim PROPERTIES LINKER_LANGUAGE CXX)
 
+# LFT
+add_library(lft include/lft.h)
+target_link_libraries(lft state_space)
+set_target_properties(lft PROPERTIES LINKER_LANGUAGE CXX)
+
+# Pole Placement
 add_library(pole_placement include/pole_placement.h)
 target_link_libraries(pole_placement Boost::system Boost::thread Boost::chrono)
 set_target_properties(pole_placement PROPERTIES LINKER_LANGUAGE CXX)
 
+# ARE
 add_library(are include/are.h)
 target_link_libraries(are state_space)
 set_target_properties(are PROPERTIES LINKER_LANGUAGE CXX)
 
+# H-infinity Synthesis
 add_library(h_infinity_synthesis include/h_infinity_synthesis.h)
 target_link_libraries(h_infinity_synthesis state_space)
 set_target_properties(h_infinity_synthesis PROPERTIES LINKER_LANGUAGE CXX)

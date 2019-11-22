@@ -1,6 +1,6 @@
 /**
 *   @author : koseng (Lintang)
-*   @brief : JACL State Space module
+*   @brief : jacl State Space module
 */
 
 #pragma once
@@ -17,7 +17,7 @@
 #include "physical_parameter.h"
 #include "linear_algebra.h"
 
-namespace JACL{
+namespace jacl{
 
 namespace{
     namespace linalg = linear_algebra;
@@ -34,7 +34,7 @@ public:
               typename std::enable_if<
                   std::is_same<typename std::decay<_PhysicalParam>::type,
                                PhysicalParameter>::value, int>::type* = nullptr>
-    StateSpace(_PhysicalParam _param, Rest... _rest)
+    StateSpace(_PhysicalParam* _param, Rest*... _rest)
         : A_(num_states, num_states)
         , B_(num_states, num_inputs)
         , C_(num_outputs, num_states)
@@ -64,15 +64,12 @@ public:
         return D_;
     }
 
-    bool controlable();
-    bool observable();
-
     double const& param(int _index) const{
-        return params_[_index].perturbed;
+        return params_[_index]->perturbed;
     }
 
     double& param(int _index){
-        return params_[_index].perturbed;
+        return params_[_index]->perturbed;
     }
 
     auto setA(const Formulas& f) -> void{
@@ -133,7 +130,7 @@ private:
     Formulas fD_;
 
     // TODO : change the arguement to pointer to prevent object slicing
-    std::vector<PhysicalParameter > params_;
+    std::vector<PhysicalParameter* > params_;
 
     arma::mat A_;
     arma::mat B_;
@@ -141,7 +138,7 @@ private:
     arma::mat D_;
 
     template <typename _PhysicalParam = PhysicalParam>
-    auto push(_PhysicalParam _param)
+    auto push(_PhysicalParam* _param)
     -> typename std::enable_if<
     std::is_same<typename std::decay<_PhysicalParam>::type,
                  PhysicalParameter>::value, void>::type{
@@ -149,7 +146,7 @@ private:
     }
 
     template <typename _PhysicalParam = PhysicalParam, class ...PhysicalParamRest>
-    auto push(_PhysicalParam _param, PhysicalParamRest... _rest)
+    auto push(_PhysicalParam* _param, PhysicalParamRest*... _rest)
     -> typename std::enable_if<
     std::is_same<typename std::decay<_PhysicalParam>::type,
                  PhysicalParameter>::value, void>::type{
@@ -175,16 +172,6 @@ StateSpace<num_states, num_inputs, num_outputs, PhysicalParam, Rest...>::StateSp
 
 template<int num_states, int num_inputs, int num_outputs, class PhysicalParam, class ...Rest>
 StateSpace<num_states, num_inputs, num_outputs, PhysicalParam, Rest...>::~StateSpace(){
-
-}
-
-template<int num_states, int num_inputs, int num_outputs, class PhysicalParam, class ...Rest>
-bool StateSpace<num_states, num_inputs, num_outputs, PhysicalParam, Rest...>::controlable(){
-
-}
-
-template<int num_states, int num_inputs, int num_outputs, class PhysicalParam, class ...Rest>
-bool StateSpace<num_states, num_inputs, num_outputs, PhysicalParam, Rest...>::observable(){
 
 }
 

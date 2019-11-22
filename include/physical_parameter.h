@@ -1,11 +1,11 @@
 /**
 *   @author : koseng (Lintang)
-*   @brief : JACL Physical Parameter abstract
+*   @brief : jacl Physical Parameter abstract
 */
 
 #pragma once
 
-namespace JACL{
+namespace jacl{
 
 class PhysicalParameter{
 public:

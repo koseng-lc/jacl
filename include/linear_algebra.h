@@ -4,7 +4,7 @@
 
 #include <vector>
 
-namespace JACL{
+namespace jacl{
 
 namespace linear_algebra{
 
