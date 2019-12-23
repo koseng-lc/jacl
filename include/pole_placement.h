@@ -27,8 +27,8 @@ enum Type{
     Observer
 };
 
-template <class SSpace>
-void KautskyNichols(SSpace *_ss, const arma::mat& _poles, arma::mat* _K, Type _type = Controller){
+template <class _StateSpace>
+void KautskyNichols(_StateSpace *_ss, const arma::mat& _poles, arma::mat* _K, Type _type = Controller){
 
     assert(_poles.is_vec());
 
@@ -48,16 +48,12 @@ void KautskyNichols(SSpace *_ss, const arma::mat& _poles, arma::mat* _K, Type _t
     int T_rows(T.n_rows);
     int T_cols(T.n_cols);
 
-//    Q.print("Q : ");
-//    R.print("R : ");
-
     //-- special treatment
     //-- due to the one of the span from orthogonal by QR of T is empty
     //-- with assumption that T is invertible
     if(T_rows == T_cols){
         arma::mat inv_T(arma::inv(T));
         arma::mat P(arma::diagmat(_poles));
-//        P.print("P : ");
         *_K = (_ss->A() - P) * inv_T;
         return;
     }
@@ -66,9 +62,6 @@ void KautskyNichols(SSpace *_ss, const arma::mat& _poles, arma::mat* _K, Type _t
     U1 = Q.submat(0, T_cols, T_rows-1, T_rows-1);
     Z = R.submat(0, 0, T_cols-1, T_cols-1);
 
-//    U0.print("U0 : ");
-//    U1.print("U1 : ");
-//    Z.print("Z : ");
 
     //-- A Step
 
@@ -79,7 +72,6 @@ void KautskyNichols(SSpace *_ss, const arma::mat& _poles, arma::mat* _K, Type _t
     arma::mat temp1, temp2, temp3, temp4;
     arma::mat temp5, temp6;
 
-//    _poles.print("Poles : ");
 
     for(auto p:_poles){
 
@@ -89,26 +81,17 @@ void KautskyNichols(SSpace *_ss, const arma::mat& _poles, arma::mat* _K, Type _t
         temp4 = temp1 * temp3;
         temp4 = temp4.t();
 
-//        temp4.print("Temp4 : ");
-
         int rows(temp4.n_rows);
         int cols(temp4.n_cols);
 
         arma::qr(temp5, temp6, temp4);
 
-//        temp5.print("Temp5 : ");
-
         S_hat.push_back(temp5.submat(0, 0, rows-1, cols-1));
-//        S_hat.back().print("S_hat : ");
 
         S.push_back(temp5.submat(0, cols, rows-1, rows-1));
-//        S.back().print("S : ");
 
         another_R.push_back(temp6.submat(0, 0, cols-1, cols-1));
-//        another_R.back().print("R : ");
     }
-
-//    std::cout << "=======================================" << std::endl;
 
     //-- X Step
 
@@ -128,8 +111,6 @@ void KautskyNichols(SSpace *_ss, const arma::mat& _poles, arma::mat* _K, Type _t
     auto prev_cond(cond);
     auto err(.0);
 
-//    X.print("X : ");
-
     int restX_span_cols = X.n_cols - 1;
     int restX_span_rows = X.n_rows;
 
@@ -142,32 +123,21 @@ void KautskyNichols(SSpace *_ss, const arma::mat& _poles, arma::mat* _K, Type _t
             X_rest.shed_col(i);
 
             arma::qr(Q1, R1, X_rest);
-//            Q1.print("Q1 : ");
-//            R1.print("R1 : ");
 
             Q_tilde = Q1.submat(0, 0, restX_span_rows-1, restX_span_cols-1);
             y_tilde = Q1.submat(0, restX_span_cols, restX_span_rows-1, restX_span_rows-1);
             R_tilde = R1.submat(0, 0, restX_span_cols-1, restX_span_cols-1);
 
-//            Q_tilde.print("Q tilde : ");
-//            y_tilde.print("y tilde : ");
-//            R_tilde.print("R tilde : ");
             // reuse the temporary variable
-//            S[i].print("S : ");
             temp1 = S[i].t() * y_tilde;
             // calculate 2-norm
             norm = arma::norm(temp1, 2);            
             X.col(i) = (S[i] * temp1) / norm;
-//            std::cout << "Norm : " << arma::norm(X.col(i), 2) << std::endl;
         }
-
-//        X.print("X : ");
 
         cond = arma::cond(X);
         err = std::fabs(cond - prev_cond);
         prev_cond = cond;
-//        std::cout << "Error : " << err << std::endl;
-//        std::cout << std::setprecision(6) << "Condition Number : " << cond << std::endl;
 
     }while(err > condition_number_tol); // iterate until well-conditioned
 

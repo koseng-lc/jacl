@@ -13,10 +13,10 @@ namespace{
     namespace linalg = linear_algebra;
 }
 
-template <class SSpace>
+template <class _StateSpace>
 class Observer{
 public:
-    Observer(SSpace* _ss, const arma::mat& _K, double _time_step = 1e-4);
+    Observer(_StateSpace* _ss, const arma::mat& _K, double _time_step = 1e-4);
     ~Observer();
 
     arma::mat calcStateEst();
@@ -40,7 +40,7 @@ public:
 
 
 private:
-    SSpace* ss_;
+    _StateSpace* ss_;
 
     // Observer Gain
     arma::mat K_;
@@ -75,8 +75,8 @@ private:
 
 };
 
-template <class SSpace>
-Observer<SSpace>::Observer(SSpace* _ss, const arma::mat& _K, double _time_step)
+template <class _StateSpace>
+Observer<_StateSpace>::Observer(_StateSpace* _ss, const arma::mat& _K, double _time_step)
     : ss_(_ss)
     , u_(_ss->B().n_cols, 1, arma::fill::zeros)
     , prev_u_(u_)
@@ -94,18 +94,18 @@ Observer<SSpace>::Observer(SSpace* _ss, const arma::mat& _K, double _time_step)
     // for Full-order observer
     K_ = _K;
 
-    updateVariables();
+    // updateVariables();
 
 }
 
-template <class SSpace>
-Observer<SSpace>::~Observer(){
+template <class _StateSpace>
+Observer<_StateSpace>::~Observer(){
 
     ss_ = nullptr;
 }
 
-template <class SSpace>
-void Observer<SSpace>::calcState(){
+template <class _StateSpace>
+void Observer<_StateSpace>::calcState(){
 
     static arma::mat term1, term2, term3, term4;
 
@@ -120,15 +120,15 @@ void Observer<SSpace>::calcState(){
 
 }
 
-template <class SSpace>
-void Observer<SSpace>::calcOutput(){
+template <class _StateSpace>
+void Observer<_StateSpace>::calcOutput(){
 
     arma::mat term1 = ss_->C() * prev_state_;
     output_ = term1 + (ss_->D() * u_);
 }
 
-template <class SSpace>
-arma::mat Observer<SSpace>::calcStateEst(){
+template <class _StateSpace>
+arma::mat Observer<_StateSpace>::calcStateEst(){
 
     calcState();
 
@@ -152,14 +152,14 @@ arma::mat Observer<SSpace>::calcStateEst(){
 
 }
 
-template <class SSpace>
-void Observer<SSpace>::calcOutputEst(){
+template <class _StateSpace>
+void Observer<_StateSpace>::calcOutputEst(){
 
     output_est_ = ss_->C() * prev_state_est_;
 }
 
-template <class SSpace>
-void Observer<SSpace>::updateVariables(){
+template <class _StateSpace>
+void Observer<_StateSpace>::updateVariables(){
 
     // system
     state_trans_ = arma::expmat(ss_->A() * dt_);

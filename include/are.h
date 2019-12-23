@@ -9,11 +9,11 @@ namespace{
     namespace linalg = linear_algebra;
 }
 
-template <class SSpace>
+template <class _StateSpace>
 class ARE{
 public:
-    ARE(SSpace* _ss, const arma::mat& _R, const arma::mat& _Q);
-    ARE(SSpace* _ss);
+    ARE(_StateSpace* _ss, const arma::mat& _R, const arma::mat& _Q);
+    ARE(_StateSpace* _ss);
     ~ARE();
 
     void setR(const arma::mat& _R, bool update_hamiltonian = false){
@@ -33,16 +33,16 @@ public:
     void solve();
 
 private:
-    SSpace* ss_;
+    _StateSpace* ss_;
 
-    //-- Hamiltonian arma::matrix
+    //-- Hamiltonian matrix
     arma::mat H_;
 
-    //-- Symmetric arma::matrix
+    //-- Symmetric matrix
     arma::mat R_;
     arma::mat Q_;
 
-    //-- SKew-Symmetric arma::matrix
+    //-- SKew-Symmetric matrix
     arma::mat J_;
 
     //-- Solution
@@ -52,8 +52,8 @@ private:
 
 };
 
-template <class SSpace>
-ARE<SSpace>::ARE(SSpace* _ss, const arma::mat& _R, const arma::mat& _Q)
+template <class _StateSpace>
+ARE<_StateSpace>::ARE(_StateSpace* _ss, const arma::mat& _R, const arma::mat& _Q)
     : ss_(_ss)
     , H_(ss_->numStates() * 2, ss_->numStates() * 2)
     , R_(ss_->numStates(), ss_->numStates())
@@ -63,8 +63,8 @@ ARE<SSpace>::ARE(SSpace* _ss, const arma::mat& _R, const arma::mat& _Q)
     setQ(_Q, true);
 }
 
-template <class SSpace>
-ARE<SSpace>::ARE(SSpace* _ss)
+template <class _StateSpace>
+ARE<_StateSpace>::ARE(_StateSpace* _ss)
     : ss_(_ss)
     , H_(ss_->numStates() * 2, ss_->numStates() * 2)
     , R_(ss_->numStates(), ss_->numStates())
@@ -72,13 +72,13 @@ ARE<SSpace>::ARE(SSpace* _ss)
 
 }
 
-template <class SSpace>
-ARE<SSpace>::~ARE(){
+template <class _StateSpace>
+ARE<_StateSpace>::~ARE(){
 
 }
 
-template <class SSpace>
-void ARE<SSpace>::genHamiltonianMatrix(){
+template <class _StateSpace>
+void ARE<_StateSpace>::genHamiltonianMatrix(){
 
     H_.submat(               0,                0,      ss_->numStates(),     ss_->numStates()) = ss_->A();
     H_.submat(               0, ss_->numStates(),      ss_->numStates(), ss_->numStates() * 2) = R_;
@@ -86,8 +86,8 @@ void ARE<SSpace>::genHamiltonianMatrix(){
     H_.submat(ss_->numStates(), ss_->numStates(), ss_->numStates() * 2,  ss_->numStates() * 2) = -ss_->A_.t();
 }
 
-template <class SSpace>
-void ARE<SSpace>::solve(){
+template <class _StateSpace>
+void ARE<_StateSpace>::solve(){
 
     //-- Using QR-Algorithm
     /*arma::mat T, U;

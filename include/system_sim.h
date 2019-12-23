@@ -10,10 +10,10 @@
 
 namespace jacl{
 
-template <class SSpace>
-class SystemSim: public Sim<SSpace>{
+template <class _StateSpace>
+class SystemSim: public Sim<_StateSpace>{
 public:
-    SystemSim(SSpace* _ss, double _time_step = 1e-4);
+    SystemSim(_StateSpace* _ss, double _time_step = 1e-4);
     ~SystemSim();
 
     void setInput(const arma::mat& _in);
@@ -23,10 +23,15 @@ protected:
     arma::mat signalCalc();
 
 private:
-    SSpace* ss_;
+    _StateSpace* ss_;
 
     arma::mat u_;
     arma::mat prev_u_;
+
+    arma::mat Ad_;
+    arma::mat Bd_;
+    arma::mat Cd_;
+    arma::mat Dd_;
 
     //-- System Variable
     arma::mat state_;
@@ -41,9 +46,9 @@ private:
 
 };
 
-template <class SSpace>
-SystemSim<SSpace>::SystemSim(SSpace* _ss, double _time_step)
-    : Sim<SSpace >(_ss->A().n_rows +_ss->B().n_cols + _ss->C().n_rows)
+template <class _StateSpace>
+SystemSim<_StateSpace>::SystemSim(_StateSpace* _ss, double _time_step)
+    : Sim<_StateSpace >(_ss->A().n_rows +_ss->B().n_cols + _ss->C().n_rows)
     , ss_(_ss)
     , u_(_ss->B().n_cols, 1, arma::fill::zeros)
     , prev_u_(u_)
@@ -51,29 +56,28 @@ SystemSim<SSpace>::SystemSim(SSpace* _ss, double _time_step)
     , prev_state_(state_)
     , dt_(_time_step){
 
-    updateVariables();
+    // updateVariables();
 
 }
 
-template <class SSpace>
-SystemSim<SSpace>::~SystemSim(){
+template <class _StateSpace>
+SystemSim<_StateSpace>::~SystemSim(){
     ss_ = nullptr;
 }
 
-template <class SSpace>
-void SystemSim<SSpace>::setInput(const arma::mat& _in){
-
+template <class _StateSpace>
+void SystemSim<_StateSpace>::setInput(const arma::mat& _in){
     u_ = _in;
 }
 
-template <class SSpace>
-void SystemSim<SSpace>::updateVariables(){
-
+template <class _StateSpace>
+void SystemSim<_StateSpace>::updateVariables(){
     state_trans_ = arma::expmat(ss_->A() * dt_);
 }
 
-template <class SSpace>
-arma::mat SystemSim<SSpace>::signalCalc(){
+template <class _StateSpace>
+arma::mat SystemSim<_StateSpace>::signalCalc(){
+
     static arma::mat term1, term2, term3, term4, term5;
 
     term1 = state_trans_ * prev_state_;

@@ -101,7 +101,7 @@ def tf(_s, _A, _B, _C, _D):
     temp = (_s * np.eye(np.size(_A, 0)) - _A)
     return _C * np.linalg.inv(temp) * _B + _D
 
-def bodePlot(title, _A, _B, _C, _D):
+def bodePlot(title, _A, _B, _C, _D, color='yellow',show=True,sequel=False,linestyle='solid'):
     freq = 2.0j * np.pi * np.logspace(0,5)
     # print('Freq : {}'.format(freq))
     magnitude = []
@@ -117,25 +117,31 @@ def bodePlot(title, _A, _B, _C, _D):
         # print('Magnitude : {}'.format(magnitude_val))
         # print('Phase : {}'.format(phase_val))
 
-    plt.clf()
+    # plt.clf()
 
     plt.subplot(211)
-    plt.title(title)
-    plt.xscale('log')
+        
     # plt.yticks(np.arange(-150,150,step=25))
-    plt.ylabel('Magnitude (dB)')
-    plt.xlabel('Frequency (rad / sec)')
-    plt.grid(True)
-    plt.plot(np.imag(freq),magnitude)
+    dashes=[6,2]
+    if sequel == False:
+        plt.title(title)
+        plt.xscale('log')
+        plt.ylabel('Magnitude (dB)')
+        plt.xlabel('Frequency (rad / sec)')
+        plt.grid(True)
+        dashes=[1,0]
+    plt.plot(np.imag(freq), magnitude, color=color, linestyle=linestyle, dashes=dashes)
 
     plt.subplot(212)
-    plt.xscale('log')
-    plt.ylabel('Phase (Degree)')
-    plt.xlabel('Frequency (rad / sec)')
-    plt.grid(True)
-    plt.plot(np.imag(freq),phase)
+    if sequel == False:
+        plt.xscale('log')
+        plt.ylabel('Phase (Degree)')
+        plt.xlabel('Frequency (rad / sec)')
+        plt.grid(True)
+    plt.plot(np.imag(freq), phase, color=color, linestyle=linestyle, dashes=dashes)
 
-    plt.show()
+    if show == True:
+        plt.show()
 
 class LuenbergerObserver:
     def __init__(self):
@@ -298,34 +304,98 @@ def ssSimulation(title, _A, _B, _C, _D, _u):
 
 if __name__ == "__main__":    
 
-    plant = DCMotorOpenLoop(Bm, Jm, Ki, La, Kb, Ra)
-
-    bodePlot('DC Motor Response', plant.A(), plant.B(), plant.C(), plant.D())
+    plant = DCMotorOpenLoop(Bm, Jm, Ki, La, Kb, Ra)    
 
     # Perturb from -100 % -> 100 %
-    Bm_perturbation = Bm * (2 * random.random() - 1)
-    Jm_perturbation = Jm * (2 * random.random() - 1)
-    Ki_perturbation = Ki * (2 * random.random() - 1)
-    La_perturbation = La * (2 * random.random() - 1)
-    Kb_perturbation = Kb * (2 * random.random() - 1)
-    Ra_perturbation = Ra * (2 * random.random() - 1)
 
-    print('Perturbed by :')
-    print('Bm : {} %'.format((Bm_perturbation/Bm) * 100))
-    print('Jm : {} %'.format((Jm_perturbation/Jm) * 100))
-    print('Ki : {} %'.format((Ki_perturbation/Ki) * 100))
-    print('La : {} %'.format((La_perturbation/La) * 100))
-    print('Kb : {} %'.format((Kb_perturbation/Kb) * 100))
-    print('Ra : {} %'.format((Ra_perturbation/Ra) * 100))
+    plt.style.use('dark_background')
 
-    plant.perturbBm(Bm_perturbation)
-    plant.perturbJm(Jm_perturbation)
-    plant.perturbKi(Ki_perturbation)
-    plant.perturbLa(La_perturbation)
-    plant.perturbKb(Kb_perturbation)
-    plant.perturbRa(Ra_perturbation)
+    show = False
+    plt.clf()
+    bodePlot('Perturbed by Bm', plant.A(), plant.B(), plant.C(), plant.D(), show=False)
+    for i in range(0,10):        
+        Bm_perturbation = Bm * (2 * random.random() - 1)
+        plant.perturbBm(Bm_perturbation)
+        print('Bm : {} %'.format((Bm_perturbation/Bm) * 100))
+        if i == 9:
+            show = True
+        bodePlot('DC Motor Response', plant.A(), plant.B(), plant.C(), plant.D(),
+                 color='red', show=show, sequel=True, linestyle='dashed')
+        plant.unperturbAll()
 
-    bodePlot('Perturbed', plant.A(), plant.B(), plant.C(), plant.D()) 
+    show = False
+    plt.clf()
+    bodePlot('Perturbed by Jm', plant.A(), plant.B(), plant.C(), plant.D(), show=False)
+    for i in range(0,10):
+        Jm_perturbation = Jm * (2 * random.random() - 1)
+        plant.perturbJm(Jm_perturbation)
+        print('Jm : {} %'.format((Jm_perturbation/Jm) * 100))
+        if i == 9:
+            show = True
+        bodePlot('DC Motor Response', plant.A(), plant.B(), plant.C(), plant.D(),
+                 color='red', show=show, sequel=True, linestyle='dashed')
+        plant.unperturbAll()
+
+    show = False
+    plt.clf()
+    bodePlot('Perturbed by Ki', plant.A(), plant.B(), plant.C(), plant.D(), show=False)
+    for i in range(0,10):
+        Ki_perturbation = Ki * (2 * random.random() - 1)
+        plant.perturbKi(Ki_perturbation)
+        print('Ki : {} %'.format((Ki_perturbation/Ki) * 100))
+        if i == 9:
+            show = True
+        bodePlot('DC Motor Response', plant.A(), plant.B(), plant.C(), plant.D(),
+                 color='red', show=show, sequel=True, linestyle='dashed')
+        plant.unperturbAll()
+    
+    show = False
+    plt.clf()
+    bodePlot('Perturbed by La', plant.A(), plant.B(), plant.C(), plant.D(), show=False)
+    for i in range(0,10):
+        La_perturbation = La * (2 * random.random() - 1)
+        plant.perturbLa(La_perturbation)
+        print('La : {} %'.format((La_perturbation/La) * 100))
+        if i == 9:
+            show = True
+        bodePlot('DC Motor Response', plant.A(), plant.B(), plant.C(), plant.D(),
+                 color='red', show=show, sequel=True, linestyle='dashed')
+        plant.unperturbAll()
+
+    show = False
+    plt.clf()
+    bodePlot('Perturbed by Kb', plant.A(), plant.B(), plant.C(), plant.D(), show=False)
+    for i in range(0,10):
+        Kb_perturbation = Kb * (2 * random.random() - 1)
+        plant.perturbKb(Kb_perturbation)
+        print('Kb : {} %'.format((Kb_perturbation/Kb) * 100))
+        if i == 9:
+            show = True
+        bodePlot('DC Motor Response', plant.A(), plant.B(), plant.C(), plant.D(),
+                 color='red', show=show, sequel=True, linestyle='dashed')
+        plant.unperturbAll()
+    
+    show = False
+    plt.clf()
+    bodePlot('Perturbed by Ra', plant.A(), plant.B(), plant.C(), plant.D(), show=False)
+    for i in range(0,10):
+        Ra_perturbation = Ra * (2 * random.random() - 1) 
+        plant.perturbRa(Ra_perturbation)  
+        print('Ra : {} %'.format((Ra_perturbation/Ra) * 100)) 
+        if i == 9:
+            show = True
+        bodePlot('DC Motor Response', plant.A(), plant.B(), plant.C(), plant.D(),
+                 color='red', show=show, sequel=True, linestyle='dashed')
+        plant.unperturbAll()  
+
+    # print('Perturbed by :')
+    # print('Bm : {} %'.format((Bm_perturbation/Bm) * 100))
+    # print('Jm : {} %'.format((Jm_perturbation/Jm) * 100))
+    # print('Ki : {} %'.format((Ki_perturbation/Ki) * 100))
+    # print('La : {} %'.format((La_perturbation/La) * 100))
+    # print('Kb : {} %'.format((Kb_perturbation/Kb) * 100))
+    # print('Ra : {} %'.format((Ra_perturbation/Ra) * 100))
+
     # plant.unperturbAll()
 
     # u = 1

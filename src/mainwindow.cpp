@@ -16,17 +16,13 @@ MainWindow::MainWindow(QWidget *parent)
     , kb(.052)
     , ra(2.07)
     , ss_(&bm, &jm, &ki, &la, &kb, &ra)
-//    , obs_gain_({{ 101.0,     1.0},
-//                 {-311.9, -3143.4},
-//                 { 139.8,  1367.6}})
     , G_(&bm, &jm, &ki, &la, &kb, &ra)
 //    , sim_(3,2,2)
     , system_sim_(&ss_)
     , obs_gain_({{ .0, .0, .0},
                  { .0, .0, .0},
                  { .0, .0, .0}})
-    , observer_sim_(&ss_, obs_gain_)
-    , h_inf_(&ss_){
+    , observer_sim_(&ss_, obs_gain_){
 
     ui->setupUi(this);
 
@@ -96,6 +92,10 @@ MainWindow::MainWindow(QWidget *parent)
     ss_.C().print("C : ");
     ss_.D().print("D : ");
 
+    std::cout << "Ctrb : " << jacl::common::controlable(ss_.A(), ss_.B()) << std::endl;
+    std::cout << "Obsv : " << jacl::common::observable(ss_.A(), ss_.C()) << std::endl;
+
+
     //-- G Realization
     {
         GRealization::Formula A11, A12, A13;
@@ -108,9 +108,9 @@ MainWindow::MainWindow(QWidget *parent)
         GRealization::Formula B11, B12, B13, B14, B15, B16, B17, B18;
         B11 = B12 = B13 = B14 = B15 = B16 = B17 = B18 = JC(G_, .0);
         GRealization::Formula B21, B22, B23, B24, B25, B26, B27, B28;
-        B21 = B22 = B23 = JE(G_, -1.0/G_(iJm)); B24 = B25 = B26 = JC(G_, .0); B27 = JE(G_, -1.0/G_(iJm)); B28 = JC(G_, .0);
+        B21 = B22 = B23 = JE(G_, -1.0/G_(iJm)); B24 = B25 = B26 = B27 = JC(G_, .0); B28 = JE(G_, -1.0/G_(iJm));
         GRealization::Formula B31, B32, B33, B34, B35, B36, B37, B38;
-        B31 = B32 = B33 = JC(G_, .0); B34 = B35 = B36 = JE(G_, -1.0/G_(iLa)); B37 = JC(G_, .0); B38 = JE(G_, -1.0/G_(iLa));
+        B31 = B32 = B33 = JC(G_, .0); B34 = B35 = B36 = B37 = JE(G_, -1.0/G_(iLa)); B38 = JC(G_, .0);
 
         GRealization::Formula C11, C12, C13;
         C11 = JC(G_, .0); C12 = JC(G_, 1.0); C13 = JC(G_, .0);
@@ -193,10 +193,106 @@ MainWindow::MainWindow(QWidget *parent)
         G_.formulaToMat();
     }
 
-    G_.A().print("\nGA : ");
-    G_.B().print("GB : ");
-    G_.C().print("GC : ");
-    G_.D().print("GD : ");
+//    G_.A().print("\nGA : ");
+//    G_.B().print("GB : ");
+//    G_.C().print("GC : ");
+//    G_.D().print("GD : ");
+
+    //-- P-Delta Realization
+    {
+        PRealization::Formulas fA{
+            JC(P_, -1790), JC(P_, 945.2), JC(P_, -0.4491), JC(P_, 9.531), JC(P_, -0.6474), JC(P_, 0.02418), JC(P_, -4.527e-05), JC(P_, 4.543e-08), JC(P_, 8.589e-15),
+            JC(P_, 2266), JC(P_, -1537), JC(P_, -0.5102), JC(P_, 10.96), JC(P_, -0.7445), JC(P_, 0.02781), JC(P_, -5.206e-05), JC(P_, 5.225e-08), JC(P_, -1.226e-14),
+            JC(P_, -0.238), JC(P_, 0.313), JC(P_, -3136), JC(P_, 80.45), JC(P_, -5.465), JC(P_, 0.2041), JC(P_, -0.0003821), JC(P_, 3.835e-07), JC(P_, -3.118e-14),
+            JC(P_, -1.281), JC(P_, -1.065), JC(P_, 0.4703), JC(P_, -3128), JC(P_, 207.8), JC(P_, 0.009844), JC(P_, -1.843e-05), JC(P_, 1.85e-08), JC(P_, -5.121e-14),
+            JC(P_, 0.08699), JC(P_, 0.07231), JC(P_, -0.03195), JC(P_, 207.8), JC(P_, -77.96), JC(P_, 110.8), JC(P_, 1.252e-06), JC(P_, -1.256e-09), JC(P_, -1.43e-14),
+            JC(P_, -0.003249), JC(P_, -0.002701), JC(P_, 0.001193), JC(P_, -0.4271), JC(P_, 104.3), JC(P_, -180.3), JC(P_, 5.586), JC(P_, 4.693e-11), JC(P_, -1.897e-14),
+            JC(P_, 6.083e-06), JC(P_, 5.057e-06), JC(P_, -2.234e-06), JC(P_, 13.67), JC(P_, 189), JC(P_, -322.2), JC(P_, -161.8), JC(P_, 2.968), JC(P_, -7.243e-14),
+            JC(P_, -6.105e-09), JC(P_, -5.075e-09), JC(P_, 2.242e-09), JC(P_, -6.387), JC(P_, -88.26), JC(P_, 154.4), JC(P_, -12.19), JC(P_, -188.8), JC(P_, 3.215e-15),
+            JC(P_, 1.277e-14), JC(P_, -7.597e-15), JC(P_, -5.757e-16), JC(P_, -0.05278), JC(P_, -0.7943), JC(P_, -0.4598), JC(P_, -0.01586), JC(P_, -0.0002494), JC(P_, -187.4)
+        };
+
+        PRealization::Formulas fB{
+            JC(P_, 0.6773), JC(P_, -4.319e-18),
+            JC(P_, -0.4418), JC(P_, 2.803e-18),
+            JC(P_, 3.676), JC(P_, -1.545e-17),
+            JC(P_, -63.75), JC(P_, -0.001311),
+            JC(P_, 4.33), JC(P_, -0.01824),
+            JC(P_, -0.1617), JC(P_, 0.02794),
+            JC(P_, 0.0003028), JC(P_, -0.1938),
+            JC(P_, -3.039e-07), JC(P_, -0.4921),
+            JC(P_, -1.017e-15), JC(P_, -1.313)
+        };
+
+        PRealization::Formulas fC{
+            JC(P_, 0.0371), JC(P_, 0.03426), JC(P_, -7.107e-06), JC(P_, 0.05756), JC(P_, 0.8638), JC(P_, 0.5002), JC(P_, 0.01814), JC(P_, 0.002169), JC(P_, -0.004907),
+            JC(P_, -2.435e-05), JC(P_, 1.049e-05), JC(P_, 0.6569), JC(P_, 0.03607), JC(P_, -0.0252), JC(P_, 0.02546), JC(P_, 0.3908), JC(P_, 0.8316), JC(P_, 0.3932),
+            JC(P_, -0.5196), JC(P_, 0.3392), JC(P_, -2.416), JC(P_, 50.2), JC(P_, -3.427), JC(P_, 0.1587), JC(P_, -0.05068), JC(P_, 0.02228), JC(P_, -1.364e-15)
+        };
+
+        PRealization::Formulas fD{
+            JC(P_, .0), JC(P_, .0),
+            JC(P_, .0), JC(P_, .0),
+            JC(P_, .0), JC(P_, .0)
+        };
+
+        P_.setA(fA);
+        P_.setB(fB);
+        P_.setC(fC);
+        P_.setD(fD);
+        P_.formulaToMat();
+    }
+
+    //-- Realization of Inter-connection Matrix    
+    {
+        arma::mat temp1, temp2, temp3;
+        arma::mat zeros9x3(9,3,arma::fill::zeros);
+        arma::mat zeros9x2(9,2,arma::fill::zeros);
+        arma::mat zeros2x9(2,9,arma::fill::zeros);
+        arma::mat zeros3x3(3,3,arma::fill::zeros);
+        arma::mat zeros3x2(3,2,arma::fill::zeros);
+        arma::mat zeros2x3(2,3,arma::fill::zeros);
+        arma::mat zeros2x2(2,2,arma::fill::zeros);
+        arma::mat eye3x3(3,3,arma::fill::eye);
+        arma::mat eye2x2(2,2,arma::fill::eye);
+
+        temp1 = arma::join_horiz(zeros9x3, P_.B());
+        temp2 = arma::join_horiz(zeros9x3, temp1);
+        arma::mat B = arma::join_horiz(P_.B(), temp2);
+
+        temp1 = arma::join_vert(zeros2x9, -1.*P_.C());
+        arma::mat C = arma::join_vert(-1.*P_.C(), temp1);
+
+        temp1 = arma::join_horiz(zeros3x3, eye3x3);
+        temp2 = arma::join_horiz(zeros3x2, temp1);
+        temp3 = arma::join_horiz(zeros2x2, arma::join_horiz(zeros2x3, zeros2x3));
+        arma::mat D11 = arma::join_vert(temp2, temp3);
+
+        arma::mat D12 = arma::join_vert(zeros3x2, eye2x2);
+
+        temp1 = arma::join_horiz(-1.*eye3x3,eye3x3);
+        arma::mat D21 = arma::join_horiz(zeros3x2,temp1);
+        
+        arma::mat D22 = zeros3x2;
+
+        temp1 = arma::join_horiz(D11, D12);
+        temp2 = arma::join_horiz(D21, D22);
+        arma::mat D = arma::join_vert(temp1, temp2);
+
+        ICM_.setA(P_.A());
+        ICM_.setB(B);
+        ICM_.setC(C);
+        ICM_.setD(D);
+
+    }    
+
+    ICM_.A().print("ICM A : ");
+    ICM_.B().print("ICM B : ");
+    ICM_.C().print("ICM C : ");
+    ICM_.D().print("ICM D : ");
+
+    h_inf_ = new HInf(&ICM_);
+    // h_inf_->solve();
 
     //-- Test KautskyNichols
     arma::mat observer_K;

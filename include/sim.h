@@ -28,7 +28,7 @@ namespace jacl{
 namespace py = boost::python;
 namespace np = boost::python::numpy;
 
-template <class SSpace>
+template <class _StateSpace>
 class Sim{
 public:    
     Sim(std::size_t _n_signals);
@@ -98,8 +98,8 @@ protected:
 
 };
 
-template <class SSpace>
-Sim<SSpace>::Sim(std::size_t _n_signals)
+template <class _StateSpace>
+Sim<_StateSpace>::Sim(std::size_t _n_signals)
     : running_(true)
     , n_signals_(_n_signals)
     , d_time_(1e-4)
@@ -118,8 +118,8 @@ Sim<SSpace>::Sim(std::size_t _n_signals)
     }
 }
 
-template <class SSpace>
-Sim<SSpace>::~Sim(){
+template <class _StateSpace>
+Sim<_StateSpace>::~Sim(){
 
     boost::mutex::scoped_lock lk(running_mtx_);
     running_ = false;    
@@ -130,8 +130,8 @@ Sim<SSpace>::~Sim(){
 
 }
 
-template <class SSpace>
-int Sim<SSpace>::init(){
+template <class _StateSpace>
+int Sim<_StateSpace>::init(){
 
     if(!Py_IsInitialized())
         Py_Initialize();
@@ -166,8 +166,8 @@ int Sim<SSpace>::init(){
     return 0;
 }
 
-template <class SSpace>
-void Sim<SSpace>::process(){
+template <class _StateSpace>
+void Sim<_StateSpace>::process(){
 
     arma::mat pres_signal;
     auto t(.0);    
@@ -221,13 +221,13 @@ void Sim<SSpace>::process(){
 
 }
 
-template <class SSpace>
-void Sim<SSpace>::simulate(){
+template <class _StateSpace>
+void Sim<_StateSpace>::simulate(){
 
     AcquireGIL lk;
     try{
 
-        process_thread_ = boost::thread(boost::bind(&Sim<SSpace>::process, this));
+        process_thread_ = boost::thread(boost::bind(&Sim<_StateSpace>::process, this));
 
         sim_.attr("setTitle")(title_.c_str());
         sim_.attr("setDelay")(delay_);
@@ -241,8 +241,8 @@ void Sim<SSpace>::simulate(){
 
 }
 
-template <class SSpace>
-void Sim<SSpace>::setPlotName(std::initializer_list<std::string> _plot_name){
+template <class _StateSpace>
+void Sim<_StateSpace>::setPlotName(std::initializer_list<std::string> _plot_name){
 
     plot_name_.clear();
     plot_name_.insert(plot_name_.end(), _plot_name.begin(), _plot_name.end());

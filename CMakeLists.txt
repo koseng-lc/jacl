@@ -57,7 +57,9 @@ set_target_properties(simulator PROPERTIES SUFFIX .so)
 set_target_properties(simulator PROPERTIES PREFIX "")
 set_target_properties(simulator PROPERTIES LINKER_LANGUAGE CXX)
 
-# JACL Lib
+#-- JACL Lib
+
+# Physical Parameter
 add_library(physical_parameter include/physical_parameter.h)
 set_target_properties(physical_parameter PROPERTIES LINKER_LANGUAGE CXX)
 
@@ -69,17 +71,23 @@ target_link_libraries(state_space armadillo physical_parameter)
 # Transfer Matrix
 add_library(transfer_matrix include/transfer_matrix.h src/transfer_matrix.cpp)
 
+# Traits
+add_library(traits include/traits.h)
+set_target_properties(traits PROPERTIES LINKER_LANGUAGE CXX)
+
 # Linear Algebra
 add_library(linear_algebra include/linear_algebra.h)
 target_link_libraries(linear_algebra armadillo)
 set_target_properties(linear_algebra PROPERTIES LINKER_LANGUAGE CXX)
 
+# LTI Common
 add_library(lti_common include/lti_common.h)
-target_link_libraries(lti_common state_space)
+target_link_libraries(lti_common armadillo)
 set_target_properties(lti_common PROPERTIES LINKER_LANGUAGE CXX)
 
 # Observer
-add_library(observer include/observer.h src/observer.cpp)
+add_library(observer include/observer.h)
+set_target_properties(observer PROPERTIES LINKER_LANGUAGE CXX)
 
 # Simulator(more precisely is plotter)
 add_library(sim SHARED include/sim.h)
@@ -111,6 +119,11 @@ add_library(upper_lft include/upper_lft.h)
 target_link_libraries(upper_lft PUBLIC state_space lft)
 set_target_properties(upper_lft PROPERTIES LINKER_LANGUAGE CXX)
 
+# Lower LFT
+add_library(lower_lft include/lower_lft.h)
+target_link_libraries(lower_lft PUBLIC state_space lft)
+set_target_properties(lower_lft PROPERTIES LINKER_LANGUAGE CXX)
+
 # Pole Placement
 add_library(pole_placement include/pole_placement.h)
 target_link_libraries(pole_placement Boost::system Boost::thread Boost::chrono)
@@ -123,7 +136,7 @@ set_target_properties(are PROPERTIES LINKER_LANGUAGE CXX)
 
 # H-infinity Synthesis
 add_library(h_infinity_synthesis include/h_infinity_synthesis.h)
-target_link_libraries(h_infinity_synthesis state_space)
+target_link_libraries(h_infinity_synthesis upper_lft are lti_common)
 set_target_properties(h_infinity_synthesis PROPERTIES LINKER_LANGUAGE CXX)
 
 # System Simulator
@@ -139,7 +152,9 @@ set_target_properties(system_sim PROPERTIES LINKER_LANGUAGE CXX)
 # JACL
 add_library(jacl include/jacl)
 set_target_properties(jacl PROPERTIES LINKER_LANGUAGE CXX)
-target_link_libraries(jacl state_space transfer_matrix simulator sim)
+target_link_libraries(jacl state_space transfer_matrix simulator sim h_infinity_synthesis)
+
+#-- End of JACL Lib part
 
 # Test
 

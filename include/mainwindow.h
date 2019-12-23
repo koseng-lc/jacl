@@ -116,7 +116,10 @@ private:
 
     StateSpace ss_;
 //    jacl::Simulator sim_;
-    jacl::SystemSim<StateSpace> system_sim_;
+    jacl::SystemSim<StateSpace> system_sim_;    
+
+    arma::mat::fixed<3, 3> obs_gain_;
+    jacl::ObserverSim<StateSpace> observer_sim_;
 
     using GRealization =
         jacl::StateSpace<3, 8, 9,
@@ -129,10 +132,14 @@ private:
 
     GRealization G_;
 
-    arma::mat::fixed<3, 3> obs_gain_;
-    jacl::ObserverSim<StateSpace> observer_sim_;
+    using PRealization = jacl::StateSpace<9, 2, 3>;
+    PRealization P_;
 
-    jacl::synthesis::Hinf<StateSpace, 1> h_inf_;
+    using InterConnMat = jacl::StateSpace<9, 10, 8>;
+    InterConnMat ICM_;
+
+    using HInf = jacl::synthesis::Hinf<InterConnMat, 5, 8>;
+    HInf* h_inf_;
 
 private Q_SLOTS:
     void perturbAct();

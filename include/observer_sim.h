@@ -10,10 +10,10 @@
 
 namespace jacl{
 
-template <class SSpace>
-class ObserverSim: public Sim<SSpace>{
+template <class _StateSpace>
+class ObserverSim: public Sim<_StateSpace>{
 public:
-    ObserverSim(SSpace* _ss, const arma::mat& _K);
+    ObserverSim(_StateSpace* _ss, const arma::mat& _K);
     ~ObserverSim();
 
     void setInput(const arma::mat& _in);
@@ -30,30 +30,30 @@ protected:
     arma::mat signalCalc();
 
 private:
-    Observer<SSpace> observer_;
+    Observer<_StateSpace> observer_;
 
 };
 
-template <class SSpace>
-ObserverSim<SSpace>::ObserverSim(SSpace* _ss, const arma::mat& _K)
-    : Sim<SSpace >(_ss->A().n_rows + _ss->C().n_rows) // State and ouputs only
+template <class _StateSpace>
+ObserverSim<_StateSpace>::ObserverSim(_StateSpace* _ss, const arma::mat& _K)
+    : Sim<_StateSpace >(_ss->A().n_rows + _ss->C().n_rows) // State and ouputs only
     , observer_(_ss, _K){
 
 }
 
-template <class SSpace>
-ObserverSim<SSpace>::~ObserverSim(){
+template <class _StateSpace>
+ObserverSim<_StateSpace>::~ObserverSim(){
 
 }
 
-template <class SSpace>
-void ObserverSim<SSpace>::setInput(const arma::mat& _in){
+template <class _StateSpace>
+void ObserverSim<_StateSpace>::setInput(const arma::mat& _in){
 
     observer_.setInput(_in);
 }
 
-template <class SSpace>
-arma::mat ObserverSim<SSpace>::signalCalc(){
+template <class _StateSpace>
+arma::mat ObserverSim<_StateSpace>::signalCalc(){
     return observer_.calcStateEst();
 }
 
