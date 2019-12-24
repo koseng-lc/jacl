@@ -87,11 +87,7 @@ bool Hinf<_StateSpace,
     performance_size,
     perturbation_size>::checkAssumption1(){
 
-    llft_.A().print("A : ");
-    llft_.B2().print("B2 : ");
-    llft_.C2().print("C2 : ");
-
-    bool ctrb = common::controlable(llft_.A(), llft_.B2());
+    bool ctrb = common::stabilizable(llft_.A(), llft_.B2());//common::controlable(llft_.A(), llft_.B2());
     bool obsv = common::observable(llft_.A(), llft_.C2());
     std::cout << "Assumption 1 : " << std::endl;
     std::cout << std::boolalpha << ctrb << " ; " << obsv << std::endl;
