@@ -286,13 +286,13 @@ MainWindow::MainWindow(QWidget *parent)
 
     }    
 
-    ICM_.A().print("ICM A : ");
-    ICM_.B().print("ICM B : ");
-    ICM_.C().print("ICM C : ");
-    ICM_.D().print("ICM D : ");
+//    ICM_.A().print("ICM A : ");
+//    ICM_.B().print("ICM B : ");
+//    ICM_.C().print("ICM C : ");
+//    ICM_.D().print("ICM D : ");
 
     h_inf_ = new HInf(&ICM_);
-    // h_inf_->solve();
+    h_inf_->solve();
 
     //-- Test KautskyNichols
     arma::mat observer_K;

@@ -23,8 +23,7 @@ template <class _StateSpace,
 class Hinf{
 public:
     template<typename T = _StateSpace,
-             typename std::enable_if<
-               traits::is_state_space<T>::value>::type* = nullptr>
+             typename std::enable_if<traits::is_state_space<T>::value>::type* = nullptr>
     Hinf(T* _ss)
         : ss_(_ss)
         , llft_(ss_)
@@ -41,11 +40,14 @@ public:
 private:
     _StateSpace* ss_;
 
+    static constexpr auto INPUT_SIZE{_StateSpace::n_inputs - perturbation_size};
+    static constexpr auto OUTPUT_SIZE{_StateSpace::n_outputs - performance_size};
+
     using LLFT = LowerLFT<_StateSpace,
                           performance_size,
                           perturbation_size,
-                          _StateSpace::n_outputs,
-                          _StateSpace::n_inputs>;
+                          OUTPUT_SIZE,
+                          INPUT_SIZE>;
 
     LLFT llft_;
 
@@ -85,6 +87,10 @@ bool Hinf<_StateSpace,
     performance_size,
     perturbation_size>::checkAssumption1(){
 
+    llft_.A().print("A : ");
+    llft_.B2().print("B2 : ");
+    llft_.C2().print("C2 : ");
+
     bool ctrb = common::controlable(llft_.A(), llft_.B2());
     bool obsv = common::observable(llft_.A(), llft_.C2());
     std::cout << "Assumption 1 : " << std::endl;
@@ -100,19 +106,16 @@ bool Hinf<_StateSpace,
     perturbation_size>::checkAssumption2(){
 
     bool ok(false); //-- RVO
-    arma::mat I_in(ss_->numInputs(), ss_->numInputs(), arma::fill::eye);
-    arma::mat expected_D12(
-                arma::join_vert(
-                    arma::mat(performance_size - ss_->numInputs(), ss_->numInputs(), arma::fill::zeros),
-                    I_in));
+    arma::mat I_in(INPUT_SIZE, INPUT_SIZE, arma::fill::eye);
+    arma::mat expected_D12 = arma::join_vert(arma::mat(performance_size, INPUT_SIZE, arma::fill::zeros), I_in);
 
-    if(performance_size > ss_->numInputs()){
+    if(performance_size > INPUT_SIZE){
         if(arma::approx_equal(llft_.D12(), expected_D12, "absdiff", .0)){
             ok = true;
         }else{
             //-- do normalization here using SVD
         }
-    }else if(performance_size == ss_->numInputs()){
+    }else if(performance_size == INPUT_SIZE){
         if(arma::approx_equal(llft_.D12(), I_in, "absdiff", .0)){
             std::cout << "[Hinf] Special cases trigerred !!!" << std::endl;
             //-- do special cases here
@@ -124,20 +127,25 @@ bool Hinf<_StateSpace,
         ok = false;
     }
 
-    bool ok2(false); //-- RVO
-    arma::mat I_out(ss_->numOutputs(), ss_->numOutputs(), arma::fill::eye);
-    arma::mat expected_D21(
-                arma::join_horiz(
-                    arma::mat(ss_->numOutputs(), perturbation_size - ss_->numOutputs(), arma::fill::zeros),
-                    I_out));
+    arma::mat U, V;
+    arma::vec s;
+    arma::svd(U,s,V,llft_.D12());
 
-    if(perturbation_size > ss_->numOutputs()){
+    U.print("U : ");
+    s.print("s : ");
+    V.print("V : ");
+
+    bool ok2(false); //-- RVO
+    arma::mat I_out(OUTPUT_SIZE, OUTPUT_SIZE, arma::fill::eye);
+    arma::mat expected_D21 = arma::join_horiz(arma::mat(OUTPUT_SIZE, perturbation_size, arma::fill::zeros), I_out);
+
+    if(perturbation_size > OUTPUT_SIZE){
         if(arma::approx_equal(llft_.D12(), expected_D21, "absdiff", .0)){
             ok2 = true;
         }else{
             //-- do normalization here using SVD
         }
-    }else if(perturbation_size == ss_->numOutputs()){
+    }else if(perturbation_size == OUTPUT_SIZE){
         if(arma::approx_equal(llft_.D12(), I_out, "absdiff", .0)){
             std::cout << "[Hinf] Special cases trigerred !!!" << std::endl;
             //-- do special cases here

@@ -1,13 +1,15 @@
 #
 # JACL CMake
 #
+
 cmake_minimum_required(VERSION 2.8.3)
 project(control_sim)
 
 add_compile_options(-std=c++14)
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+#message("${CMAKE_CXX_FLAGS}")
 
 # QT
-
 # Prevent Qt keywords with Python
 ADD_DEFINITIONS(-DQT_NO_KEYWORDS)
 
