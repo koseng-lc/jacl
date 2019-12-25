@@ -92,7 +92,7 @@ MainWindow::MainWindow(QWidget *parent)
     ss_.C().print("C : ");
     ss_.D().print("D : ");
 
-    std::cout << "Ctrb : " << jacl::common::controlable(ss_.A(), ss_.B()) << std::endl;
+    std::cout << "Ctrb : " << jacl::common::controllable(ss_.A(), ss_.B()) << std::endl;
     std::cout << "Obsv : " << jacl::common::observable(ss_.A(), ss_.C()) << std::endl;
 
 

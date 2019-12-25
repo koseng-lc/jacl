@@ -12,7 +12,7 @@ namespace jacl{
 
 namespace common{
 
-static bool controlable(const arma::mat& _A, const arma::mat& _B){
+static bool controllable(const arma::mat& _A, const arma::mat& _B){
     //-- must be square matrix
     assert(_A.n_rows == _A.n_cols);
     //-- must be compatible with A
@@ -41,9 +41,8 @@ static bool stabilizable(const arma::mat& _A, const arma::mat& _B){
     arma::cx_vec eigval;
     arma::cx_mat eigvec;
     arma::eig_gen(eigval, eigvec, _A);
-    eigval.print("EigVal : ");
-    eigvec.print("EigVec: ");
-
+//    eigval.print("EigVal : ");
+//    eigvec.print("EigVec: ");
     arma::vec eigval_re = arma::real(eigval);
 
     arma::cx_mat temp;
@@ -84,7 +83,31 @@ static bool observable(const arma::mat& _A, const arma::mat& _C){
 }
 
 static bool detectability(const arma::mat& _A, const arma::mat& _C){
+    //-- must be square matrix
+    assert(_A.n_rows == _A.n_cols);
+    //-- must be compatible with A
+    assert(_C.n_cols == _A.n_cols);
 
+    arma::cx_vec eigval;
+    arma::cx_mat eigvec;
+    arma::eig_gen(eigval, eigvec, _A);
+    arma::vec eigval_re = arma::real(eigval);
+
+    arma::cx_mat temp;
+    arma::cx_mat eye(arma::size(_A), arma::fill::eye);
+    arma::cx_mat cx_C( arma::size(_C) );
+    cx_C.set_real(_C);
+    bool ok(true);
+    for(int i(0); i < eigval_re.n_rows; i++){
+        if(eigval_re(i) > .0){
+            temp = _A - eigval(i)*eye;
+            if(arma::rank( arma::join_vert(temp, cx_C) ) < _A.n_cols){
+                ~ok;
+                break;
+            }
+        }
+    }
+    return ok;
 }
 
 }
