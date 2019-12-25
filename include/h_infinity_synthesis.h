@@ -101,15 +101,37 @@ bool Hinf<_StateSpace,
     performance_size,
     perturbation_size>::checkAssumption2(){
 
+    arma::mat U1,R1;
+    arma::mat U2,R2;
+
     bool ok(false); //-- RVO
     arma::mat I_in(INPUT_SIZE, INPUT_SIZE, arma::fill::eye);
-    arma::mat expected_D12 = arma::join_vert(arma::mat(performance_size, INPUT_SIZE, arma::fill::zeros), I_in);
+    arma::mat expected_D12 = arma::join_vert(arma::mat(performance_size - INPUT_SIZE, INPUT_SIZE, arma::fill::zeros), I_in);
 
     if(performance_size > INPUT_SIZE){
-        if(arma::approx_equal(llft_.D12(), expected_D12, "absdiff", .0)){
+        if(!arma::approx_equal(llft_.D12(), expected_D12, "absdiff", .0)){
             ok = true;
         }else{
             //-- do normalization here using SVD
+
+            arma::mat zeros1(performance_size - INPUT_SIZE, INPUT_SIZE, arma::fill::zeros);
+            arma::mat zeros2(INPUT_SIZE, performance_size - INPUT_SIZE, arma::fill::zeros);
+            arma::mat eye(performance_size - INPUT_SIZE, performance_size - INPUT_SIZE, arma::fill::eye);
+
+            arma::mat U, V;
+            arma::vec s;
+            arma::svd(U,s,V,llft_.D12());
+
+            arma::mat S = arma::diagmat(s);
+            arma::mat recip_S(arma::size(S), arma::fill::zeros);
+            for(int i(0); i < S.n_rows; i++){
+                recip_S(i, i) = 1./S(i,i);
+            }
+
+            arma::mat T = arma::join_vert(
+                            arma::join_horiz(zeros1, eye),
+                            arma::join_horiz(recip_S, zeros2)
+                        );
         }
     }else if(performance_size == INPUT_SIZE){
         if(arma::approx_equal(llft_.D12(), I_in, "absdiff", .0)){
@@ -123,23 +145,40 @@ bool Hinf<_StateSpace,
         ok = false;
     }
 
-    arma::mat U, V;
-    arma::vec s;
-    arma::svd(U,s,V,llft_.D12());
-
-    U.print("U : ");
-    s.print("s : ");
-    V.print("V : ");
-
     bool ok2(false); //-- RVO
     arma::mat I_out(OUTPUT_SIZE, OUTPUT_SIZE, arma::fill::eye);
-    arma::mat expected_D21 = arma::join_horiz(arma::mat(OUTPUT_SIZE, perturbation_size, arma::fill::zeros), I_out);
+    arma::mat expected_D21 = arma::join_horiz(arma::mat(OUTPUT_SIZE, perturbation_size - OUTPUT_SIZE, arma::fill::zeros), I_out);
 
     if(perturbation_size > OUTPUT_SIZE){
         if(arma::approx_equal(llft_.D12(), expected_D21, "absdiff", .0)){
             ok2 = true;
         }else{
             //-- do normalization here using SVD
+
+            arma::mat zeros1(OUTPUT_SIZE, perturbation_size - OUTPUT_SIZE, arma::fill::zeros);
+            arma::mat zeros2(perturbation_size - OUTPUT_SIZE, OUTPUT_SIZE, arma::fill::zeros);
+            arma::mat eye(perturbation_size - OUTPUT_SIZE, perturbation_size - OUTPUT_SIZE, arma::fill::eye);
+
+            arma::mat U, V;
+            arma::vec s;
+            arma::svd(U,s,V,llft_.D21());
+
+            arma::mat S = arma::diagmat(s);
+            arma::mat recip_S(arma::size(S), arma::fill::zeros);
+            for(int i(0); i < S.n_rows; i++){
+                recip_S(i, i) = 1./S(i,i);
+            }
+
+            arma::mat T = arma::join_vert(
+                            arma::join_horiz(zeros1, recip_S),
+                            arma::join_horiz(eye, zeros2)
+                        );
+
+//            arma::mat R = arma::inv(T) * V.t();
+//            U.print("U : ");
+//            V.print("V : ");
+//            R.print("R : ");
+//            arma::mat test = R.t() * R;test.print("TEST : ");
         }
     }else if(perturbation_size == OUTPUT_SIZE){
         if(arma::approx_equal(llft_.D12(), I_out, "absdiff", .0)){
