@@ -20,11 +20,11 @@ namespace{
 template <class _StateSpace,
           std::size_t performance_size,
           std::size_t perturbation_size>
-class Hinf{
+class HInf{
 public:
     template<typename T = _StateSpace,
              typename std::enable_if<traits::is_state_space<T>::value>::type* = nullptr>
-    Hinf(T* _ss)
+    HInf(T* _ss)
         : ss_(_ss)
         , llft_(ss_)
         , are_solver1_(ss_)
@@ -32,7 +32,7 @@ public:
 
     }    
 
-    ~Hinf();
+    ~HInf();
 
     void init();
     void solve();
@@ -65,16 +65,16 @@ private:
 template <class _StateSpace,
           std::size_t performance_size,
           std::size_t perturbation_size>
-Hinf<_StateSpace,
+HInf<_StateSpace,
     performance_size,
-    perturbation_size>::~Hinf(){
+    perturbation_size>::~HInf(){
 
 }
 
 template <class _StateSpace,
           std::size_t performance_size,
           std::size_t perturbation_size>
-void Hinf<_StateSpace,
+void HInf<_StateSpace,
     performance_size,
     perturbation_size>::init(){
 
@@ -83,12 +83,12 @@ void Hinf<_StateSpace,
 template <class _StateSpace,
           std::size_t performance_size,
           std::size_t perturbation_size>
-bool Hinf<_StateSpace,
+bool HInf<_StateSpace,
     performance_size,
     perturbation_size>::checkAssumption1(){
 
-    bool ctrb = common::stabilizable(llft_.A(), llft_.B2());//common::controlable(llft_.A(), llft_.B2());
-    bool obsv = common::detectability(llft_.A(), llft_.C2());//common::observable(llft_.A(), llft_.C2());
+    bool ctrb = common::stabilizable(llft_.A(), llft_.B2());
+    bool obsv = common::detectability(llft_.A(), llft_.C2());
     std::cout << "Assumption 1 : " << std::endl;
     std::cout << std::boolalpha << ctrb << " ; " << obsv << std::endl;
     return ctrb & obsv;
@@ -97,13 +97,9 @@ bool Hinf<_StateSpace,
 template <class _StateSpace,
           std::size_t performance_size,
           std::size_t perturbation_size>
-bool Hinf<_StateSpace,
+bool HInf<_StateSpace,
     performance_size,
     perturbation_size>::checkAssumption2(){
-
-    //-- Weight Matrix for normalization
-    arma::mat U1,R1;
-    arma::mat U2,R2;
 
     bool ok(true); //-- RVO
     arma::mat I_in(INPUT_SIZE, INPUT_SIZE, arma::fill::eye);
@@ -133,10 +129,21 @@ bool Hinf<_StateSpace,
                             arma::join_horiz(zeros1, eye),
                             arma::join_horiz(recip_S, zeros2)
                         );
+
+            arma::mat U1 = U*arma::inv(T);
+            arma::mat U1_t = U1.t();
+            arma::mat R1 = V.t();
+            arma::mat R1_inv = arma::inv(R1);
+
+            llft_.B2() = llft_.B2()*R1_inv;
+            llft_.C1() = U1_t*llft_.C1();
+            llft_.D11() = U1_t*llft_.D11();
+            llft_.D12() = U1_t*llft_.D12()*R1_inv;
+            llft_.D22() = llft_.D22()*R1_inv;
         }
     }else if(performance_size == INPUT_SIZE){
         if(arma::approx_equal(llft_.D12(), I_in, "absdiff", .0)){
-            std::cout << "[Hinf] Special cases trigerred !!!" << std::endl;
+            std::cout << "[HInf] Special cases trigerred !!!" << std::endl;
         }else{
             //-- do normalization here
         }
@@ -173,7 +180,18 @@ bool Hinf<_StateSpace,
                             arma::join_horiz(eye, zeros2)
                         );
 
-            //-- TODO : the matrix isn't unitary ?
+            arma::mat U2 = arma::inv(T)*V.t();
+            arma::mat U2_t = U2.t();
+            arma::mat R2 = U;
+            arma::mat R2_inv = arma::inv(R2);
+
+            llft_.B1() = llft_.B1()*U2_t;
+            llft_.D11() = llft_.D11()*U2_t;
+            llft_.C2() = R2_inv*llft_.C2();
+            llft_.D21() = R2_inv*llft_.D21()*U2_t;
+            llft_.D22() = R2_inv*llft_.D22();
+
+            //-- TODO : the matrix that isn't unitary ?
 //            arma::mat R = arma::inv(T) * V.t();
 //            U.print("U : ");
 //            V.print("V : ");
@@ -182,7 +200,7 @@ bool Hinf<_StateSpace,
         }
     }else if(perturbation_size == OUTPUT_SIZE){
         if(arma::approx_equal(llft_.D12(), I_out, "absdiff", .0)){
-            std::cout << "[Hinf] Special cases trigerred !!!" << std::endl;
+            std::cout << "[HInf] Special cases trigerred !!!" << std::endl;
             //-- do special cases here
         }else{
             //-- do normalization here
@@ -200,7 +218,7 @@ bool Hinf<_StateSpace,
 template <class _StateSpace,
           std::size_t performance_size,
           std::size_t perturbation_size>
-bool Hinf<_StateSpace,
+bool HInf<_StateSpace,
     performance_size,
     perturbation_size>::checkAssumption3(){
 
@@ -235,7 +253,7 @@ bool Hinf<_StateSpace,
 template <class _StateSpace,
           std::size_t performance_size,
           std::size_t perturbation_size>
-bool Hinf<_StateSpace,
+bool HInf<_StateSpace,
     performance_size,
     perturbation_size>::checkAssumption4(){
 
@@ -264,7 +282,7 @@ bool Hinf<_StateSpace,
 template <class _StateSpace,
           std::size_t performance_size,
           std::size_t perturbation_size>
-bool Hinf<_StateSpace,
+bool HInf<_StateSpace,
     performance_size,
     perturbation_size>::checkAllAssumption(){
     return checkAssumption1()
@@ -276,7 +294,7 @@ bool Hinf<_StateSpace,
 template <class _StateSpace,
           std::size_t performance_size,
           std::size_t perturbation_size>
-void Hinf<_StateSpace,
+void HInf<_StateSpace,
     performance_size,
     perturbation_size>::solve(){
 

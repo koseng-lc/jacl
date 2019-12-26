@@ -138,7 +138,7 @@ private:
     using InterConnMat = jacl::StateSpace<9, 10, 8>;
     InterConnMat ICM_;
 
-    using HInf = jacl::synthesis::Hinf<InterConnMat, 5, 8>;
+    using HInf = jacl::synthesis::HInf<InterConnMat, 5, 8>;
     HInf* h_inf_;
 
 private Q_SLOTS:

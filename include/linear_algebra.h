@@ -26,7 +26,7 @@ static void QRDecomp(const arma::mat& in, arma::mat* Q, arma::mat* R){
 //    int n_rank = arma::rank(in);
     arma::mat u;
 
-    //Gram-Schmidt Process
+    //-- Gram-Schmidt Process
     auto norm(.0);
     arma::mat normalized_u;
     for(int i(0); i < in.n_cols; i++){
@@ -38,7 +38,7 @@ static void QRDecomp(const arma::mat& in, arma::mat* Q, arma::mat* R){
         Q->col(i) = e[i];
     }
 
-    for(int r(0); r < in.n_cols; r++){ // limit row iteration
+    for(int r(0); r < in.n_cols; r++){ //-- limit row iteration
         for(int c(r); c < in.n_cols; c++){
             (*R)(r, c) = arma::dot(in.col(c), Q->col(r));
         }
