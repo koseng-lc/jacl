@@ -12,6 +12,11 @@ namespace jacl{
 
 namespace common{
 
+enum PBHTestType{
+    Column,
+    Row
+};
+
 static bool controllable(const arma::mat& _A, const arma::mat& _B){
     //-- must be square matrix
     assert(_A.n_rows == _A.n_cols);
@@ -41,8 +46,6 @@ static bool stabilizable(const arma::mat& _A, const arma::mat& _B){
     arma::cx_vec eigval;
     arma::cx_mat eigvec;
     arma::eig_gen(eigval, eigvec, _A);
-//    eigval.print("EigVal : ");
-//    eigvec.print("EigVec: ");
     arma::vec eigval_re = arma::real(eigval);
 
     arma::cx_mat temp;
@@ -52,6 +55,35 @@ static bool stabilizable(const arma::mat& _A, const arma::mat& _B){
     bool ok(true);
     for(int i(0); i < eigval_re.n_rows; i++){
         if(eigval_re(i) > .0){
+            temp = _A - eigval(i)*eye;
+            if(arma::rank( arma::join_horiz(temp, cx_B) ) < _A.n_rows){
+                ~ok;
+                break;
+            }
+        }
+    }
+
+    return ok;
+}
+
+static bool hasUncontrollableModeInImAxis(const arma::mat& _A, const arma::mat& _B){
+    //-- must be square matrix
+    assert(_A.n_rows == _A.n_cols);
+    //-- must be compatible with A
+    assert(_B.n_rows == _A.n_rows);
+
+    arma::cx_vec eigval;
+    arma::cx_mat eigvec;
+    arma::eig_gen(eigval, eigvec, _A);
+    arma::vec eigval_re = arma::real(eigval);
+
+    arma::cx_mat temp;
+    arma::cx_mat eye(arma::size(_A), arma::fill::eye);
+    arma::cx_mat cx_B( arma::size(_B) );
+    cx_B.set_real(_B);
+    bool ok(true);
+    for(int i(0); i < eigval_re.n_rows; i++){
+        if(eigval_re(i) == .0){
             temp = _A - eigval(i)*eye;
             if(arma::rank( arma::join_horiz(temp, cx_B) ) < _A.n_rows){
                 ~ok;
@@ -100,6 +132,34 @@ static bool detectability(const arma::mat& _A, const arma::mat& _C){
     bool ok(true);
     for(int i(0); i < eigval_re.n_rows; i++){
         if(eigval_re(i) > .0){
+            temp = _A - eigval(i)*eye;
+            if(arma::rank( arma::join_vert(temp, cx_C) ) < _A.n_cols){
+                ~ok;
+                break;
+            }
+        }
+    }
+    return ok;
+}
+
+static bool noUnobservableModeInImAxis(const arma::mat& _A, const arma::mat& _C){
+    //-- must be square matrix
+    assert(_A.n_rows == _A.n_cols);
+    //-- must be compatible with A
+    assert(_C.n_cols == _A.n_cols);
+
+    arma::cx_vec eigval;
+    arma::cx_mat eigvec;
+    arma::eig_gen(eigval, eigvec, _A);
+    arma::vec eigval_re = arma::real(eigval);
+
+    arma::cx_mat temp;
+    arma::cx_mat eye(arma::size(_A), arma::fill::eye);
+    arma::cx_mat cx_C( arma::size(_C) );
+    cx_C.set_real(_C);
+    bool ok(true);
+    for(int i(0); i < eigval_re.n_rows; i++){
+        if(eigval_re(i) == .0){
             temp = _A - eigval(i)*eye;
             if(arma::rank( arma::join_vert(temp, cx_C) ) < _A.n_cols){
                 ~ok;

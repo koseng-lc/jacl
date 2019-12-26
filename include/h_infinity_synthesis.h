@@ -202,6 +202,29 @@ template <class _StateSpace,
 bool Hinf<_StateSpace,
     performance_size,
     perturbation_size>::checkAssumption3(){
+
+    /*
+     * Based on Lemma 12.6 in Essential Robust Control
+     * This condition is equivalent with ((I-D*inv(R)*conj(D))*C, A-B*inv(R)*conj(D)*C) has no
+     * unobservable modes on the jw axis
+     */
+
+    arma::mat D12_conj( arma::conj(llft_.D12()) );
+    arma::mat R( D12_conj*llft_.D12() );
+    arma::mat R_inv( arma::inv(R) );
+    arma::mat I(performance_size, performance_size, arma::fill::eye);
+
+    arma::mat temp1, temp2;
+    temp1 = llft_.D12()*R_inv*D12_conj;
+    temp2 = I - temp1;
+    arma::mat C = temp2*llft_.C1();
+
+    temp1 = llft_.B2()*R_inv*D12_conj;
+    temp2 = temp1*llft_.C1();
+    arma::mat A = llft_.A() - temp2;
+
+    //-- do PBH test here
+
     return true;
 }
 
@@ -211,6 +234,21 @@ template <class _StateSpace,
 bool Hinf<_StateSpace,
     performance_size,
     perturbation_size>::checkAssumption4(){
+
+    arma::mat D21_conj( arma::conj(llft_.D21()) );
+    arma::mat R( llft_.D21()*D21_conj );
+    arma::mat R_inv( arma::inv(R) );
+    arma::mat I(perturbation_size, perturbation_size, arma::fill::eye);
+
+    arma::mat temp1, temp2;
+    temp1 = llft_.B1()*D21_conj*R_inv;
+    temp2 = temp1*llft_.C2();
+    arma::mat A = llft_.A() - temp2;
+
+    temp1 = D21_conj*R_inv*llft_.D21();
+    temp2 = llft_.B1()*temp1;
+    arma::mat B = llft_.B1()*temp2;
+
     return true;
 }
 
