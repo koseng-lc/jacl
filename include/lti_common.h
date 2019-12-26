@@ -81,7 +81,7 @@ static bool hasUncontrollableModeInImAxis(const arma::mat& _A, const arma::mat& 
     arma::cx_mat eye(arma::size(_A), arma::fill::eye);
     arma::cx_mat cx_B( arma::size(_B) );
     cx_B.set_real(_B);
-    bool ok(true);
+    bool ok(false);
     for(int i(0); i < eigval_re.n_rows; i++){
         if(eigval_re(i) == .0){
             temp = _A - eigval(i)*eye;
@@ -142,7 +142,7 @@ static bool detectability(const arma::mat& _A, const arma::mat& _C){
     return ok;
 }
 
-static bool noUnobservableModeInImAxis(const arma::mat& _A, const arma::mat& _C){
+static bool hasUnobservableModeInImAxis(const arma::mat& _A, const arma::mat& _C){
     //-- must be square matrix
     assert(_A.n_rows == _A.n_cols);
     //-- must be compatible with A
@@ -157,7 +157,7 @@ static bool noUnobservableModeInImAxis(const arma::mat& _A, const arma::mat& _C)
     arma::cx_mat eye(arma::size(_A), arma::fill::eye);
     arma::cx_mat cx_C( arma::size(_C) );
     cx_C.set_real(_C);
-    bool ok(true);
+    bool ok(false);
     for(int i(0); i < eigval_re.n_rows; i++){
         if(eigval_re(i) == .0){
             temp = _A - eigval(i)*eye;

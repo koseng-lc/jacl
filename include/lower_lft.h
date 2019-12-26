@@ -20,15 +20,23 @@ public:
     inline arma::mat const& A() const{ return this->ss_->A(); }
 
     inline arma::mat const& B1() const{ return B1_; }
+    inline arma::mat& B1(){ return B1_; }
     inline arma::mat const& B2() const{ return B2_; }
+    inline arma::mat& B2(){ return B2_; }
 
     inline arma::mat const& C1() const{ return C1_; }
+    inline arma::mat& C1(){ return C1_; }
     inline arma::mat const& C2() const{ return C2_; }
+    inline arma::mat& C2(){ return C2_; }
 
     inline arma::mat const& D11() const{ return D11_; }
+    inline arma::mat& D11(){ return D11_; }
     inline arma::mat const& D12() const{ return D12_; }
+    inline arma::mat& D12(){ return D12_; }
     inline arma::mat const& D21() const{ return D21_; }
+    inline arma::mat& D21(){ return D21_; }
     inline arma::mat const& D22() const{ return D22_; }
+    inline arma::mat& D22(){ return D22_; }
 
     inline arma::mat const& delta() const{ return delta_; }
     arma::mat& delta(){ return delta_; }

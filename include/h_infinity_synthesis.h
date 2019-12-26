@@ -101,16 +101,17 @@ bool Hinf<_StateSpace,
     performance_size,
     perturbation_size>::checkAssumption2(){
 
+    //-- Weight Matrix for normalization
     arma::mat U1,R1;
     arma::mat U2,R2;
 
-    bool ok(false); //-- RVO
+    bool ok(true); //-- RVO
     arma::mat I_in(INPUT_SIZE, INPUT_SIZE, arma::fill::eye);
     arma::mat expected_D12 = arma::join_vert(arma::mat(performance_size - INPUT_SIZE, INPUT_SIZE, arma::fill::zeros), I_in);
 
     if(performance_size > INPUT_SIZE){
         if(!arma::approx_equal(llft_.D12(), expected_D12, "absdiff", .0)){
-            ok = true;
+
         }else{
             //-- do normalization here using SVD
 
@@ -136,22 +137,20 @@ bool Hinf<_StateSpace,
     }else if(performance_size == INPUT_SIZE){
         if(arma::approx_equal(llft_.D12(), I_in, "absdiff", .0)){
             std::cout << "[Hinf] Special cases trigerred !!!" << std::endl;
-            //-- do special cases here
-            ok = true;
         }else{
             //-- do normalization here
         }
     }else{ //-- if not full column rank
-        ok = false;
+        ~ok;
     }
 
-    bool ok2(false); //-- RVO
+    bool ok2(true); //-- RVO
     arma::mat I_out(OUTPUT_SIZE, OUTPUT_SIZE, arma::fill::eye);
     arma::mat expected_D21 = arma::join_horiz(arma::mat(OUTPUT_SIZE, perturbation_size - OUTPUT_SIZE, arma::fill::zeros), I_out);
 
     if(perturbation_size > OUTPUT_SIZE){
         if(arma::approx_equal(llft_.D12(), expected_D21, "absdiff", .0)){
-            ok2 = true;
+
         }else{
             //-- do normalization here using SVD
 
@@ -174,6 +173,7 @@ bool Hinf<_StateSpace,
                             arma::join_horiz(eye, zeros2)
                         );
 
+            //-- TODO : the matrix isn't unitary ?
 //            arma::mat R = arma::inv(T) * V.t();
 //            U.print("U : ");
 //            V.print("V : ");
@@ -184,14 +184,15 @@ bool Hinf<_StateSpace,
         if(arma::approx_equal(llft_.D12(), I_out, "absdiff", .0)){
             std::cout << "[Hinf] Special cases trigerred !!!" << std::endl;
             //-- do special cases here
-            ok2 = true;
         }else{
             //-- do normalization here
-            ok2 = false;
         }
     }else{ //-- if not full row rank
-        ok2 = false;
+        ~ok2;
     }
+
+    std::cout << "Assumption 2 : " << std::endl;
+    std::cout << std::boolalpha << ok << " ; " << ok2 << std::endl;
 
     return ok & ok2;
 }
@@ -209,23 +210,26 @@ bool Hinf<_StateSpace,
      * unobservable modes on the jw axis
      */
 
-    arma::mat D12_conj( arma::conj(llft_.D12()) );
-    arma::mat R( D12_conj*llft_.D12() );
+    arma::mat D12_t( llft_.D12().t() );
+    arma::mat R( D12_t*llft_.D12() );
     arma::mat R_inv( arma::inv(R) );
     arma::mat I(performance_size, performance_size, arma::fill::eye);
 
     arma::mat temp1, temp2;
-    temp1 = llft_.D12()*R_inv*D12_conj;
+    temp1 = llft_.D12()*R_inv*D12_t;
     temp2 = I - temp1;
     arma::mat C = temp2*llft_.C1();
 
-    temp1 = llft_.B2()*R_inv*D12_conj;
+    temp1 = llft_.B2()*R_inv*D12_t;
     temp2 = temp1*llft_.C1();
-    arma::mat A = llft_.A() - temp2;
+    arma::mat A = llft_.A() - temp2;    
 
-    //-- do PBH test here
+    bool ok = !common::hasUnobservableModeInImAxis(A, C);
 
-    return true;
+    std::cout << "Assumption 3 : " << std::endl;
+    std::cout << std::boolalpha << ok << std::endl;
+
+    return !common::hasUnobservableModeInImAxis(A, C);
 }
 
 template <class _StateSpace,
@@ -235,21 +239,26 @@ bool Hinf<_StateSpace,
     performance_size,
     perturbation_size>::checkAssumption4(){
 
-    arma::mat D21_conj( arma::conj(llft_.D21()) );
-    arma::mat R( llft_.D21()*D21_conj );
+    arma::mat D21_t( llft_.D21().t() );
+    arma::mat R( llft_.D21()*D21_t );
     arma::mat R_inv( arma::inv(R) );
     arma::mat I(perturbation_size, perturbation_size, arma::fill::eye);
 
     arma::mat temp1, temp2;
-    temp1 = llft_.B1()*D21_conj*R_inv;
+    temp1 = llft_.B1()*D21_t*R_inv;
     temp2 = temp1*llft_.C2();
     arma::mat A = llft_.A() - temp2;
 
-    temp1 = D21_conj*R_inv*llft_.D21();
-    temp2 = llft_.B1()*temp1;
+    temp1 = D21_t*R_inv*llft_.D21();
+    temp2 = (I - temp1);
     arma::mat B = llft_.B1()*temp2;
 
-    return true;
+    bool ok = !common::hasUncontrollableModeInImAxis(A, B);
+
+    std::cout << "Assumption 4 : " << std::endl;
+    std::cout << std::boolalpha << ok << std::endl;
+
+    return ok;
 }
 
 template <class _StateSpace,
@@ -271,7 +280,9 @@ void Hinf<_StateSpace,
     performance_size,
     perturbation_size>::solve(){
 
-    std::cout << std::boolalpha << checkAllAssumption() << std::endl;
+    if(checkAllAssumption()){
+
+    }
 }
 
 }
