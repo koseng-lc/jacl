@@ -28,7 +28,8 @@ public:
         : ss_(_ss)
         , llft_(ss_)
         , are_solver1_(ss_)
-        , are_solver2_(ss_){
+        , are_solver2_(ss_)
+        , gam_(1.0){
 
     }    
 
@@ -59,6 +60,8 @@ private:
     bool checkAssumption3();
     bool checkAssumption4();
     bool checkAllAssumption();
+
+    double gam_;
 
 };
 
@@ -215,18 +218,17 @@ bool HInf<_StateSpace,
     return ok & ok2;
 }
 
+/*
+ * Based on Lemma 12.6 in Essential Robust Control
+ * This condition is equivalent with ((I-D*inv(R)*conj(D))*C, A-B*inv(R)*conj(D)*C) has no
+ * unobservable modes on the jw axis
+ */
 template <class _StateSpace,
           std::size_t performance_size,
           std::size_t perturbation_size>
 bool HInf<_StateSpace,
     performance_size,
-    perturbation_size>::checkAssumption3(){
-
-    /*
-     * Based on Lemma 12.6 in Essential Robust Control
-     * This condition is equivalent with ((I-D*inv(R)*conj(D))*C, A-B*inv(R)*conj(D)*C) has no
-     * unobservable modes on the jw axis
-     */
+    perturbation_size>::checkAssumption3(){   
 
     arma::mat D12_t( llft_.D12().t() );
     arma::mat R( D12_t*llft_.D12() );
@@ -299,6 +301,37 @@ void HInf<_StateSpace,
     perturbation_size>::solve(){
 
     if(checkAllAssumption()){
+        arma::mat temp1, temp2, temp3;
+
+        arma::mat D1_ = ss_->D().row(0);
+        arma::mat D1__t = D1_.t();
+        temp1 = gam_*gam_*arma::eye(performance_size, performance_size);
+        temp2 = arma::zeros<arma::mat>( arma::size(D1_) );
+        temp2.submat(0, 0, D1_.n_rows - 1, D1_.n_rows - 1) = temp;
+        arma::mat R1 = D1__t * D1_ - temp2;
+
+        arma::mat D_1 = ss_->D().col(0);
+        arma::mat D_1_t = D_1.t();
+        temp1 = gam_*gam_*arma::eye(perturbation_size, perturbation_size);
+        temp2 = arma::zeros<arma::mat>( arma::size(D_1) );
+        temp2.submat(0, 0, D_1.n_cols - 1, D_1.n_cols - 1) = temp1;
+        arma::mat R2 = D_1 * D_1_t - temp2;
+
+        //-- Ricatti Domain
+        arma::mat C1_t = llft_.C1().t();
+        arma::mat A_t = ss_->A().t();
+        temp1 = arma::join_vert(
+                    arma::join_horiz(ss_->A(), arma::zeros(arma::size(ss_->A()))),
+                    arma::join_horiz(-C1_t,*llft_.C1(), -A_t)
+                    );
+        temp2 = arma::join_vert(
+                    arma::ss_->B(),
+                    -C1_t*D1_
+                    );
+        temp3 = arma::join_horiz(D1__t*llft_.C1(), ss_->C());
+
+        arma::mat H_inf;
+        arma::mat J_inf;
 
     }
 }
