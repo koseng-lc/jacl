@@ -301,37 +301,59 @@ void HInf<_StateSpace,
     perturbation_size>::solve(){
 
     if(checkAllAssumption()){
-        arma::mat temp1, temp2, temp3;
+        arma::mat temp1, temp2, temp3, temp4;
 
-        arma::mat D1_ = ss_->D().row(0);
+        arma::mat A_t = ss_->A().t();
+        arma::mat B_t = ss_->B().t();
+        arma::mat B1_t = llft_.B1().t();
+        arma::mat C_t = ss_->C().t();
+        arma::mat C1_t = llft_.C1().t();
+
+        arma::mat D1_ = ss_->D().head_rows(performance_size);
         arma::mat D1__t = D1_.t();
-        temp1 = gam_*gam_*arma::eye(performance_size, performance_size);
-        temp2 = arma::zeros<arma::mat>( arma::size(D1_) );
-        temp2.submat(0, 0, D1_.n_rows - 1, D1_.n_rows - 1) = temp;
-        arma::mat R1 = D1__t * D1_ - temp2;
-
-        arma::mat D_1 = ss_->D().col(0);
+        arma::mat D_1 = ss_->D().head_cols(perturbation_size);
         arma::mat D_1_t = D_1.t();
+
+        temp1 = gam_*gam_*arma::eye(performance_size, performance_size);
+        temp2 = arma::zeros<arma::mat>(D1_.n_cols,  D1_.n_cols);
+        temp2.submat(0, 0, performance_size - 1, performance_size - 1) = temp1;
+        arma::mat R1 = D1__t * D1_ - temp2;
+        arma::mat R1_inv = arma::inv(R1);
+
         temp1 = gam_*gam_*arma::eye(perturbation_size, perturbation_size);
-        temp2 = arma::zeros<arma::mat>( arma::size(D_1) );
-        temp2.submat(0, 0, D_1.n_cols - 1, D_1.n_cols - 1) = temp1;
+        temp2 = arma::zeros<arma::mat>(D_1.n_rows, D_1.n_rows);
+        temp2.submat(0, 0, perturbation_size - 1, perturbation_size - 1) = temp1;
         arma::mat R2 = D_1 * D_1_t - temp2;
+        arma::mat R2_inv = arma::inv(R2);
 
         //-- Ricatti Domain
-        arma::mat C1_t = llft_.C1().t();
-        arma::mat A_t = ss_->A().t();
+
         temp1 = arma::join_vert(
-                    arma::join_horiz(ss_->A(), arma::zeros(arma::size(ss_->A()))),
-                    arma::join_horiz(-C1_t,*llft_.C1(), -A_t)
+                    arma::join_horiz(ss_->A(), arma::zeros<arma::mat>(arma::size(ss_->A()))),
+                    arma::join_horiz(-C1_t*llft_.C1(), -A_t)
                     );
         temp2 = arma::join_vert(
-                    arma::ss_->B(),
+                    ss_->B(),
                     -C1_t*D1_
                     );
-        temp3 = arma::join_horiz(D1__t*llft_.C1(), ss_->C());
+        temp3 = arma::join_horiz(D1__t*llft_.C1(), B_t);
+        temp4 = temp2*R1_inv*temp3;
+        arma::mat H_inf = temp1 - temp4;
 
-        arma::mat H_inf;
-        arma::mat J_inf;
+        temp1 = arma::join_vert(
+                    arma::join_horiz(A_t, arma::zeros<arma::mat>(arma::size(ss_->A()))),
+                    arma::join_horiz(-llft_.B1()*B1_t, -ss_->A())
+                    );
+        temp2 = arma::join_vert(
+                    C_t,
+                    -llft_.B1()*D_1_t
+                    );
+        temp3 = arma::join_horiz(
+                    D_1*B1_t,
+                    ss_->C()
+                    );
+        temp4 = temp2*R2_inv*temp3;
+        arma::mat J_inf = temp1 - temp4;
 
     }
 }
