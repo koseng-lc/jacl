@@ -30,7 +30,11 @@ public:
             genHamiltonianMatrix();
     }
 
-    void solve();
+    void setHamiltonianMatrix(const arma::mat& _H){
+        H_ = _H;
+    }
+
+    arma::mat solve();
 
 private:
     _StateSpace* ss_;
@@ -55,9 +59,9 @@ private:
 template <class _StateSpace>
 ARE<_StateSpace>::ARE(_StateSpace* _ss, const arma::mat& _R, const arma::mat& _Q)
     : ss_(_ss)
-    , H_(ss_->numStates() * 2, ss_->numStates() * 2)
-    , R_(ss_->numStates(), ss_->numStates())
-    , Q_(ss_->numStates(), ss_->numStates()){
+    , H_(_StateSpace::n_states * 2, _StateSpace::n_states * 2)
+    , R_(_StateSpace::n_states, _StateSpace::n_states)
+    , Q_(_StateSpace::n_states, _StateSpace::n_states){
 
     setR(_R);
     setQ(_Q, true);
@@ -66,9 +70,9 @@ ARE<_StateSpace>::ARE(_StateSpace* _ss, const arma::mat& _R, const arma::mat& _Q
 template <class _StateSpace>
 ARE<_StateSpace>::ARE(_StateSpace* _ss)
     : ss_(_ss)
-    , H_(ss_->numStates() * 2, ss_->numStates() * 2)
-    , R_(ss_->numStates(), ss_->numStates())
-    , Q_(ss_->numStates(), ss_->numStates()){
+    , H_(_StateSpace::n_states * 2, _StateSpace::n_states * 2)
+    , R_(_StateSpace::n_states, _StateSpace::n_states)
+    , Q_(_StateSpace::n_states, _StateSpace::n_states){
 
 }
 
@@ -80,14 +84,14 @@ ARE<_StateSpace>::~ARE(){
 template <class _StateSpace>
 void ARE<_StateSpace>::genHamiltonianMatrix(){
 
-    H_.submat(               0,                0,      ss_->numStates(),     ss_->numStates()) = ss_->A();
-    H_.submat(               0, ss_->numStates(),      ss_->numStates(), ss_->numStates() * 2) = R_;
-    H_.submat(ss_->numStates(),                0, ss_->numStates() * 2,      ss_->numStates()) = -Q_;
-    H_.submat(ss_->numStates(), ss_->numStates(), ss_->numStates() * 2,  ss_->numStates() * 2) = -ss_->A_.t();
+    H_.submat(               0,                0,      _StateSpace::n_states,     _StateSpace::n_states) = ss_->A();
+    H_.submat(               0, _StateSpace::n_states,      _StateSpace::n_states, _StateSpace::n_states * 2) = R_;
+    H_.submat(_StateSpace::n_states,                0, _StateSpace::n_states * 2,      _StateSpace::n_states) = -Q_;
+    H_.submat(_StateSpace::n_states, _StateSpace::n_states, _StateSpace::n_states * 2,  _StateSpace::n_states * 2) = -ss_->A_.t();
 }
 
 template <class _StateSpace>
-void ARE<_StateSpace>::solve(){
+arma::mat ARE<_StateSpace>::solve(){
 
     //-- Using QR-Algorithm
     /*arma::mat T, U;
@@ -119,7 +123,7 @@ void ARE<_StateSpace>::solve(){
 
     arma::mat eigval_re = arma::real(eigval);
 
-    eigval_re.print("Eval Re : ");
+//    eigval_re.print("EigVal Re : ");
 
     //-- invariant spectral subspace
     arma::cx_mat ISS;
@@ -130,15 +134,17 @@ void ARE<_StateSpace>::solve(){
         }
     }
 
-    ISS.print("ISS : ");
+//    ISS.print("ISS : ");
 
     arma::cx_mat X1, X2;
-    X1 = ISS.submat(             0, 0, ISS.n_rows * 2, ISS.n_cols);
-    X2 = ISS.submat(ISS.n_rows * 2, 0,     ISS.n_rows, ISS.n_cols);
+    X1 = ISS.head_rows(ISS.n_rows * .5);
+    X2 = ISS.tail_rows(ISS.n_rows * .5);
 
-    arma::mat inv_X1(arma::inv(X1));
-    arma::mat solution(X2*inv_X1);
-    solution.print("X : ");
+    arma::mat inv_X1( arma::inv( arma::real(X1) ) );
+    arma::mat solution(arma::real(X2)*inv_X1);
+//    solution.print("X : ");
+
+    return solution;
 
 }
 

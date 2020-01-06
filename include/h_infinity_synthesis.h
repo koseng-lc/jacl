@@ -355,6 +355,43 @@ void HInf<_StateSpace,
         temp4 = temp2*R2_inv*temp3;
         arma::mat J_inf = temp1 - temp4;
 
+        ARE<_StateSpace> solver1(ss_);
+        ARE<_StateSpace> solver2(ss_);
+
+        solver1.setHamiltonianMatrix(H_inf);
+        solver2.setHamiltonianMatrix(J_inf);
+
+        arma::mat X_inf = solver1.solve();
+        arma::mat Y_inf = solver2.solve();
+
+        temp1 = D1__t*llft_.C1();
+        temp2 = B_t*X_inf;
+        arma::mat F = -R1_inv*(temp1 + temp2);
+        arma::mat F1_inf = F.head_rows(perturbation_size);
+        arma::mat F2_inf = F.tail_rows(INPUT_SIZE);
+
+        temp1 = llft_.B1()*D_1_t;
+        temp2 = Y_inf*C_t;
+        arma::mat L = -(temp1 + temp2)*R2_inv;
+        arma::mat L1_inf = L.head_cols(performance_size);
+        arma::mat L2_inf = L.tail_cols(OUTPUT_SIZE);
+
+        //-- Partition of D, F1_inf and L1_inf        
+        arma::mat F11_inf = F1_inf.head_rows(perturbation_size - OUTPUT_SIZE);
+        arma::mat F12_inf = F1_inf.tail_rows(OUTPUT_SIZE);
+
+        arma::mat L11_inf = L1_inf.head_cols(performance_size - INPUT_SIZE);
+        arma::mat L12_inf = L1_inf.tail_cols(INPUT_SIZE);
+
+        arma::mat D1111 = llft_.D11().submat(0, 0,
+                                             (performance_size - INPUT_SIZE) - 1, (perturbation_size - OUTPUT_SIZE) - 1);
+        arma::mat D1112 = llft_.D11().submat(0, (perturbation_size - OUTPUT_SIZE),
+                                             (performance_size - INPUT_SIZE) - 1, perturbation_size);
+        arma::mat D1121 = llft_.D11().submat((performance_size - INPUT_SIZE), 0,
+                                             performance_size, (perturbation_size - OUTPUT_SIZE) - 1);
+        arma::mat D1122 = llft_.D11().submat((performance_size - INPUT_SIZE), (perturbation_size - OUTPUT_SIZE),
+                                             performance_size,  perturbation_size);
+
     }
 }
 
