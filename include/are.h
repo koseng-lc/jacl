@@ -34,7 +34,7 @@ public:
         H_ = _H;
     }
 
-    arma::mat solve();
+    arma::cx_mat solve();
 
 private:
     _StateSpace* ss_;
@@ -84,14 +84,14 @@ ARE<_StateSpace>::~ARE(){
 template <class _StateSpace>
 void ARE<_StateSpace>::genHamiltonianMatrix(){
 
-    H_.submat(               0,                0,      _StateSpace::n_states,     _StateSpace::n_states) = ss_->A();
-    H_.submat(               0, _StateSpace::n_states,      _StateSpace::n_states, _StateSpace::n_states * 2) = R_;
-    H_.submat(_StateSpace::n_states,                0, _StateSpace::n_states * 2,      _StateSpace::n_states) = -Q_;
-    H_.submat(_StateSpace::n_states, _StateSpace::n_states, _StateSpace::n_states * 2,  _StateSpace::n_states * 2) = -ss_->A_.t();
+    H_.submat(                    0,                     0,     _StateSpace::n_states - 1,     _StateSpace::n_states - 1) = ss_->A();
+    H_.submat(                    0, _StateSpace::n_states,     _StateSpace::n_states - 1, _StateSpace::n_states * 2 - 1) = R_;
+    H_.submat(_StateSpace::n_states,                     0, _StateSpace::n_states * 2 - 1,     _StateSpace::n_states - 1) = -Q_;
+    H_.submat(_StateSpace::n_states, _StateSpace::n_states, _StateSpace::n_states * 2 - 1, _StateSpace::n_states * 2 - 1) = -ss_->A_.t();
 }
 
 template <class _StateSpace>
-arma::mat ARE<_StateSpace>::solve(){
+arma::cx_mat ARE<_StateSpace>::solve(){
 
     //-- Using QR-Algorithm
     /*arma::mat T, U;
@@ -123,7 +123,7 @@ arma::mat ARE<_StateSpace>::solve(){
 
     arma::mat eigval_re = arma::real(eigval);
 
-//    eigval_re.print("EigVal Re : ");
+    eigval_re.print("EigVal Re : ");
 
     //-- invariant spectral subspace
     arma::cx_mat ISS;
@@ -140,8 +140,11 @@ arma::mat ARE<_StateSpace>::solve(){
     X1 = ISS.head_rows(ISS.n_rows * .5);
     X2 = ISS.tail_rows(ISS.n_rows * .5);
 
-    arma::mat inv_X1( arma::inv( arma::real(X1) ) );
-    arma::mat solution(arma::real(X2)*inv_X1);
+//    X1.print("X1 : ");
+//    X2.print("X2 : ");
+
+    arma::cx_mat inv_X1( arma::inv( X1 ) );
+    arma::cx_mat solution( X2 * inv_X1 );
 //    solution.print("X : ");
 
     return solution;

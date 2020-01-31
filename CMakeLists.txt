@@ -21,11 +21,11 @@ find_package(Qt5Core REQUIRED)
 find_package(Qt5Gui REQUIRED)
 find_package(Qt5Widgets REQUIRED)
 
-find_package(PythonLibs 3.5 REQUIRED)
+find_package(PythonLibs REQUIRED)
 
-find_package(Boost 1.70.0 REQUIRED COMPONENTS
+find_package(Boost REQUIRED COMPONENTS
     system
-    python
+    python3
     numpy
     thread
     chrono
@@ -52,7 +52,7 @@ include_directories(
 add_library(simulator SHARED include/simulator.h)
 
 target_link_libraries(simulator
-    Boost::system Boost::python
+    Boost::system Boost::python3
     ${PYTHON_LIBRARIES}
 )
 set_target_properties(simulator PROPERTIES SUFFIX .so)
@@ -94,7 +94,7 @@ set_target_properties(observer PROPERTIES LINKER_LANGUAGE CXX)
 # Simulator(more precisely is plotter)
 add_library(sim SHARED include/sim.h)
 target_link_libraries(sim
-    Boost::system Boost::python Boost::thread Boost::chrono
+    Boost::system Boost::python3 Boost::thread Boost::chrono
     ${PYTHON_LIBRARIES}
     state_space
 )
@@ -103,7 +103,7 @@ set_target_properties(sim PROPERTIES LINKER_LANGUAGE CXX)
 # Observer Simulator
 add_library(observer_sim include/observer_sim.h)
 target_link_libraries(observer_sim
-    Boost::system Boost::python Boost::chrono
+    Boost::system Boost::python3 Boost::chrono
     ${PYTHON_LIBRARIES}
     state_space
     sim
@@ -144,7 +144,7 @@ set_target_properties(h_infinity_synthesis PROPERTIES LINKER_LANGUAGE CXX)
 # System Simulator
 add_library(system_sim include/system_sim.h)
 target_link_libraries(system_sim
-    Boost::system Boost::python Boost::chrono
+    Boost::system Boost::python3 Boost::chrono
     ${PYTHON_LIBRARIES}
     state_space
     sim
@@ -162,12 +162,12 @@ target_link_libraries(jacl state_space transfer_matrix simulator sim h_infinity_
 
 add_library(hello_ext SHARED src/hello.cpp)
 
-target_link_libraries(hello_ext Boost::python)
+target_link_libraries(hello_ext Boost::python3)
 set_target_properties(hello_ext PROPERTIES SUFFIX .so)
 set_target_properties(hello_ext PROPERTIES PREFIX "")
 
 add_executable(embed_test src/embed_test.cpp)
-target_link_libraries(embed_test Boost::system Boost::python ${PYTHON_LIBRARIES})
+target_link_libraries(embed_test Boost::system Boost::python3 ${PYTHON_LIBRARIES})
 
 # Main Program
 

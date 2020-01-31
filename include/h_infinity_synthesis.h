@@ -29,7 +29,7 @@ public:
         , llft_(ss_)
         , are_solver1_(ss_)
         , are_solver2_(ss_)
-        , gam_(1.0){
+        , gam_(0.85){
 
     }    
 
@@ -114,9 +114,9 @@ bool HInf<_StateSpace,
         }else{
             //-- do normalization here using SVD
 
-            arma::mat zeros1(performance_size - INPUT_SIZE, INPUT_SIZE, arma::fill::zeros);
-            arma::mat zeros2(INPUT_SIZE, performance_size - INPUT_SIZE, arma::fill::zeros);
-            arma::mat eye(performance_size - INPUT_SIZE, performance_size - INPUT_SIZE, arma::fill::eye);
+//            arma::mat zeros1(performance_size - INPUT_SIZE, INPUT_SIZE, arma::fill::zeros);
+//            arma::mat zeros2(INPUT_SIZE, performance_size - INPUT_SIZE, arma::fill::zeros);
+//            arma::mat eye(performance_size - INPUT_SIZE, performance_size - INPUT_SIZE, arma::fill::eye);
 
             arma::mat U, V;
             arma::vec s;
@@ -128,14 +128,11 @@ bool HInf<_StateSpace,
                 recip_S(i, i) = 1./S(i,i);
             }
 
-            arma::mat T = arma::join_vert(
-                            arma::join_horiz(zeros1, eye),
-                            arma::join_horiz(recip_S, zeros2)
-                        );
+            arma::mat U_flip( arma::fliplr( U ) ), S_flip( arma::flipud( S ) );
 
-            arma::mat U1 = U*arma::inv(T);
-            arma::mat U1_t = U1.t();
-            arma::mat R1 = V.t();
+            arma::mat U1 = U_flip;
+            arma::mat U1_t = arma::trans( U1 );
+            arma::mat R1 = S_flip * arma::trans( V );
             arma::mat R1_inv = arma::inv(R1);
 
             llft_.B2() = llft_.B2()*R1_inv;
@@ -143,6 +140,7 @@ bool HInf<_StateSpace,
             llft_.D11() = U1_t*llft_.D11();
             llft_.D12() = U1_t*llft_.D12()*R1_inv;
             llft_.D22() = llft_.D22()*R1_inv;
+
         }
     }else if(performance_size == INPUT_SIZE){
         if(arma::approx_equal(llft_.D12(), I_in, "absdiff", .0)){
@@ -164,42 +162,33 @@ bool HInf<_StateSpace,
         }else{
             //-- do normalization here using SVD
 
-            arma::mat zeros1(OUTPUT_SIZE, perturbation_size - OUTPUT_SIZE, arma::fill::zeros);
-            arma::mat zeros2(perturbation_size - OUTPUT_SIZE, OUTPUT_SIZE, arma::fill::zeros);
-            arma::mat eye(perturbation_size - OUTPUT_SIZE, perturbation_size - OUTPUT_SIZE, arma::fill::eye);
+//            arma::mat zeros1(OUTPUT_SIZE, perturbation_size - OUTPUT_SIZE, arma::fill::zeros);
+//            arma::mat zeros2(perturbation_size - OUTPUT_SIZE, OUTPUT_SIZE, arma::fill::zeros);
+//            arma::mat eye(perturbation_size - OUTPUT_SIZE, perturbation_size - OUTPUT_SIZE, arma::fill::eye);
 
             arma::mat U, V;
             arma::vec s;
             arma::svd(U,s,V,llft_.D21());
 
             arma::mat S = arma::diagmat(s);
+            S.print("S : ");
             arma::mat recip_S(arma::size(S), arma::fill::zeros);
             for(int i(0); i < S.n_rows; i++){
                 recip_S(i, i) = 1./S(i,i);
             }
 
-            arma::mat T = arma::join_vert(
-                            arma::join_horiz(zeros1, recip_S),
-                            arma::join_horiz(eye, zeros2)
-                        );
+            arma::mat V_flip( arma::flipud( arma::trans(V) ) ), S_flip( arma::fliplr(S) );
 
-            arma::mat U2 = arma::inv(T)*V.t();
-            arma::mat U2_t = U2.t();
-            arma::mat R2 = U;
-            arma::mat R2_inv = arma::inv(R2);
+            arma::mat R2 = U * S_flip;
+            arma::mat R2_inv = arma::inv( R2 );
+            arma::mat U2 = V_flip;
+            arma::mat U2_t = arma::trans( U2 );
 
             llft_.B1() = llft_.B1()*U2_t;
             llft_.D11() = llft_.D11()*U2_t;
             llft_.C2() = R2_inv*llft_.C2();
             llft_.D21() = R2_inv*llft_.D21()*U2_t;
             llft_.D22() = R2_inv*llft_.D22();
-
-            //-- TODO : the matrix that isn't unitary ?
-//            arma::mat R = arma::inv(T) * V.t();
-//            U.print("U : ");
-//            V.print("V : ");
-//            R.print("R : ");
-//            arma::mat test = R.t() * R;test.print("TEST : ");
         }
     }else if(perturbation_size == OUTPUT_SIZE){
         if(arma::approx_equal(llft_.D12(), I_out, "absdiff", .0)){
@@ -314,21 +303,26 @@ void HInf<_StateSpace,
         arma::mat D_1 = ss_->D().head_cols(perturbation_size);
         arma::mat D_1_t = D_1.t();
 
-        temp1 = gam_*gam_*arma::eye(performance_size, performance_size);
+        temp1 = gam_*gam_*arma::eye(perturbation_size, perturbation_size);
         temp2 = arma::zeros<arma::mat>(D1_.n_cols,  D1_.n_cols);
-        temp2.submat(0, 0, performance_size - 1, performance_size - 1) = temp1;
-        arma::mat R1 = D1__t * D1_ - temp2;
+        temp2.submat(0, 0, perturbation_size - 1, perturbation_size - 1) = temp1;
+        arma::mat R1 = (D1__t * D1_) - temp2;
+//        R1.print("R1 : ");
+        //-- create exception here for singular R1 and warn for change the gamma
         arma::mat R1_inv = arma::inv(R1);
 
-        temp1 = gam_*gam_*arma::eye(perturbation_size, perturbation_size);
+        temp1 = gam_*gam_*arma::eye(performance_size, performance_size);
         temp2 = arma::zeros<arma::mat>(D_1.n_rows, D_1.n_rows);
-        temp2.submat(0, 0, perturbation_size - 1, perturbation_size - 1) = temp1;
-        arma::mat R2 = D_1 * D_1_t - temp2;
+        temp2.submat(0, 0, performance_size - 1, performance_size - 1) = temp1;
+        arma::mat R2 = (D_1 * D_1_t) - temp2;
+//        R2.print("R2 : ");
+        //-- create exception here for singular R2 and warn for change the gamma
         arma::mat R2_inv = arma::inv(R2);
 
         //-- Ricatti Domain
 
         temp1 = arma::join_vert(
+                                                //-- create a function to simplify the zeros
                     arma::join_horiz(ss_->A(), arma::zeros<arma::mat>(arma::size(ss_->A()))),
                     arma::join_horiz(-C1_t*llft_.C1(), -A_t)
                     );
@@ -339,6 +333,7 @@ void HInf<_StateSpace,
         temp3 = arma::join_horiz(D1__t*llft_.C1(), B_t);
         temp4 = temp2*R1_inv*temp3;
         arma::mat H_inf = temp1 - temp4;
+//        H_inf.print("H_inf : ");
 
         temp1 = arma::join_vert(
                     arma::join_horiz(A_t, arma::zeros<arma::mat>(arma::size(ss_->A()))),
@@ -353,7 +348,8 @@ void HInf<_StateSpace,
                     ss_->C()
                     );
         temp4 = temp2*R2_inv*temp3;
-        arma::mat J_inf = temp1 - temp4;
+        arma::mat J_inf = temp1 - temp4;        
+//        J_inf.print("J_inf : ");
 
         ARE<_StateSpace> solver1(ss_);
         ARE<_StateSpace> solver2(ss_);
@@ -361,36 +357,39 @@ void HInf<_StateSpace,
         solver1.setHamiltonianMatrix(H_inf);
         solver2.setHamiltonianMatrix(J_inf);
 
-        arma::mat X_inf = solver1.solve();
-        arma::mat Y_inf = solver2.solve();
+        arma::cx_mat X_inf = solver1.solve();
+        arma::cx_mat Y_inf = solver2.solve();
 
-        temp1 = D1__t*llft_.C1();
-        temp2 = B_t*X_inf;
-        arma::mat F = -R1_inv*(temp1 + temp2);
-        arma::mat F1_inf = F.head_rows(perturbation_size);
-        arma::mat F2_inf = F.tail_rows(INPUT_SIZE);
+        X_inf.print("X_inf : ");
+        Y_inf.print("Y_inf : ");
 
-        temp1 = llft_.B1()*D_1_t;
-        temp2 = Y_inf*C_t;
-        arma::mat L = -(temp1 + temp2)*R2_inv;
-        arma::mat L1_inf = L.head_cols(performance_size);
-        arma::mat L2_inf = L.tail_cols(OUTPUT_SIZE);
+//        temp1 = D1__t*llft_.C1();
+//        temp2 = B_t*X_inf;
+//        arma::mat F = -R1_inv*(temp1 + temp2);
+//        arma::mat F1_inf = F.head_rows(perturbation_size);
+//        arma::mat F2_inf = F.tail_rows(INPUT_SIZE);
 
-        //-- Partition of D, F1_inf and L1_inf        
-        arma::mat F11_inf = F1_inf.head_rows(perturbation_size - OUTPUT_SIZE);
-        arma::mat F12_inf = F1_inf.tail_rows(OUTPUT_SIZE);
+//        temp1 = llft_.B1()*D_1_t;
+//        temp2 = Y_inf*C_t;
+//        arma::mat L = -(temp1 + temp2)*R2_inv;
+//        arma::mat L1_inf = L.head_cols(performance_size);
+//        arma::mat L2_inf = L.tail_cols(OUTPUT_SIZE);
 
-        arma::mat L11_inf = L1_inf.head_cols(performance_size - INPUT_SIZE);
-        arma::mat L12_inf = L1_inf.tail_cols(INPUT_SIZE);
+//        //-- Partition of D, F1_inf and L1_inf
+//        arma::mat F11_inf = F1_inf.head_rows(perturbation_size - OUTPUT_SIZE);
+//        arma::mat F12_inf = F1_inf.tail_rows(OUTPUT_SIZE);
 
-        arma::mat D1111 = llft_.D11().submat(0, 0,
-                                             (performance_size - INPUT_SIZE) - 1, (perturbation_size - OUTPUT_SIZE) - 1);
-        arma::mat D1112 = llft_.D11().submat(0, (perturbation_size - OUTPUT_SIZE),
-                                             (performance_size - INPUT_SIZE) - 1, perturbation_size);
-        arma::mat D1121 = llft_.D11().submat((performance_size - INPUT_SIZE), 0,
-                                             performance_size, (perturbation_size - OUTPUT_SIZE) - 1);
-        arma::mat D1122 = llft_.D11().submat((performance_size - INPUT_SIZE), (perturbation_size - OUTPUT_SIZE),
-                                             performance_size,  perturbation_size);
+//        arma::mat L11_inf = L1_inf.head_cols(performance_size - INPUT_SIZE);
+//        arma::mat L12_inf = L1_inf.tail_cols(INPUT_SIZE);
+
+//        arma::mat D1111 = llft_.D11().submat(0, 0,
+//                                             (performance_size - INPUT_SIZE) - 1, (perturbation_size - OUTPUT_SIZE) - 1);
+//        arma::mat D1112 = llft_.D11().submat(0, (perturbation_size - OUTPUT_SIZE),
+//                                             (performance_size - INPUT_SIZE) - 1, perturbation_size);
+//        arma::mat D1121 = llft_.D11().submat((performance_size - INPUT_SIZE), 0,
+//                                             performance_size, (perturbation_size - OUTPUT_SIZE) - 1);
+//        arma::mat D1122 = llft_.D11().submat((performance_size - INPUT_SIZE), (perturbation_size - OUTPUT_SIZE),
+//                                             performance_size,  perturbation_size);
 
     }
 }
