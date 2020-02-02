@@ -117,13 +117,13 @@ arma::cx_mat ARE<_StateSpace>::solve(){
 
     arma::cx_vec eigval;
     arma::cx_mat eigvec;
-    eig_gen(eigval, eigvec, H_);
+    arma::eig_gen(eigval, eigvec, H_);
 //    eigval.print("EigenValue : ");
 //    eigvec.print("EigenVector : ");
 
     arma::mat eigval_re = arma::real(eigval);
 
-    eigval_re.print("EigVal Re : ");
+//    eigval_re.print("EigVal Re : ");
 
     //-- invariant spectral subspace
     arma::cx_mat ISS;

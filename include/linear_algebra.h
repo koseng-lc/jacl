@@ -64,6 +64,31 @@ static void QRAlgorithm(const arma::mat& in, arma::mat* T, arma::mat* U, int num
     *T = updated_in;
 }
 
+template <typename Type>
+static bool isPosSemiDefinite(const arma::Mat<Type> in){
+    arma::Mat<Type> hessian_in = .5*(in + arma::trans(in));
+    arma::Mat<Type> R;
+    return arma::chol(R, hessian_in);
+}
+
+template <typename Type>
+static double spectralRadius(const arma::Mat<Type>& in){
+    arma::Mat<Type> eigvec;
+    arma::Col<Type> eigval;
+    arma::eig_gen(eigval, eigvec, in);
+    arma::vec eigval_re = arma::real(eigval);
+    arma::vec eigval_im = arma::imag(eigval);
+    auto max_mag_eigval(.0);
+    auto mag_eigval(.0);
+    for(int i(0); i < eigval.n_rows; i++){
+        mag_eigval = std::sqrt(eigval_re(i)*eigval_re(i) + eigval_im(i)*eigval_im(i));
+        if(mag_eigval > max_mag_eigval)
+            max_mag_eigval = mag_eigval;
+    }
+
+    return max_mag_eigval;
+}
+
 }
 
 }

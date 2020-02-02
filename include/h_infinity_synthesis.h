@@ -29,7 +29,7 @@ public:
         , llft_(ss_)
         , are_solver1_(ss_)
         , are_solver2_(ss_)
-        , gam_(0.85){
+        , gam_(15.){
 
     }    
 
@@ -61,7 +61,20 @@ private:
     bool checkAssumption4();
     bool checkAllAssumption();
 
+    bool checkCondition1();
+    bool checkCondition2();
+    bool checkCondition3();
+    bool checkCondition4();
+    bool checkAllCondition();
+
     double gam_;
+
+    arma::cx_mat X_inf_;
+    arma::cx_mat Y_inf_;
+
+    inline arma::cx_mat toCx(const arma::mat& _in) const{
+        return arma::cx_mat(_in, arma::zeros<arma::mat>( arma::size(_in) ));
+    }
 
 };
 
@@ -285,12 +298,76 @@ bool HInf<_StateSpace,
 template <class _StateSpace,
           std::size_t performance_size,
           std::size_t perturbation_size>
+bool HInf<_StateSpace,
+    performance_size,
+    perturbation_size>::checkCondition1(){
+
+    arma::mat D11_ = llft_.D11().head_rows(performance_size - INPUT_SIZE);
+    arma::mat D_11 = llft_.D11().head_cols(perturbation_size - OUTPUT_SIZE);
+
+    arma::mat U, V;
+    arma::vec s;
+    arma::svd(U, s, V, D11_);
+    auto sval1( s.max() );
+    arma::svd(U, s, V, D_11);
+    auto sval2( s.max() );
+
+//    std::cout << "VAL : " << sval1 << " : " << sval2 << std::endl;
+
+    return gam_ > std::max(sval1, sval2);
+}
+
+template <class _StateSpace,
+          std::size_t performance_size,
+          std::size_t perturbation_size>
+bool HInf<_StateSpace,
+    performance_size,
+    perturbation_size>::checkCondition2(){
+    return linear_algebra::isPosSemiDefinite(X_inf_);
+}
+
+template <class _StateSpace,
+          std::size_t performance_size,
+          std::size_t perturbation_size>
+bool HInf<_StateSpace,
+    performance_size,
+    perturbation_size>::checkCondition3(){
+
+    return linear_algebra::isPosSemiDefinite(Y_inf_);
+}
+
+template <class _StateSpace,
+          std::size_t performance_size,
+          std::size_t perturbation_size>
+bool HInf<_StateSpace,
+    performance_size,
+    perturbation_size>::checkCondition4(){
+    arma::cx_mat temp( X_inf_*Y_inf_ );
+    return linear_algebra::spectralRadius( std::move(temp) ) < gam_*gam_;
+}
+
+template <class _StateSpace,
+          std::size_t performance_size,
+          std::size_t perturbation_size>
+bool HInf<_StateSpace,
+    performance_size,
+    perturbation_size>::checkAllCondition(){
+    return checkCondition1()
+            & checkCondition2()
+            & checkCondition3()
+            & checkCondition4();
+}
+
+template <class _StateSpace,
+          std::size_t performance_size,
+          std::size_t perturbation_size>
 void HInf<_StateSpace,
     performance_size,
     perturbation_size>::solve(){
 
     if(checkAllAssumption()){
         arma::mat temp1, temp2, temp3, temp4;
+        arma::cx_mat ctemp1, ctemp2, ctemp3, ctemp4;
 
         arma::mat A_t = ss_->A().t();
         arma::mat B_t = ss_->B().t();
@@ -363,33 +440,38 @@ void HInf<_StateSpace,
         X_inf.print("X_inf : ");
         Y_inf.print("Y_inf : ");
 
-//        temp1 = D1__t*llft_.C1();
-//        temp2 = B_t*X_inf;
-//        arma::mat F = -R1_inv*(temp1 + temp2);
-//        arma::mat F1_inf = F.head_rows(perturbation_size);
-//        arma::mat F2_inf = F.tail_rows(INPUT_SIZE);
+        ctemp1 = toCx(D1__t * llft_.C1());
+        ctemp2 = toCx(B_t) * X_inf;
+        arma::cx_mat F = -toCx(R1_inv)*(ctemp1 + ctemp2);
+        arma::cx_mat F1_inf = F.head_rows(perturbation_size);
+        arma::cx_mat F2_inf = F.tail_rows(INPUT_SIZE);
 
-//        temp1 = llft_.B1()*D_1_t;
-//        temp2 = Y_inf*C_t;
-//        arma::mat L = -(temp1 + temp2)*R2_inv;
-//        arma::mat L1_inf = L.head_cols(performance_size);
-//        arma::mat L2_inf = L.tail_cols(OUTPUT_SIZE);
+        ctemp1 = toCx(llft_.B1() * D_1_t);
+        ctemp2 = Y_inf * toCx(C_t);
+        arma::cx_mat L = -(ctemp1 + ctemp2)*toCx(R2_inv);
+        arma::cx_mat L1_inf = L.head_cols(performance_size);
+        arma::cx_mat L2_inf = L.tail_cols(OUTPUT_SIZE);
 
-//        //-- Partition of D, F1_inf and L1_inf
-//        arma::mat F11_inf = F1_inf.head_rows(perturbation_size - OUTPUT_SIZE);
-//        arma::mat F12_inf = F1_inf.tail_rows(OUTPUT_SIZE);
+        //-- Partition of D, F1_inf and L1_inf
+        arma::cx_mat F11_inf = F1_inf.head_rows(perturbation_size - OUTPUT_SIZE);
+        arma::cx_mat F12_inf = F1_inf.tail_rows(OUTPUT_SIZE);
 
-//        arma::mat L11_inf = L1_inf.head_cols(performance_size - INPUT_SIZE);
-//        arma::mat L12_inf = L1_inf.tail_cols(INPUT_SIZE);
+        arma::cx_mat L11_inf = L1_inf.head_cols(performance_size - INPUT_SIZE);
+        arma::cx_mat L12_inf = L1_inf.tail_cols(INPUT_SIZE);
 
-//        arma::mat D1111 = llft_.D11().submat(0, 0,
-//                                             (performance_size - INPUT_SIZE) - 1, (perturbation_size - OUTPUT_SIZE) - 1);
-//        arma::mat D1112 = llft_.D11().submat(0, (perturbation_size - OUTPUT_SIZE),
-//                                             (performance_size - INPUT_SIZE) - 1, perturbation_size);
-//        arma::mat D1121 = llft_.D11().submat((performance_size - INPUT_SIZE), 0,
-//                                             performance_size, (perturbation_size - OUTPUT_SIZE) - 1);
-//        arma::mat D1122 = llft_.D11().submat((performance_size - INPUT_SIZE), (perturbation_size - OUTPUT_SIZE),
-//                                             performance_size,  perturbation_size);
+        arma::cx_mat D1111 = toCx(llft_.D11()).submat(0, 0,
+                                             (performance_size - INPUT_SIZE) - 1, (perturbation_size - OUTPUT_SIZE) - 1);
+        arma::cx_mat D1112 = toCx(llft_.D11()).submat(0, (perturbation_size - OUTPUT_SIZE),
+                                             (performance_size - INPUT_SIZE) - 1, perturbation_size - 1);
+        arma::cx_mat D1121 = toCx(llft_.D11()).submat((performance_size - INPUT_SIZE), 0,
+                                             performance_size - 1, (perturbation_size - OUTPUT_SIZE) - 1);
+        arma::cx_mat D1122 = toCx(llft_.D11()).submat((performance_size - INPUT_SIZE), (perturbation_size - OUTPUT_SIZE),
+                                             performance_size - 1,  perturbation_size - 1);
+
+        X_inf_ = X_inf;
+        Y_inf_ = Y_inf;
+        bool check_cond = checkAllCondition();
+        std::cout << "Condition : " << std::boolalpha << check_cond << std::endl;
 
     }
 }
