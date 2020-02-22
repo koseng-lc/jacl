@@ -1,3 +1,9 @@
+/**
+*   @author
+*   @brief
+*   a lot of code here, is constructed by copy constructor because it's easier to read
+*/
+
 #pragma once
 
 #include <tuple>
@@ -29,7 +35,7 @@ public:
         , llft_(ss_)
         , are_solver1_(ss_)
         , are_solver2_(ss_)
-        , gam_(15.){
+        , gam_(20.){
 
     }    
 
@@ -370,6 +376,7 @@ template <class _StateSpace,
 bool HInf<_StateSpace,
     performance_size,
     perturbation_size>::checkCondition2(){
+
     return linear_algebra::isPosSemiDefinite(X_inf_);
 }
 
@@ -517,9 +524,38 @@ void HInf<_StateSpace,
 
         X_inf_ = X_inf;
         Y_inf_ = Y_inf;
+
         bool check_cond = checkAllCondition();
         std::cout << "Condition : " << std::boolalpha << check_cond << std::endl;
 
+        //-- I assume the arbitrary system that have property less than to gamma is zero
+
+        ctemp1 = (gam_*gam_)*Y_inf*X_inf;
+        arma::cx_mat Z_inf = arma::inv(arma::eye(_StateSpace::n_states, _StateSpace::n_states) - ctemp1);
+
+        ctemp1 = -D1121*arma::trans(D1111);
+        ctemp2 = (gam_*gam_)*arma::eye(performance_size - INPUT_SIZE, performance_size - INPUT_SIZE)
+                    - D1111*arma::trans(D1111);
+        ctemp3 = ctemp1*arma::inv(ctemp2);
+        arma::cx_mat D11_hat = ctemp3*D1112 - D1122;
+
+        //-- calculate D12_hat and D21_hat
+
+        D1111.print("D1111 : ");
+
+        ctemp1 = (gam_*gam_)*arma::eye(perturbation_size - OUTPUT_SIZE, perturbation_size - OUTPUT_SIZE)
+                    - arma::trans(D1111)*D1111;
+        ctemp2 = arma::eye(INPUT_SIZE, INPUT_SIZE) - D1121*ctemp1*arma::trans(D1121);
+        ctemp2.print("CHECK1 : ");
+        arma::cx_mat D12_hat = arma::chol(ctemp2, "lower");
+        D12_hat.print("D12_hat : ");
+
+        ctemp1 = (gam_*gam_)*arma::eye(performance_size - INPUT_SIZE, performance_size - INPUT_SIZE)
+                    - D1111*arma::trans(D1111);
+        ctemp2 = arma::eye(OUTPUT_SIZE, OUTPUT_SIZE) - arma::trans(D1112)*ctemp1*D1112;
+        ctemp2.print("CHECK2 : ");
+        arma::cx_mat D21_hat = arma::chol(ctemp2, "upper");
+        D21_hat.print("D21_hat : ");
     }
 }
 
