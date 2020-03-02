@@ -11,10 +11,15 @@
 namespace jacl{
 
 template <class _StateSpace, std::size_t z2_size, std::size_t w2_size, std::size_t y2_size, std::size_t u2_size>
-class LowerLFT:public LFT<_StateSpace>{
+class LowerLFT:public LFT<_StateSpace, z2_size, w2_size, 0, 0, y2_size, u2_size>{
 public:
     LowerLFT(_StateSpace* _ss);
-    ~LowerLFT();
+    LowerLFT(const arma::cx_mat& _A, const arma::cx_mat& _B1, const arma::cx_mat& _B2,
+             const arma::cx_mat& _C1, const arma::cx_mat& _D11, const arma::cx_mat& _D12,
+             const arma::cx_mat& _C2, const arma::cx_mat& _D21, const arma::cx_mat& _D22){
+
+    }
+    ~LowerLFT();    
 
     //-- setters and getters
     inline arma::mat const& A() const{ return this->ss_->A(); }
@@ -59,7 +64,7 @@ private:
 
 template <class _StateSpace, std::size_t z2_size, std::size_t w2_size, std::size_t y2_size, std::size_t u2_size>
 LowerLFT<_StateSpace, z2_size, w2_size, y2_size, u2_size>::LowerLFT(_StateSpace* _ss)
-    : LFT<_StateSpace>(_ss){
+    : LFT<_StateSpace, z2_size, w2_size, 0, 0, y2_size, u2_size>(_ss){
 
     B1_ = this->ss_->B().head_cols(w2_size);
     B2_ = this->ss_->B().tail_cols(u2_size);

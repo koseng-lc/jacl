@@ -10,7 +10,7 @@
 namespace jacl{
 
 template <class _StateSpace, int num_uncertainty>
-class UpperLFT:public LFT<_StateSpace>{
+class UpperLFT:public LFT<_StateSpace,0,0,0,0,0,0>{
 public:
     UpperLFT(_StateSpace* _ss);
     ~UpperLFT();
@@ -53,7 +53,7 @@ private:
 
 template <class _StateSpace, int num_uncertainty>
 UpperLFT<_StateSpace, num_uncertainty>::UpperLFT(_StateSpace* _ss)
-    : LFT<_StateSpace>(_ss){
+    : LFT<_StateSpace,0,0,0,0,0,0>(_ss){
 
     B1_ = this->ss_->B().head_cols(num_uncertainty);
     B2_ = this->ss_->B().tail_cols(this->ss_->numInputs() - num_uncertainty);

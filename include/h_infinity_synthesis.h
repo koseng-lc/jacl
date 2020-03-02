@@ -44,6 +44,14 @@ public:
     void init();
     void solve();
 
+    template <typename SS1, typename SS2>
+    void starProducts(const SS1 &_ss1, const SS2 &_ss2){
+        arma::cx_mat A_bar(SS1::n_states + SS2::n_states, SS1::n_states + SS2::n_states);
+        arma::cx_mat B_bar(SS1::n_states + SS2::n_states, SS1::w1_size + SS2::u_sz);
+        arma::cx_mat C_bar(SS1::z1_sz + SS2::y_sz, SS1::n_states + SS2::n_states);
+        arma::cx_mat D_bar(SS1::z1_sz + SS2::y_sz, SS1::w1_size, + SS2::u_sz);
+    }
+
 private:
     _StateSpace* ss_;
 
@@ -113,7 +121,7 @@ private:
         temp2 = arma::eye(__StateSpace::n_outputs,
                           __StateSpace::n_outputs)
                  - temp1;
-        H.submat(__StateSpace::n_states,                     0, __StateSpace::n_states * 2 - 1,     __StateSpace::n_states - 1) = -C_t*temp2*_ss.C();
+        H.submat(__StateSpace::n_states, 0, __StateSpace::n_states * 2 - 1, __StateSpace::n_states - 1) = -C_t*temp2*_ss.C();
 
         arma::cx_mat eigvec;
         arma::cx_vec eigval;
@@ -545,17 +553,27 @@ void HInf<_StateSpace,
 
         ctemp1 = (gam_*gam_)*arma::eye(perturbation_size - OUTPUT_SIZE, perturbation_size - OUTPUT_SIZE)
                     - arma::trans(D1111)*D1111;
-        ctemp2 = arma::eye(INPUT_SIZE, INPUT_SIZE) - D1121*ctemp1*arma::trans(D1121);
-        ctemp2.print("CHECK1 : ");
+        ctemp2 = arma::eye(INPUT_SIZE, INPUT_SIZE) - D1121*arma::inv(ctemp1)*arma::trans(D1121);
         arma::cx_mat D12_hat = arma::chol(ctemp2, "lower");
         D12_hat.print("D12_hat : ");
 
         ctemp1 = (gam_*gam_)*arma::eye(performance_size - INPUT_SIZE, performance_size - INPUT_SIZE)
                     - D1111*arma::trans(D1111);
-        ctemp2 = arma::eye(OUTPUT_SIZE, OUTPUT_SIZE) - arma::trans(D1112)*ctemp1*D1112;
-        ctemp2.print("CHECK2 : ");
+        ctemp2 = arma::eye(OUTPUT_SIZE, OUTPUT_SIZE) - arma::trans(D1112)*arma::inv(ctemp1)*D1112;
         arma::cx_mat D21_hat = arma::chol(ctemp2, "upper");
         D21_hat.print("D21_hat : ");
+
+        ctemp1 = llft_.B2() + L12_inf;
+        arma::cx_mat B2_hat = Z_inf*ctemp1*D12_hat;
+        arma::cx_mat C2_hat = -D21_hat*(llft_.C2() + F12_inf);
+        ctemp1 = -Z_inf*L2_inf;
+        ctemp2 = B2_hat*arma::inv(D12_hat)*D11_hat;
+        arma::cx_mat B1_hat = ctemp1 + ctemp2;
+        ctemp1 = D11_hat*arma::inv(D21_hat)*C2_hat;
+        arma::cx_mat C1_hat = F2_inf + ctemp1;
+        ctemp1 = B1_hat*arma::inv(D21_hat)*C2_hat;
+        arma::cx_mat A_hat = ss_->A() + ss_->B()*F + ctemp1;
+
     }
 }
 
