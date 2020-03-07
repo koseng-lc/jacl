@@ -18,3 +18,4 @@
 // Example use of JACL
 #include "observer_sim.h"
 #include "system_sim.h"
+#include "controller_sim.h"

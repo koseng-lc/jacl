@@ -42,7 +42,7 @@ public:
     ~HInf();
 
     void init();
-    void solve();
+    std::tuple<arma::mat, arma::mat, arma::mat, arma::mat > solve();
 
     template <typename SS1, typename SS2>
     void starProducts(const SS1 &_ss1, const SS2 &_ss2){
@@ -88,6 +88,10 @@ private:
 
     inline arma::cx_mat toCx(const arma::mat& _in) const{
         return arma::cx_mat(_in, arma::zeros<arma::mat>( arma::size(_in) ));
+    }
+
+    inline arma::mat toReal(const arma::cx_mat& _in) const{
+        return arma::real(_in);
     }
 
     template <typename __StateSpace>
@@ -423,7 +427,7 @@ bool HInf<_StateSpace,
 template <class _StateSpace,
           std::size_t performance_size,
           std::size_t perturbation_size>
-void HInf<_StateSpace,
+std::tuple<arma::mat, arma::mat, arma::mat, arma::mat > HInf<_StateSpace,
     performance_size,
     perturbation_size>::solve(){
 
@@ -573,6 +577,17 @@ void HInf<_StateSpace,
         arma::cx_mat C1_hat = F2_inf + ctemp1;
         ctemp1 = B1_hat*arma::inv(D21_hat)*C2_hat;
         arma::cx_mat A_hat = ss_->A() + ss_->B()*F + ctemp1;
+
+        A_hat.print("A_hat : ");
+        B1_hat.print("B1_hat : ");
+        B2_hat.print("B2_hat : ");
+        C1_hat.print("C1_hat : ");
+        C2_hat.print("C2_hat : ");
+        D11_hat.print("D11_hat : ");
+        D12_hat.print("D12_hat : ");
+        D21_hat.print("D21_hat : ");
+
+        return std::make_tuple(toReal(A_hat), toReal(B1_hat), toReal(C1_hat), toReal(D11_hat));
 
     }
 }

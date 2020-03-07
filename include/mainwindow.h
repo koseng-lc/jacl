@@ -19,6 +19,8 @@
 
 #include <jacl>
 
+//-- TODO : Add GroupBox for Control Input
+
 namespace Ui {
 class MainWindow;
 }
@@ -138,8 +140,13 @@ private:
     using InterConnMat = jacl::StateSpace<9, 10, 8>;
     InterConnMat ICM_;
 
+    using Controller = jacl::StateSpace<9, 3, 2>;
+    Controller K_;
+    jacl::ControllerSim<Controller> controller_sim_;
+
     using HInf = jacl::synthesis::HInf<InterConnMat, 5, 8>;
     HInf* h_inf_;
+
 
 private Q_SLOTS:
     void perturbAct();

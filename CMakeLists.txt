@@ -97,6 +97,7 @@ target_link_libraries(sim
     Boost::system Boost::python3 Boost::thread Boost::chrono
     ${PYTHON_LIBRARIES}
     state_space
+#    X11
 )
 set_target_properties(sim PROPERTIES LINKER_LANGUAGE CXX)
 
@@ -151,10 +152,23 @@ target_link_libraries(system_sim
 )
 set_target_properties(system_sim PROPERTIES LINKER_LANGUAGE CXX)
 
+# Controller
+add_library(controller include/controller.h)
+set_target_properties(controller PROPERTIES LINKER_LANGUAGE CXX)
+
+# Controller Simulator
+add_library(controller_sim include/controller_sim.h)
+target_link_libraries(controller_sim
+    Boost::system Boost::python3 Boost::chrono
+    ${Python_LIBRARIES}
+    sim
+)
+set_target_properties(controller_sim PROPERTIES LINKER_LANGUAGE CXX)
+
 # JACL
 add_library(jacl include/jacl)
 set_target_properties(jacl PROPERTIES LINKER_LANGUAGE CXX)
-target_link_libraries(jacl state_space transfer_matrix simulator sim h_infinity_synthesis)
+target_link_libraries(jacl state_space transfer_matrix simulator sim h_infinity_synthesis controller_sim)
 
 #-- End of JACL Lib part
 

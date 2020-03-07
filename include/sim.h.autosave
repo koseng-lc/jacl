@@ -21,8 +21,6 @@
 #include <thread>
 #include <queue>
 
-//#include <X11/Xlib.h>
-
 #include "state_space.h"
 
 namespace jacl{
@@ -134,8 +132,6 @@ Sim<_StateSpace>::~Sim(){
 
 template <class _StateSpace>
 int Sim<_StateSpace>::init(){
-
-//    XInitThreads();
 
     if(!Py_IsInitialized())
         Py_Initialize();

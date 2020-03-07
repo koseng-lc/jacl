@@ -7,12 +7,18 @@ import time
 import math
 import numpy as np
 import signal
+import multiprocessing
 from multiprocessing import Process, Array
+import matplotlib
 import matplotlib.pyplot as plt
 from scipy.linalg import expm
 
 class Plotter:
     def __init__(self, n_signals, d_time, view_interval):
+        matplotlib.use('TkAgg')
+        # print(matplotlib.get_backend())
+        # matplotlib.use('QT5Agg')
+        # print(matplotlib.get_backend())
         self.n_signals = n_signals        
         self.running = True
         self.max_data = int(view_interval / d_time)
@@ -91,12 +97,10 @@ class Plotter:
 
         # Manual adjustment
         # plt.subplots_adjust(left=0.05,bottom=0.05,right=0.99,top=0.96,wspace=0.21,hspace=0.3)
-
         plt.grid(True)        
-
         fig.canvas.draw()
-        fig.show()
-
+        # plt.pause(0.1)
+        fig.show()        
         n_data = 0
 
         while self.running:

@@ -22,7 +22,8 @@ MainWindow::MainWindow(QWidget *parent)
     , obs_gain_({{ .0, .0, .0},
                  { .0, .0, .0},
                  { .0, .0, .0}})
-    , observer_sim_(&ss_, obs_gain_){
+    , observer_sim_(&ss_, obs_gain_)
+    , controller_sim_(&K_){
 
     ui->setupUi(this);
 
@@ -292,7 +293,13 @@ MainWindow::MainWindow(QWidget *parent)
 //    ICM_.D().print("ICM D : ");
 
     h_inf_ = new HInf(&ICM_);
-    h_inf_->solve();
+    std::tuple<arma::mat, arma::mat, arma::mat, arma::mat> K(h_inf_->solve());
+    K_.setA(std::get<0>(K));
+    K_.setB(std::get<1>(K));
+    K_.setC(std::get<2>(K));
+    K_.setD(std::get<3>(K));
+
+    controller_sim_.updateVariables();
 
     //-- Test KautskyNichols
     arma::mat observer_K;
