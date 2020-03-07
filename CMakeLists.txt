@@ -191,10 +191,12 @@ set(CMAKE_AUTOUIC on)
 add_executable(${PROJECT_NAME}
         # Header
 	include/mainwindow.h
+        include/controller_dialog.h
         # Source
 	src/main.cpp
 	src/mainwindow.cpp
 	src/mainwindow.ui
+        src/controller_dialog.cpp
 )
 
 target_link_libraries(${PROJECT_NAME}

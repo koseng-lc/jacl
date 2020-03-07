@@ -293,12 +293,21 @@ MainWindow::MainWindow(QWidget *parent)
 //    ICM_.D().print("ICM D : ");
 
     h_inf_ = new HInf(&ICM_);
-    std::tuple<arma::mat, arma::mat, arma::mat, arma::mat> K(h_inf_->solve());
+    std::tuple<arma::mat, arma::mat, arma::mat, arma::mat> K( h_inf_->solve() );
     K_.setA(std::get<0>(K));
     K_.setB(std::get<1>(K));
     K_.setC(std::get<2>(K));
     K_.setD(std::get<3>(K));
 
+    K_.A().print("K_A : ");
+    K_.B().print("K_B : ");
+    K_.C().print("K_C : ");
+    K_.D().print("K_D : ");
+
+    controller_sim_.init();
+    controller_sim_.setTitle("Controller");
+    controller_sim_.setDelay() = TIME_STEP;
+    controller_sim_.setPlotName({"1","2","3","4","5"});
     controller_sim_.updateVariables();
 
     //-- Test KautskyNichols
@@ -312,7 +321,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     system_sim_.init();
     system_sim_.setTitle("DC Motor");
-    system_sim_.setDelay() = .02;
+    system_sim_.setDelay() = TIME_STEP;
     system_sim_.setPlotName({"Angular Position", "Angular Velocity", "Current",
                        "Voltage In", "Torque In",
                        "Angular Position", "Angular Velocity", "Current"});
@@ -320,7 +329,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     observer_sim_.init();
     observer_sim_.setTitle("Full-order Luenberger Observer of DC Motor");
-    observer_sim_.setDelay() = .02;
+    observer_sim_.setDelay() = TIME_STEP;
     observer_sim_.setPlotName({"Est. Position", "Est. Velocity", "Est. Current"
                               ,"Est. Out Position", "Est. Out Velocity", "Est. Out Current"});
     observer_sim_.updateVariables();
@@ -334,14 +343,20 @@ MainWindow::MainWindow(QWidget *parent)
 //    sim_.setStateSpace(ss_.A(), ss_.B(), ss_.C(), ss_.D());    
 
     setupWidgets();
+    setupControllerDialog();
+    setupMenus();
     setupActions();
+
+    cl_status_ = true;
+    cl_thread_ = boost::thread{boost::bind(&MainWindow::closedLoopProcess, this)};
 
     jacl::StateSpace<12,4,4> another_ss;
 
 }
 
 MainWindow::~MainWindow(){
-
+    boost::mutex::scoped_lock lk(cl_mtx_);
+    cl_status_ = true;
     delete ui;    
 }
 
@@ -602,6 +617,19 @@ void MainWindow::setupWidgets(){
 
 }
 
+void MainWindow::setupControllerDialog(){
+    controller_dialog_ = new jacl::ControllerDialog(this);
+
+}
+
+void MainWindow::setupMenus(){
+    controller_act_ = new QAction(tr("Controller"), this);
+    controller_act_->setStatusTip(tr("Open controller dialog"));
+    connect(controller_act_, SIGNAL(triggered()), this, SLOT(openControllerDialog()));
+    tools_menu_ = this->menuBar()->addMenu(tr("Tools"));
+    tools_menu_->addAction(controller_act_);
+}
+
 void MainWindow::setupActions(){
 
     connect(perturb_pb_, SIGNAL(clicked()), this, SLOT(perturbAct()));
@@ -690,4 +718,19 @@ void MainWindow::scaleDSBConv(int _val){
 
 void MainWindow::deadZoneDSBConv(int _val){
     dead_zone_dsb_->setValue((double)_val);
+}
+
+void MainWindow::openControllerDialog(){
+    controller_dialog_->show();
+}
+
+void MainWindow::closedLoopProcess(){
+    arma::mat a(3,1,arma::fill::zeros),b(2,1,arma::fill::zeros);
+    while(cl_status_){
+        controller_sim_.setInput(a);
+        b = controller_sim_.getOutputSig();
+        system_sim_.setInput(b);
+        a = system_sim_.getOutputSig();
+        boost::this_thread::sleep_for(boost::chrono::milliseconds((int)TIME_STEP*1000));
+    }
 }

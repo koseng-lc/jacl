@@ -18,6 +18,7 @@ public:
 
     void setInput(const arma::mat& _in);
     void updateVariables();
+    arma::mat getOutputSig() const;
 
 protected:
     arma::mat signalCalc();
@@ -39,6 +40,8 @@ private:
     arma::mat state_trans_;
     arma::mat output_;
 
+    arma::mat all_sig_;
+
     void calcState();
     void calcOutput();
 
@@ -48,7 +51,7 @@ private:
 
 template <class _StateSpace>
 SystemSim<_StateSpace>::SystemSim(_StateSpace* _ss, double _time_step)
-    : Sim<_StateSpace >(_ss->A().n_rows +_ss->B().n_cols + _ss->C().n_rows)
+    : Sim<_StateSpace >(_StateSpace::n_states + _StateSpace::n_inputs + _StateSpace::n_outputs)
     , ss_(_ss)
     , u_(_ss->B().n_cols, 1, arma::fill::zeros)
     , prev_u_(u_)
@@ -94,6 +97,11 @@ arma::mat SystemSim<_StateSpace>::signalCalc(){
     prev_u_ = u_;
 
     return arma::join_cols(state_, arma::join_cols(u_, output_));
+}
+
+template <class _StateSpace>
+arma::mat SystemSim<_StateSpace>::getOutputSig() const{
+    return output_;
 }
 
 }

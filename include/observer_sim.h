@@ -36,7 +36,7 @@ private:
 
 template <class _StateSpace>
 ObserverSim<_StateSpace>::ObserverSim(_StateSpace* _ss, const arma::mat& _K)
-    : Sim<_StateSpace >(_ss->A().n_rows + _ss->C().n_rows) // State and ouputs only
+    : Sim<_StateSpace >(_StateSpace::n_states + _StateSpace::n_outputs) // State and ouputs only
     , observer_(_ss, _K){
 
 }

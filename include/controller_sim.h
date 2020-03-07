@@ -12,7 +12,7 @@ public:
     ~ControllerSim();
     void updateVariables();
     void setInput(const arma::mat& _in);
-
+    arma::mat getOutputSig() const;
 protected:
     arma::mat signalCalc();
 
@@ -24,6 +24,7 @@ private:
     arma::mat prev_state_;
     arma::mat state_trans_;
     arma::mat output_;
+
     double dt_;
 };
 
@@ -68,6 +69,11 @@ arma::mat ControllerSim<_StateSpace>::signalCalc(){
     prev_u_ = u_;
 
     return arma::join_cols(state_, arma::join_cols(u_, output_));
+}
+
+template <class _StateSpace>
+arma::mat ControllerSim<_StateSpace>::getOutputSig() const{
+    return output_;
 }
 
 }

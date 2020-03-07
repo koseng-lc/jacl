@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <boost/thread.hpp>
+
 #include <QMainWindow>
 #include <QGroupBox>
 #include <QLabel>
@@ -16,8 +18,12 @@
 #include <QDial>
 #include <QFile>
 #include <QComboBox>
+#include <QMenu>
+#include <QDialog>
 
 #include <jacl>
+
+#include "controller_dialog.h"
 
 //-- TODO : Add GroupBox for Control Input
 
@@ -86,7 +92,26 @@ private:
     QLabel* title_label_;
     QLabel* author_label_;
 
+    //-- Menu stuff
+    QMenu* tools_menu_;
+    QAction* controller_act_;
+
+    //-- Controller Dialog
+    jacl::ControllerDialog* controller_dialog_;
+//    QDialog* controller_dialog_;
+    QGridLayout* ctrl_gl_;
+    QGroupBox* ctrl_in_gb_;
+
+    //-- Closed-loop process
+    boost::thread cl_thread_;
+    boost::mutex cl_mtx_;
+    bool cl_status_;
+    void closedLoopProcess();
+    const double TIME_STEP{.02};
+
     void setupWidgets();
+    void setupControllerDialog();
+    void setupMenus();
     void setupActions();
 
     //-- Control stuff
@@ -160,4 +185,5 @@ private Q_SLOTS:
     void scaleDSBConv(int _val);
     void deadZoneDSBConv(int _val);
 
+    void openControllerDialog();
 };
