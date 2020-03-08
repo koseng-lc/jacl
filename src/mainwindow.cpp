@@ -644,6 +644,8 @@ void MainWindow::setupActions(){
     connect(bias_dial_, SIGNAL(valueChanged(int)), this, SLOT(biasDSBConv(int)));
     connect(scale_dial_, SIGNAL(valueChanged(int)), this, SLOT(scaleDSBConv(int)));
     connect(dead_zone_dial_, SIGNAL(valueChanged(int)), this, SLOT(deadZoneDSBConv(int)));
+
+    connect(controller_dialog_, SIGNAL(setRefSig()), this, SLOT())
 }
 
 void MainWindow::perturbAct(){
@@ -684,6 +686,7 @@ void MainWindow::simulateAct(){
 
 //    sim_.simulate();
     system_sim_.simulate();
+    controller_sim_.simulate();
     observer_sim_.simulate();
 }
 
@@ -727,10 +730,13 @@ void MainWindow::openControllerDialog(){
 void MainWindow::closedLoopProcess(){
     arma::mat a(3,1,arma::fill::zeros),b(2,1,arma::fill::zeros);
     while(cl_status_){
+        a.print("a : ");
         controller_sim_.setInput(a);
         b = controller_sim_.getOutputSig();
+        b.print("b : ");
         system_sim_.setInput(b);
         a = system_sim_.getOutputSig();
+        a.print("a' : ");
         boost::this_thread::sleep_for(boost::chrono::milliseconds((int)TIME_STEP*1000));
     }
 }

@@ -141,7 +141,6 @@ int Sim<_StateSpace>::init(){
     if(PyGILState_Check()){
         PyEval_InitThreads();
         py_state_ = PyEval_SaveThread();
-
     }
 
     AcquireGIL lk;

@@ -13,6 +13,7 @@ public:
     void updateVariables();
     void setInput(const arma::mat& _in);
     arma::mat getOutputSig() const;
+
 protected:
     arma::mat signalCalc();
 
@@ -30,15 +31,20 @@ private:
 
 template <class _StateSpace>
 ControllerSim<_StateSpace>::ControllerSim(_StateSpace* _ss, double _time_step)
-    : Sim<_StateSpace>(_StateSpace::n_states + _StateSpace::n_inputs + _StateSpace::n_outputs)
+    : Sim<_StateSpace>(_StateSpace::n_inputs + _StateSpace::n_outputs)
     , ss_(_ss)
+    , u_(_StateSpace::n_inputs, 1, arma::fill::zeros)
+    , prev_u_(u_)
+    , state_(_StateSpace::n_states, 1, arma::fill::zeros)
+    , prev_state_(state_)
+    , output_(_StateSpace::n_outputs, 1, arma::fill::zeros)
     , dt_(_time_step){
 
 }
 
 template <class _StateSpace>
 ControllerSim<_StateSpace>::~ControllerSim(){
-
+    ss_ = nullptr;
 }
 
 template <class _StateSpace>
@@ -68,7 +74,7 @@ arma::mat ControllerSim<_StateSpace>::signalCalc(){
     prev_state_ = state_;
     prev_u_ = u_;
 
-    return arma::join_cols(state_, arma::join_cols(u_, output_));
+    return arma::join_cols(u_, output_);
 }
 
 template <class _StateSpace>

@@ -40,8 +40,6 @@ private:
     arma::mat state_trans_;
     arma::mat output_;
 
-    arma::mat all_sig_;
-
     void calcState();
     void calcOutput();
 
@@ -53,10 +51,11 @@ template <class _StateSpace>
 SystemSim<_StateSpace>::SystemSim(_StateSpace* _ss, double _time_step)
     : Sim<_StateSpace >(_StateSpace::n_states + _StateSpace::n_inputs + _StateSpace::n_outputs)
     , ss_(_ss)
-    , u_(_ss->B().n_cols, 1, arma::fill::zeros)
+    , u_(_StateSpace::n_inputs, 1, arma::fill::zeros)
     , prev_u_(u_)
-    , state_(_ss->A().n_rows, 1, arma::fill::zeros)
+    , state_(_StateSpace::n_states, 1, arma::fill::zeros)
     , prev_state_(state_)
+    , output_(_StateSpace::n_outputs, 1, arma::fill::zeros)
     , dt_(_time_step){
 
     // updateVariables();

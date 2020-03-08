@@ -14,27 +14,31 @@ class ControllerDialog: public QDialog{
 public:
     ControllerDialog(QWidget* parent=nullptr);
     ~ControllerDialog();
-    inline double getVoltage() const{
-        return input_dsb_[Voltage]->value();
+    inline double getPosition() const{
+        return ref_dsb_[Position]->value();
     }
-    inline double getTorque() const{
-        return input_dsb_[Torque]->value();
+    inline double getVelocity() const{
+        return ref_dsb_[Velocity]->value();
+    }
+    inline double getCurrent() const{
+        return ref_dsb_[Current]->value();
     }
 private:
-    enum InputType{
-        Voltage,
-        Torque
+    enum RefType{
+        Position,
+        Velocity,
+        Current
     };
     QGridLayout* main_layout_;
-    QGroupBox* input_gb_;
-    QLabel* input_label_[2];
-    QDoubleSpinBox* input_dsb_[2];
-    QPushButton* set_input_pb_;
-    QGridLayout* input_gl_;
+    QGroupBox* ref_gb_;
+    QLabel* ref_label_[3];
+    QDoubleSpinBox* ref_dsb_[3];
+    QPushButton* set_ref_pb_;
+    QGridLayout* ref_gl_;
 Q_SIGNALS:
-    void setInputSig();
+    void setRefSig();
 private Q_SLOTS:
-    void setInputAct();
+    void setRefAct();
 };
 
 }
