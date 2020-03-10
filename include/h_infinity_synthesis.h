@@ -30,12 +30,12 @@ class HInf{
 public:
     template<typename T = _StateSpace,
              typename std::enable_if<traits::is_state_space<T>::value>::type* = nullptr>
-    HInf(T* _ss)
+    HInf(T* _ss, double _gam)
         : ss_(_ss)
         , llft_(ss_)
         , are_solver1_(ss_)
         , are_solver2_(ss_)
-        , gam_(20.){
+        , gam_(_gam){
 
     }    
 

@@ -172,6 +172,8 @@ private:
     using HInf = jacl::synthesis::HInf<InterConnMat, 5, 8>;
     HInf* h_inf_;
 
+    arma::mat ref_;
+    int control_mode_;
 
 private Q_SLOTS:
     void perturbAct();
@@ -186,4 +188,6 @@ private Q_SLOTS:
     void deadZoneDSBConv(int _val);
 
     void openControllerDialog();
+    void refAct();
+    void modeAct(int _val);
 };

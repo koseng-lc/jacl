@@ -23,7 +23,8 @@ MainWindow::MainWindow(QWidget *parent)
                  { .0, .0, .0},
                  { .0, .0, .0}})
     , observer_sim_(&ss_, obs_gain_)
-    , controller_sim_(&K_){
+    , controller_sim_(&K_)
+    , ref_(3, 1, arma::fill::zeros){
 
     ui->setupUi(this);
 
@@ -292,7 +293,7 @@ MainWindow::MainWindow(QWidget *parent)
 //    ICM_.C().print("ICM C : ");
 //    ICM_.D().print("ICM D : ");
 
-    h_inf_ = new HInf(&ICM_);
+    h_inf_ = new HInf(&ICM_, 5.5);
     std::tuple<arma::mat, arma::mat, arma::mat, arma::mat> K( h_inf_->solve() );
     K_.setA(std::get<0>(K));
     K_.setB(std::get<1>(K));
@@ -307,7 +308,7 @@ MainWindow::MainWindow(QWidget *parent)
     controller_sim_.init();
     controller_sim_.setTitle("Controller");
     controller_sim_.setDelay() = TIME_STEP;
-    controller_sim_.setPlotName({"1","2","3","4","5"});
+    controller_sim_.setPlotName({"Position Error","Velocity Error","Current Error","Voltage","Torque"});
     controller_sim_.updateVariables();
 
     //-- Test KautskyNichols
@@ -356,8 +357,9 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow(){
     boost::mutex::scoped_lock lk(cl_mtx_);
-    cl_status_ = true;
-    delete ui;    
+    cl_status_ = false;
+    cl_thread_.join();
+    delete ui;
 }
 
 void MainWindow::setupWidgets(){
@@ -464,7 +466,7 @@ void MainWindow::setupWidgets(){
     simulate_pb_->setText(tr("Simulate"));
 
     set_input_pb_ = new QPushButton;
-    set_input_pb_->setText(tr("Set Input"));
+    set_input_pb_->setText(tr("Disturb !"));
 
     command_gl_->addWidget(perturb_pb_  , 0,0,1,1);
     command_gl_->addWidget(reset_pb_    , 0,1,1,1);
@@ -509,7 +511,7 @@ void MainWindow::setupWidgets(){
     input_gl_->addItem(new QSpacerItem(0,0,QSizePolicy::Ignored,QSizePolicy::Expanding),2,2);
 
     input_gb_->setLayout(input_gl_);
-    input_gb_->setTitle(tr("Input"));
+    input_gb_->setTitle(tr("Input Disturbance"));
 
     //-- Fault
 
@@ -645,7 +647,8 @@ void MainWindow::setupActions(){
     connect(scale_dial_, SIGNAL(valueChanged(int)), this, SLOT(scaleDSBConv(int)));
     connect(dead_zone_dial_, SIGNAL(valueChanged(int)), this, SLOT(deadZoneDSBConv(int)));
 
-    connect(controller_dialog_, SIGNAL(setRefSig()), this, SLOT())
+    connect(controller_dialog_, SIGNAL(setRefSig()), this, SLOT(refAct()));
+    connect(controller_dialog_, SIGNAL(setModeSig(int)), this, SLOT(modeAct(int)));
 }
 
 void MainWindow::perturbAct(){
@@ -687,7 +690,7 @@ void MainWindow::simulateAct(){
 //    sim_.simulate();
     system_sim_.simulate();
     controller_sim_.simulate();
-    observer_sim_.simulate();
+//    observer_sim_.simulate();
 }
 
 void MainWindow::setInputAct(){
@@ -727,16 +730,34 @@ void MainWindow::openControllerDialog(){
     controller_dialog_->show();
 }
 
+void MainWindow::refAct(){
+    ref_(0) = controller_dialog_->getPosition();
+    ref_(1) = controller_dialog_->getVelocity();
+    ref_(2) = controller_dialog_->getCurrent();
+}
+
+void MainWindow::modeAct(int _val){
+    control_mode_ = _val;
+}
+
 void MainWindow::closedLoopProcess(){
-    arma::mat a(3,1,arma::fill::zeros),b(2,1,arma::fill::zeros);
+    arma::mat out(3,1,arma::fill::zeros),in(2,1,arma::fill::zeros);
+    arma::mat err(3,1,arma::fill::zeros);
     while(cl_status_){
-        a.print("a : ");
-        controller_sim_.setInput(a);
-        b = controller_sim_.getOutputSig();
-        b.print("b : ");
-        system_sim_.setInput(b);
-        a = system_sim_.getOutputSig();
-        a.print("a' : ");
-        boost::this_thread::sleep_for(boost::chrono::milliseconds((int)TIME_STEP*1000));
+//        switch(control_mode_){
+//        case jacl::ControllerDialog::PosControl:{
+//            out(1) = ref_(1);
+//        }break;
+//        case jacl::ControllerDialog::VelControl:{
+//            out(0) = ref_(0);
+//        }break;
+//        }
+
+        err = ref_ - out;
+        controller_sim_.setInput(err);
+        in = controller_sim_.getOutputSig();
+        system_sim_.setInput(in);
+        out = system_sim_.getOutputSig();
+        boost::this_thread::sleep_for(boost::chrono::milliseconds((int)(TIME_STEP*1000.)));
     }
 }
