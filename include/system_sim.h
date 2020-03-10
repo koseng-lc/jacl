@@ -16,12 +16,16 @@ public:
     SystemSim(_StateSpace* _ss, double _time_step = 1e-4);
     ~SystemSim();
 
-    void setInput(const arma::mat& _in);
-    void updateVariables();
+    auto setInput(const arma::mat& _in) -> void;
+    auto updateVariables() -> void;
     arma::mat getOutputSig() const;
 
 protected:
-    arma::mat signalCalc();
+    auto signalCalc() -> arma::mat;
+
+private:
+    auto calcState() -> void;
+    auto calcOutput() -> void;
 
 private:
     _StateSpace* ss_;
@@ -38,10 +42,7 @@ private:
     arma::mat state_;
     arma::mat prev_state_;
     arma::mat state_trans_;
-    arma::mat output_;
-
-    void calcState();
-    void calcOutput();
+    arma::mat output_;    
 
     double dt_;
 
@@ -68,12 +69,12 @@ SystemSim<_StateSpace>::~SystemSim(){
 }
 
 template <class _StateSpace>
-void SystemSim<_StateSpace>::setInput(const arma::mat& _in){
+auto SystemSim<_StateSpace>::setInput(const arma::mat& _in) -> void{
     u_ = _in;
 }
 
 template <class _StateSpace>
-void SystemSim<_StateSpace>::updateVariables(){
+auto SystemSim<_StateSpace>::updateVariables() -> void{
     state_trans_ = arma::expmat(ss_->A() * dt_);
 }
 

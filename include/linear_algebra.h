@@ -65,14 +65,14 @@ static void QRAlgorithm(const arma::mat& in, arma::mat* T, arma::mat* U, int num
 }
 
 template <typename Type>
-static bool isPosSemiDefinite(const arma::Mat<Type> in){
+static auto isPosSemiDefinite(const arma::Mat<Type> in) -> bool{
     arma::Mat<Type> hessian_in = .5*(in + arma::trans(in));
     arma::Mat<Type> R;
     return arma::chol(R, hessian_in);
 }
 
 template <typename Type>
-static double spectralRadius(const arma::Mat<Type>& in){
+static auto spectralRadius(const arma::Mat<Type>& in) -> double{
     arma::Mat<Type> eigvec;
     arma::Col<Type> eigval;
     arma::eig_gen(eigval, eigvec, in);

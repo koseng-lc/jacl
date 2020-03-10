@@ -19,10 +19,6 @@ namespace jacl{
 
 namespace synthesis{
 
-namespace{
-    namespace linalg = linear_algebra;
-}
-
 template <class _StateSpace,
           std::size_t performance_size,
           std::size_t perturbation_size>
@@ -41,61 +37,39 @@ public:
 
     ~HInf();
 
-    void init();
-    std::tuple<arma::mat, arma::mat, arma::mat, arma::mat > solve();
+    auto init() -> void;
+    auto solve() -> std::tuple<arma::mat, arma::mat, arma::mat, arma::mat >;
 
     template <typename SS1, typename SS2>
-    void starProducts(const SS1 &_ss1, const SS2 &_ss2){
+    auto starProducts(const SS1 &_ss1, const SS2 &_ss2) -> void{
         arma::cx_mat A_bar(SS1::n_states + SS2::n_states, SS1::n_states + SS2::n_states);
         arma::cx_mat B_bar(SS1::n_states + SS2::n_states, SS1::w1_size + SS2::u_sz);
         arma::cx_mat C_bar(SS1::z1_sz + SS2::y_sz, SS1::n_states + SS2::n_states);
         arma::cx_mat D_bar(SS1::z1_sz + SS2::y_sz, SS1::w1_size, + SS2::u_sz);
     }
-
 private:
-    _StateSpace* ss_;
+    auto checkAssumption1() -> bool;
+    auto checkAssumption2() -> bool;
+    auto checkAssumption3() -> bool;
+    auto checkAssumption4() -> bool;
+    auto checkAllAssumption() -> bool;
 
-    static constexpr auto INPUT_SIZE{_StateSpace::n_inputs - perturbation_size};
-    static constexpr auto OUTPUT_SIZE{_StateSpace::n_outputs - performance_size};
+    auto checkCondition1() -> bool;
+    auto checkCondition2() -> bool;
+    auto checkCondition3() -> bool;
+    auto checkCondition4() -> bool;
+    auto checkAllCondition() -> bool;
 
-    using LLFT = LowerLFT<_StateSpace,
-                          performance_size,
-                          perturbation_size,
-                          OUTPUT_SIZE,
-                          INPUT_SIZE>;
-
-    LLFT llft_;
-
-    ARE<_StateSpace> are_solver1_;
-    ARE<_StateSpace> are_solver2_;
-
-    bool checkAssumption1();
-    bool checkAssumption2();
-    bool checkAssumption3();
-    bool checkAssumption4();
-    bool checkAllAssumption();
-
-    bool checkCondition1();
-    bool checkCondition2();
-    bool checkCondition3();
-    bool checkCondition4();
-    bool checkAllCondition();
-
-    double gam_;
-
-    arma::cx_mat X_inf_;
-    arma::cx_mat Y_inf_;
-
-    inline arma::cx_mat toCx(const arma::mat& _in) const{
+    inline auto toCx(const arma::mat& _in) const -> arma::cx_mat{
         return arma::cx_mat(_in, arma::zeros<arma::mat>( arma::size(_in) ));
     }
 
-    inline arma::mat toReal(const arma::cx_mat& _in) const{
+    inline auto toReal(const arma::cx_mat& _in) const -> arma::mat{
         return arma::real(_in);
     }
 
     template <typename __StateSpace>
-    bool isInfNormLessThan(double _gam, const __StateSpace& _ss){
+    auto isInfNormLessThan(double _gam, const __StateSpace& _ss) -> bool{
         arma::mat C_t = arma::trans( _ss.C() );
         arma::mat D_t = arma::trans( _ss.D() );
         arma::mat D_tD = D_t * _ss.D();
@@ -131,7 +105,7 @@ private:
         arma::cx_vec eigval;
         arma::eig_gen(eigval, eigvec, H);
         arma::mat eigval_re = arma::real(eigval);
-        bool ok(true);
+        auto ok(true);
         for(int i(0); i < eigval.n_rows; i++){
             if(std::fabs(eigval_re(i, 0)) < std::numeric_limits<double>::epsilon()){
                 ~ok;
@@ -140,6 +114,26 @@ private:
         }
         return ok;
     }
+
+private:
+    _StateSpace* ss_;
+
+    static constexpr auto INPUT_SIZE{_StateSpace::n_inputs - perturbation_size};
+    static constexpr auto OUTPUT_SIZE{_StateSpace::n_outputs - performance_size};
+
+    LowerLFT<_StateSpace,
+             performance_size,
+             perturbation_size,
+             OUTPUT_SIZE,
+             INPUT_SIZE> llft_;
+
+    ARE<_StateSpace> are_solver1_;
+    ARE<_StateSpace> are_solver2_;    
+
+    double gam_;
+
+    arma::cx_mat X_inf_;
+    arma::cx_mat Y_inf_;
 
 };
 
@@ -155,21 +149,21 @@ HInf<_StateSpace,
 template <class _StateSpace,
           std::size_t performance_size,
           std::size_t perturbation_size>
-void HInf<_StateSpace,
+auto HInf<_StateSpace,
     performance_size,
-    perturbation_size>::init(){
+    perturbation_size>::init() -> void{
 
 }
 
 template <class _StateSpace,
           std::size_t performance_size,
           std::size_t perturbation_size>
-bool HInf<_StateSpace,
+auto HInf<_StateSpace,
     performance_size,
-    perturbation_size>::checkAssumption1(){
+    perturbation_size>::checkAssumption1() -> bool{
 
-    bool ctrb = common::stabilizable(llft_.A(), llft_.B2());
-    bool obsv = common::detectability(llft_.A(), llft_.C2());
+    auto ctrb = common::stabilizable(llft_.A(), llft_.B2());
+    auto obsv = common::detectability(llft_.A(), llft_.C2());
     std::cout << "Assumption 1 : " << std::endl;
     std::cout << std::boolalpha << ctrb << " ; " << obsv << std::endl;
     return ctrb & obsv;
@@ -178,11 +172,11 @@ bool HInf<_StateSpace,
 template <class _StateSpace,
           std::size_t performance_size,
           std::size_t perturbation_size>
-bool HInf<_StateSpace,
+auto HInf<_StateSpace,
     performance_size,
-    perturbation_size>::checkAssumption2(){
+    perturbation_size>::checkAssumption2() -> bool{
 
-    bool ok(true); //-- RVO
+    auto ok(true); //-- RVO
     arma::mat I_in(INPUT_SIZE, INPUT_SIZE, arma::fill::eye);
     arma::mat expected_D12 = arma::join_vert(arma::mat(performance_size - INPUT_SIZE, INPUT_SIZE, arma::fill::zeros), I_in);
 
@@ -230,7 +224,7 @@ bool HInf<_StateSpace,
         ~ok;
     }
 
-    bool ok2(true); //-- RVO
+    auto ok2(true); //-- RVO
     arma::mat I_out(OUTPUT_SIZE, OUTPUT_SIZE, arma::fill::eye);
     arma::mat expected_D21 = arma::join_horiz(arma::mat(OUTPUT_SIZE, perturbation_size - OUTPUT_SIZE, arma::fill::zeros), I_out);
 
@@ -293,9 +287,9 @@ bool HInf<_StateSpace,
 template <class _StateSpace,
           std::size_t performance_size,
           std::size_t perturbation_size>
-bool HInf<_StateSpace,
+auto HInf<_StateSpace,
     performance_size,
-    perturbation_size>::checkAssumption3(){   
+    perturbation_size>::checkAssumption3() -> bool{
 
     arma::mat D12_t( llft_.D12().t() );
     arma::mat R( D12_t*llft_.D12() );
@@ -322,9 +316,9 @@ bool HInf<_StateSpace,
 template <class _StateSpace,
           std::size_t performance_size,
           std::size_t perturbation_size>
-bool HInf<_StateSpace,
+auto HInf<_StateSpace,
     performance_size,
-    perturbation_size>::checkAssumption4(){
+    perturbation_size>::checkAssumption4() -> bool{
 
     arma::mat D21_t( llft_.D21().t() );
     arma::mat R( llft_.D21()*D21_t );
@@ -351,9 +345,9 @@ bool HInf<_StateSpace,
 template <class _StateSpace,
           std::size_t performance_size,
           std::size_t perturbation_size>
-bool HInf<_StateSpace,
+auto HInf<_StateSpace,
     performance_size,
-    perturbation_size>::checkAllAssumption(){
+    perturbation_size>::checkAllAssumption() -> bool{
     return checkAssumption1()
             & checkAssumption2()
             & checkAssumption3()
@@ -363,9 +357,9 @@ bool HInf<_StateSpace,
 template <class _StateSpace,
           std::size_t performance_size,
           std::size_t perturbation_size>
-bool HInf<_StateSpace,
+auto HInf<_StateSpace,
     performance_size,
-    perturbation_size>::checkCondition1(){
+    perturbation_size>::checkCondition1() -> bool{
 
     arma::mat D11_ = llft_.D11().head_rows(performance_size - INPUT_SIZE);
     arma::mat D_11 = llft_.D11().head_cols(perturbation_size - OUTPUT_SIZE);
@@ -385,9 +379,9 @@ bool HInf<_StateSpace,
 template <class _StateSpace,
           std::size_t performance_size,
           std::size_t perturbation_size>
-bool HInf<_StateSpace,
+auto HInf<_StateSpace,
     performance_size,
-    perturbation_size>::checkCondition2(){
+    perturbation_size>::checkCondition2() -> bool{
 
     return linear_algebra::isPosSemiDefinite(X_inf_);
 }
@@ -395,9 +389,9 @@ bool HInf<_StateSpace,
 template <class _StateSpace,
           std::size_t performance_size,
           std::size_t perturbation_size>
-bool HInf<_StateSpace,
+auto HInf<_StateSpace,
     performance_size,
-    perturbation_size>::checkCondition3(){
+    perturbation_size>::checkCondition3() -> bool{
 
     return linear_algebra::isPosSemiDefinite(Y_inf_);
 }
@@ -405,9 +399,9 @@ bool HInf<_StateSpace,
 template <class _StateSpace,
           std::size_t performance_size,
           std::size_t perturbation_size>
-bool HInf<_StateSpace,
+auto HInf<_StateSpace,
     performance_size,
-    perturbation_size>::checkCondition4(){
+    perturbation_size>::checkCondition4() -> bool{
     arma::cx_mat temp( X_inf_*Y_inf_ );
     return linear_algebra::spectralRadius( std::move(temp) ) < gam_*gam_;
 }
@@ -415,9 +409,9 @@ bool HInf<_StateSpace,
 template <class _StateSpace,
           std::size_t performance_size,
           std::size_t perturbation_size>
-bool HInf<_StateSpace,
+auto HInf<_StateSpace,
     performance_size,
-    perturbation_size>::checkAllCondition(){
+    perturbation_size>::checkAllCondition() -> bool{
     return checkCondition1()
             & checkCondition2()
             & checkCondition3()
@@ -427,13 +421,13 @@ bool HInf<_StateSpace,
 template <class _StateSpace,
           std::size_t performance_size,
           std::size_t perturbation_size>
-std::tuple<arma::mat, arma::mat, arma::mat, arma::mat > HInf<_StateSpace,
+auto HInf<_StateSpace,
     performance_size,
-    perturbation_size>::solve(){
+    perturbation_size>::solve() -> std::tuple<arma::mat, arma::mat, arma::mat, arma::mat >{
 
     if(checkAllAssumption()){
         arma::mat temp1, temp2, temp3, temp4;
-        arma::cx_mat ctemp1, ctemp2, ctemp3, ctemp4;
+        arma::cx_mat ctemp1, ctemp2, ctemp3;
 
         arma::mat A_t = ss_->A().t();
         arma::mat B_t = ss_->B().t();
@@ -553,19 +547,19 @@ std::tuple<arma::mat, arma::mat, arma::mat, arma::mat > HInf<_StateSpace,
 
         //-- calculate D12_hat and D21_hat
 
-        D1111.print("D1111 : ");
+//        D1111.print("D1111 : ");
 
         ctemp1 = (gam_*gam_)*arma::eye(perturbation_size - OUTPUT_SIZE, perturbation_size - OUTPUT_SIZE)
                     - arma::trans(D1111)*D1111;
         ctemp2 = arma::eye(INPUT_SIZE, INPUT_SIZE) - D1121*arma::inv(ctemp1)*arma::trans(D1121);
         arma::cx_mat D12_hat = arma::chol(ctemp2, "lower");
-        D12_hat.print("D12_hat : ");
+//        D12_hat.print("D12_hat : ");
 
         ctemp1 = (gam_*gam_)*arma::eye(performance_size - INPUT_SIZE, performance_size - INPUT_SIZE)
                     - D1111*arma::trans(D1111);
         ctemp2 = arma::eye(OUTPUT_SIZE, OUTPUT_SIZE) - arma::trans(D1112)*arma::inv(ctemp1)*D1112;
         arma::cx_mat D21_hat = arma::chol(ctemp2, "upper");
-        D21_hat.print("D21_hat : ");
+//        D21_hat.print("D21_hat : ");
 
         ctemp1 = llft_.B2() + L12_inf;
         arma::cx_mat B2_hat = Z_inf*ctemp1*D12_hat;

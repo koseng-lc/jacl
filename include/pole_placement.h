@@ -28,7 +28,7 @@ enum Type{
 };
 
 template <class _StateSpace>
-void KautskyNichols(_StateSpace *_ss, const arma::mat& _poles, arma::mat* _K, Type _type = Controller){
+auto KautskyNichols(_StateSpace *_ss, const arma::mat& _poles, arma::mat* _K, Type _type = Controller) -> void{
 
     assert(_poles.is_vec());
 

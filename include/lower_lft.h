@@ -22,29 +22,29 @@ public:
     ~LowerLFT();    
 
     //-- setters and getters
-    inline arma::mat const& A() const{ return this->ss_->A(); }
+    inline auto A() const -> arma::mat const&{ return this->ss_->A(); }
 
-    inline arma::mat const& B1() const{ return B1_; }
-    inline arma::mat& B1(){ return B1_; }
-    inline arma::mat const& B2() const{ return B2_; }
-    inline arma::mat& B2(){ return B2_; }
+    inline auto B1() const -> arma::mat const & { return B1_; }
+    inline auto B1() -> arma::mat& { return B1_; }
+    inline auto B2() const -> arma::mat const & { return B2_; }
+    inline auto B2() -> arma::mat& { return B2_; }
 
-    inline arma::mat const& C1() const{ return C1_; }
-    inline arma::mat& C1(){ return C1_; }
-    inline arma::mat const& C2() const{ return C2_; }
-    inline arma::mat& C2(){ return C2_; }
+    inline auto C1() const -> arma::mat const & { return C1_; }
+    inline auto C1() -> arma::mat& { return C1_; }
+    inline auto C2() const -> arma::mat const & { return C2_; }
+    inline auto C2() -> arma::mat& { return C2_; }
 
-    inline arma::mat const& D11() const{ return D11_; }
-    inline arma::mat& D11(){ return D11_; }
-    inline arma::mat const& D12() const{ return D12_; }
-    inline arma::mat& D12(){ return D12_; }
-    inline arma::mat const& D21() const{ return D21_; }
-    inline arma::mat& D21(){ return D21_; }
-    inline arma::mat const& D22() const{ return D22_; }
-    inline arma::mat& D22(){ return D22_; }
+    inline auto D11() const -> arma::mat const & { return D11_; }
+    inline auto D11() -> arma::mat& { return D11_; }
+    inline auto D12() const -> arma::mat const & { return D12_; }
+    inline auto D12() -> arma::mat& { return D12_; }
+    inline auto D21() const -> arma::mat const & { return D21_; }
+    inline auto D21() -> arma::mat& { return D21_; }
+    inline auto D22() const -> arma::mat const & { return D22_; }
+    inline auto D22() -> arma::mat& { return D22_; }
 
-    inline arma::mat const& delta() const{ return delta_; }
-    arma::mat& delta(){ return delta_; }
+    inline auto delta() const -> arma::mat const & { return delta_; }
+    auto delta() -> arma::mat& { return delta_; }
 
 private:
     //-- Realization
@@ -74,9 +74,9 @@ LowerLFT<_StateSpace, z2_size, w2_size, y2_size, u2_size>::LowerLFT(_StateSpace*
 
     D11_ = this->ss_->D().submat(0, 0, z2_size - 1, w2_size - 1);
     D12_ = this->ss_->D().submat(0, w2_size,
-                                  z2_size - 1, w2_size + u2_size - 1);
+                                 z2_size - 1, w2_size + u2_size - 1);
     D21_ = this->ss_->D().submat(z2_size, 0,
-                                  z2_size + y2_size - 1, w2_size - 1);
+                                 z2_size + y2_size - 1, w2_size - 1);
     D22_ = this->ss_->D().submat(z2_size, w2_size,
                                  z2_size + y2_size - 1, w2_size + u2_size - 1);
 }

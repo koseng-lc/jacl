@@ -34,34 +34,41 @@ public:
     Sim(std::size_t _n_signals);
     ~Sim();
 
-    int init();
+    auto init() -> int;
 
-    void simulate();
+    auto simulate() -> void;
 
-    double& setDelay(){
+    auto setDelay() -> double&{
         return delay_;
     }
 
-    void setTitle(std::string&& _title){
+    auto setTitle(std::string&& _title) -> void{
         title_ = _title;
-
-//        try{
-
-//        }catch(py::error_already_set){
-
-//            PyErr_Print();
-//        }
     }
 
-    inline double timeStep() const{
+    inline auto timeStep() const -> double{
         return d_time_;
     }
 
-    void setPlotName(std::initializer_list<std::string> _plot_name);
+    auto setPlotName(std::initializer_list<std::string> _plot_name) -> void;
+
+protected:    
+    auto process() -> void;
+    virtual auto signalCalc() -> arma::mat = 0;
+
+    // more safe with RAII style
+    class AcquireGIL{
+    public:
+        AcquireGIL():state(PyGILState_Ensure()){}
+        ~AcquireGIL(){PyGILState_Release(state);}
+
+    private:
+        PyGILState_STATE state;
+
+    };
 
 protected:
     boost::thread process_thread_;
-    void process();
     boost::mutex running_mtx_;
     bool running_;
 
@@ -79,23 +86,8 @@ protected:
     double delay_;
     std::string title_;
     std::vector<std::string> plot_name_;
-
-    virtual arma::mat signalCalc() = 0;
-
-    // more safe with RAII style
-    class AcquireGIL{
-    public:
-        AcquireGIL():state(PyGILState_Ensure()){}
-        ~AcquireGIL(){PyGILState_Release(state);}
-
-    private:
-        PyGILState_STATE state;
-
-    };
-
     // to save the released thread state
     PyThreadState *py_state_;
-
 };
 
 template <class _StateSpace>
@@ -127,11 +119,10 @@ Sim<_StateSpace>::~Sim(){
 
     if(PyGILState_GetThisThreadState() == py_state_)
         PyThreadState_Swap(py_state_);
-
 }
 
 template <class _StateSpace>
-int Sim<_StateSpace>::init(){
+auto Sim<_StateSpace>::init() -> int{
 
     if(!Py_IsInitialized())
         Py_Initialize();
@@ -166,7 +157,7 @@ int Sim<_StateSpace>::init(){
 }
 
 template <class _StateSpace>
-void Sim<_StateSpace>::process(){
+auto Sim<_StateSpace>::process() -> void{
 
     arma::mat pres_signal;
     auto t(.0);    
@@ -221,7 +212,7 @@ void Sim<_StateSpace>::process(){
 }
 
 template <class _StateSpace>
-void Sim<_StateSpace>::simulate(){
+auto Sim<_StateSpace>::simulate() -> void{
 
     AcquireGIL lk;
     try{
@@ -241,7 +232,7 @@ void Sim<_StateSpace>::simulate(){
 }
 
 template <class _StateSpace>
-void Sim<_StateSpace>::setPlotName(std::initializer_list<std::string> _plot_name){
+auto Sim<_StateSpace>::setPlotName(std::initializer_list<std::string> _plot_name) -> void{
 
     plot_name_.clear();
     plot_name_.insert(plot_name_.end(), _plot_name.begin(), _plot_name.end());

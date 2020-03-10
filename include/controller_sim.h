@@ -10,9 +10,9 @@ class ControllerSim: public Sim<_StateSpace>{
 public:
     ControllerSim(_StateSpace* _ss, double _time_step=1e-4);
     ~ControllerSim();
-    void updateVariables();
-    void setInput(const arma::mat& _in);
-    arma::mat getOutputSig() const;
+    auto updateVariables() -> void;
+    auto setInput(const arma::mat& _in) -> void;
+    auto getOutputSig() const -> arma::mat;
 
 protected:
     arma::mat signalCalc();
@@ -48,17 +48,17 @@ ControllerSim<_StateSpace>::~ControllerSim(){
 }
 
 template <class _StateSpace>
-void ControllerSim<_StateSpace>::setInput(const arma::mat& _in){
+auto ControllerSim<_StateSpace>::setInput(const arma::mat& _in) -> void{
     u_ = _in;
 }
 
 template <class _StateSpace>
-void ControllerSim<_StateSpace>::updateVariables(){
+auto ControllerSim<_StateSpace>::updateVariables() -> void{
     state_trans_ = arma::expmat(ss_->A() * dt_);
 }
 
 template <class _StateSpace>
-arma::mat ControllerSim<_StateSpace>::signalCalc(){
+auto ControllerSim<_StateSpace>::signalCalc() -> arma::mat{
     static arma::mat term1, term2, term3, term4, term5;
 
     term1 = state_trans_ * prev_state_;
@@ -78,7 +78,7 @@ arma::mat ControllerSim<_StateSpace>::signalCalc(){
 }
 
 template <class _StateSpace>
-arma::mat ControllerSim<_StateSpace>::getOutputSig() const{
+auto ControllerSim<_StateSpace>::getOutputSig() const -> arma::mat{
     return output_;
 }
 

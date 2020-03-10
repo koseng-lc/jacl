@@ -30,11 +30,7 @@ public:
     typedef std::function<double(StateSpace)> Formula;
     typedef std::vector<Formula> Formulas;
 
-public:
-    static constexpr auto n_states{ num_states };
-    static constexpr auto n_inputs{ num_inputs };
-    static constexpr auto n_outputs{ num_outputs };
-
+public:    
     template <typename _PhysicalParam = PhysicalParam,
               typename std::enable_if<
                   std::is_same<typename std::decay<_PhysicalParam>::type,
@@ -51,16 +47,16 @@ public:
     StateSpace();
     ~StateSpace();
 
-    arma::mat const& A() const{ return A_; }
-    arma::mat const& B() const{ return B_; }
-    arma::mat const& C() const{ return C_; }
-    arma::mat const& D() const{ return D_; }
+    auto A() const -> arma::mat const&{ return A_; }
+    auto B() const -> arma::mat const&{ return B_; }
+    auto C() const -> arma::mat const&{ return C_; }
+    auto D() const -> arma::mat const&{ return D_; }
 
-    double const& param(int _index) const{
+    auto param(int _index) const -> decltype(std::declval<PhysicalParameter>().perturbed) const&{
         return params_[_index]->perturbed;
     }
 
-    double& param(int _index){
+    auto param(int _index) -> decltype(std::declval<PhysicalParameter>().perturbed)&{
         return params_[_index]->perturbed;
     }
 
@@ -100,45 +96,33 @@ public:
         D_ = _D;
     }
 
-    void formulaToMat();
+    auto formulaToMat() -> void;
 
-    inline int numStates() const{
+    inline auto numStates() const -> int{
         return num_states;
     }
 
-    inline int numInputs() const{
+    inline auto numInputs() const -> int{
         return num_inputs;
     }
 
-    inline int numOutputs() const{
+    inline auto numOutputs() const -> int{
         return num_outputs;
     }
 
-    inline double const& operator () (int _index) const{
+    inline auto operator () (int _index) const -> double const&{
         return param(_index);
     }
 
-    inline double operator () (double _constant){
+    inline auto operator () (double _constant) -> double const&{
         return _constant;
     }
 
-    inline double& operator () (int _index){
+    inline auto operator () (int _index) -> double&{
         return param(_index);
     }
 
 protected:
-    Formulas fA_;
-    Formulas fB_;
-    Formulas fC_;
-    Formulas fD_;
-
-    std::vector<PhysicalParameter* > params_;
-
-    arma::mat A_;
-    arma::mat B_;
-    arma::mat C_;
-    arma::mat D_;
-
     template <typename _PhysicalParam = PhysicalParam>
     auto push(_PhysicalParam* _param)
     -> typename std::enable_if<
@@ -156,6 +140,23 @@ protected:
         push(_rest...);
     }
 
+public:
+    static constexpr auto n_states{ num_states };
+    static constexpr auto n_inputs{ num_inputs };
+    static constexpr auto n_outputs{ num_outputs };
+
+protected:
+    Formulas fA_;
+    Formulas fB_;
+    Formulas fC_;
+    Formulas fD_;
+
+    std::vector<PhysicalParameter* > params_;
+
+    arma::mat A_;
+    arma::mat B_;
+    arma::mat C_;
+    arma::mat D_;
 };
 
 template <std::size_t num_states, std::size_t num_inputs, std::size_t num_outputs, class PhysicalParam, class ...Rest>
@@ -172,7 +173,7 @@ StateSpace<num_states, num_inputs, num_outputs, PhysicalParam, Rest...>::~StateS
 }
 
 template<std::size_t num_states, std::size_t num_inputs, std::size_t num_outputs, class PhysicalParam, class ...Rest>
-void StateSpace<num_states, num_inputs, num_outputs, PhysicalParam, Rest...>::formulaToMat(){
+auto StateSpace<num_states, num_inputs, num_outputs, PhysicalParam, Rest...>::formulaToMat() -> void{
 
     assert(fA_.size () > 0 && fB_.size() > 0 && fC_.size() > 0 && fD_.size() > 0);
 
@@ -180,9 +181,7 @@ void StateSpace<num_states, num_inputs, num_outputs, PhysicalParam, Rest...>::fo
         for(std::size_t j(0); j < num_states; j++){
             A_(i, j) = fA_[i * num_states + j](*this);
         }
-    }
 
-    for(std::size_t i(0); i < num_states; i++){
         for(std::size_t j(0); j < num_inputs; j++){
             B_(i, j) = fB_[i * num_inputs + j](*this);
         }
@@ -192,14 +191,11 @@ void StateSpace<num_states, num_inputs, num_outputs, PhysicalParam, Rest...>::fo
         for(std::size_t j(0); j < num_states; j++){
             C_(i, j) = fC_[i * num_states + j](*this);
         }
-    }
 
-    for(std::size_t i(0); i < num_outputs; i++){
         for(std::size_t j(0); j < num_inputs; j++){
             D_(i, j) = fD_[i * num_inputs + j](*this);
         }
     }
-
 }
 
 }
