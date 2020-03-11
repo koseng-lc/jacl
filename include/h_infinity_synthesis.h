@@ -47,6 +47,7 @@ public:
         arma::cx_mat C_bar(SS1::z1_sz + SS2::y_sz, SS1::n_states + SS2::n_states);
         arma::cx_mat D_bar(SS1::z1_sz + SS2::y_sz, SS1::w1_size, + SS2::u_sz);
     }
+
 private:
     auto checkAssumption1() -> bool;
     auto checkAssumption2() -> bool;
@@ -143,7 +144,7 @@ template <class _StateSpace,
 HInf<_StateSpace,
     performance_size,
     perturbation_size>::~HInf(){
-
+    ss_ = nullptr;
 }
 
 template <class _StateSpace,

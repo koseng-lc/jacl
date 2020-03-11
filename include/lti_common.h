@@ -17,7 +17,7 @@ enum PBHTestType{
     Row
 };
 
-static bool controllable(const arma::mat& _A, const arma::mat& _B){
+static auto controllable(const arma::mat& _A, const arma::mat& _B) -> bool{
     //-- must be square matrix
     assert(_A.n_rows == _A.n_cols);
     //-- must be compatible with A
@@ -37,7 +37,7 @@ static bool controllable(const arma::mat& _A, const arma::mat& _B){
 
 }
 
-static bool stabilizable(const arma::mat& _A, const arma::mat& _B){
+static auto stabilizable(const arma::mat& _A, const arma::mat& _B) -> bool{
     //-- must be square matrix
     assert(_A.n_rows == _A.n_cols);
     //-- must be compatible with A
@@ -66,7 +66,7 @@ static bool stabilizable(const arma::mat& _A, const arma::mat& _B){
     return ok;
 }
 
-static bool hasUncontrollableModeInImAxis(const arma::mat& _A, const arma::mat& _B){
+static auto hasUncontrollableModeInImAxis(const arma::mat& _A, const arma::mat& _B) -> bool{
     //-- must be square matrix
     assert(_A.n_rows == _A.n_cols);
     //-- must be compatible with A
@@ -95,7 +95,7 @@ static bool hasUncontrollableModeInImAxis(const arma::mat& _A, const arma::mat& 
     return ok;
 }
 
-static bool observable(const arma::mat& _A, const arma::mat& _C){
+static auto observable(const arma::mat& _A, const arma::mat& _C) -> bool{
     //-- must be square matrix
     assert(_A.n_rows == _A.n_cols);
     //-- must be compatible with A
@@ -114,7 +114,7 @@ static bool observable(const arma::mat& _A, const arma::mat& _C){
     return arma::rank(obsv) == system_order;
 }
 
-static bool detectability(const arma::mat& _A, const arma::mat& _C){
+static auto detectability(const arma::mat& _A, const arma::mat& _C) -> bool{
     //-- must be square matrix
     assert(_A.n_rows == _A.n_cols);
     //-- must be compatible with A
@@ -142,7 +142,7 @@ static bool detectability(const arma::mat& _A, const arma::mat& _C){
     return ok;
 }
 
-static bool hasUnobservableModeInImAxis(const arma::mat& _A, const arma::mat& _C){
+static auto hasUnobservableModeInImAxis(const arma::mat& _A, const arma::mat& _C) -> bool{
     //-- must be square matrix
     assert(_A.n_rows == _A.n_cols);
     //-- must be compatible with A

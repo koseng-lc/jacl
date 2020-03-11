@@ -11,14 +11,14 @@
 namespace jacl{
 
 template <class _StateSpace>
-class SystemSim: public Sim<_StateSpace>{
+class SystemSim final: public Sim<_StateSpace>{
 public:
     SystemSim(_StateSpace* _ss, double _time_step = 1e-4);
     ~SystemSim();
 
     auto setInput(const arma::mat& _in) -> void;
     auto updateVariables() -> void;
-    arma::mat getOutputSig() const;
+    auto getOutputSig() const -> arma::mat;
 
 protected:
     auto signalCalc() -> arma::mat;
@@ -79,8 +79,8 @@ auto SystemSim<_StateSpace>::updateVariables() -> void{
 }
 
 template <class _StateSpace>
-arma::mat SystemSim<_StateSpace>::signalCalc(){
-
+auto SystemSim<_StateSpace>::signalCalc() -> arma::mat{
+    boost::mutex::scoped_lock lk(this->sig_mtx_);
     static arma::mat term1, term2, term3, term4, term5;
 
     term1 = state_trans_ * prev_state_;
@@ -100,7 +100,8 @@ arma::mat SystemSim<_StateSpace>::signalCalc(){
 }
 
 template <class _StateSpace>
-arma::mat SystemSim<_StateSpace>::getOutputSig() const{
+auto SystemSim<_StateSpace>::getOutputSig() const -> arma::mat{
+    boost::mutex::scoped_lock lk(this->sig_mtx_);
     return output_;
 }
 

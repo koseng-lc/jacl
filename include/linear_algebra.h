@@ -8,16 +8,16 @@ namespace jacl{
 
 namespace linear_algebra{
 
-static void GramSchmidtProjection(int idx, const arma::mat& col, arma::mat* u, std::vector<arma::mat>* e){
+static auto GramSchmidtProjection(int idx, const arma::mat& col, arma::mat* u, std::vector<arma::mat>* e) -> void{
 
     if(idx > 0){
-        double norm = arma::dot(col, (*e)[idx-1]);
+        auto norm = arma::dot(col, (*e)[idx-1]);
         *u -= (norm * (*e)[idx-1]);
         GramSchmidtProjection(idx - 1, col, u, e);
     }
 }
 
-static void QRDecomp(const arma::mat& in, arma::mat* Q, arma::mat* R){
+static auto QRDecomp(const arma::mat& in, arma::mat* Q, arma::mat* R) -> void{
 
     *Q = arma::mat(in.n_rows, in.n_cols, arma::fill::zeros);
     *R = arma::mat(arma::size(in), arma::fill::zeros);
@@ -45,7 +45,7 @@ static void QRDecomp(const arma::mat& in, arma::mat* Q, arma::mat* R){
     }
 }
 
-static void QRAlgorithm(const arma::mat& in, arma::mat* T, arma::mat* U, int num_iter = 20){
+static auto QRAlgorithm(const arma::mat& in, arma::mat* T, arma::mat* U, int num_iter = 20) -> void{
 
     arma::mat updated_in(in);
     *U = arma::mat(arma::size(in), arma::fill::eye);

@@ -168,7 +168,7 @@ set_target_properties(controller_sim PROPERTIES LINKER_LANGUAGE CXX)
 # JACL
 add_library(jacl include/jacl)
 set_target_properties(jacl PROPERTIES LINKER_LANGUAGE CXX)
-target_link_libraries(jacl state_space transfer_matrix simulator sim h_infinity_synthesis controller_sim)
+target_link_libraries(jacl traits state_space transfer_matrix simulator sim h_infinity_synthesis controller_sim)
 
 #-- End of JACL Lib part
 

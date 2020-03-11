@@ -24,7 +24,8 @@ MainWindow::MainWindow(QWidget *parent)
                  { .0, .0, .0}})
     , observer_sim_(&ss_, obs_gain_)
     , controller_sim_(&K_)
-    , ref_(3, 1, arma::fill::zeros){
+    , ref_(3, 1, arma::fill::zeros)
+    , cl_status_(true){
 
     ui->setupUi(this);
 
@@ -348,15 +349,11 @@ MainWindow::MainWindow(QWidget *parent)
     setupMenus();
     setupActions();
 
-    cl_status_ = true;
     cl_thread_ = boost::thread{boost::bind(&MainWindow::closedLoopProcess, this)};
-
-    jacl::StateSpace<12,4,4> another_ss;
 
 }
 
 MainWindow::~MainWindow(){
-    boost::mutex::scoped_lock lk(cl_mtx_);
     cl_status_ = false;
     cl_thread_.join();
     delete ui;
@@ -744,15 +741,6 @@ void MainWindow::closedLoopProcess(){
     arma::mat out(3,1,arma::fill::zeros),in(2,1,arma::fill::zeros);
     arma::mat err(3,1,arma::fill::zeros);
     while(cl_status_){
-//        switch(control_mode_){
-//        case jacl::ControllerDialog::PosControl:{
-//            out(1) = ref_(1);
-//        }break;
-//        case jacl::ControllerDialog::VelControl:{
-//            out(0) = ref_(0);
-//        }break;
-//        }
-
         err = ref_ - out;
         controller_sim_.setInput(err);
         in = controller_sim_.getOutputSig();

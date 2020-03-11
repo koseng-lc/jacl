@@ -11,23 +11,23 @@
 namespace jacl{
 
 template <class _StateSpace>
-class ObserverSim: public Sim<_StateSpace>{
+class ObserverSim final: public Sim<_StateSpace>{
 public:
     ObserverSim(_StateSpace* _ss, const arma::mat& _K);
     ~ObserverSim();
 
-    void setInput(const arma::mat& _in);
+    auto setInput(const arma::mat& _in) -> void;
 
-    void updateVariables(){
+    auto updateVariables() -> void{
         observer_.updateVariables();
     }
 
-    void setGain(const arma::mat& _K){
+    auto setGain(const arma::mat& _K) -> void{
         observer_.setGain(_K);
     }
 
 protected:
-    arma::mat signalCalc();
+    auto signalCalc() -> arma::mat;
 
 private:
     Observer<_StateSpace> observer_;
@@ -47,13 +47,14 @@ ObserverSim<_StateSpace>::~ObserverSim(){
 }
 
 template <class _StateSpace>
-void ObserverSim<_StateSpace>::setInput(const arma::mat& _in){
-
+auto ObserverSim<_StateSpace>::setInput(const arma::mat& _in) -> void{
+    boost::mutex::scoped_lock lk(this->sig_mtx_);
     observer_.setInput(_in);
 }
 
 template <class _StateSpace>
-arma::mat ObserverSim<_StateSpace>::signalCalc(){
+auto ObserverSim<_StateSpace>::signalCalc() -> arma::mat{
+    boost::mutex::scoped_lock lk(this->sig_mtx_);
     return observer_.calcStateEst();
 }
 

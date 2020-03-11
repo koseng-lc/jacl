@@ -6,7 +6,7 @@
 namespace jacl{
 
 template <class _StateSpace>
-class ControllerSim: public Sim<_StateSpace>{
+class ControllerSim final: public Sim<_StateSpace>{
 public:
     ControllerSim(_StateSpace* _ss, double _time_step=1e-4);
     ~ControllerSim();
@@ -15,7 +15,7 @@ public:
     auto getOutputSig() const -> arma::mat;
 
 protected:
-    arma::mat signalCalc();
+    auto signalCalc() -> arma::mat;
 
 private:
     _StateSpace* ss_;
@@ -59,6 +59,7 @@ auto ControllerSim<_StateSpace>::updateVariables() -> void{
 
 template <class _StateSpace>
 auto ControllerSim<_StateSpace>::signalCalc() -> arma::mat{
+    boost::mutex::scoped_lock lk(this->sig_mtx_);
     static arma::mat term1, term2, term3, term4, term5;
 
     term1 = state_trans_ * prev_state_;
@@ -79,6 +80,7 @@ auto ControllerSim<_StateSpace>::signalCalc() -> arma::mat{
 
 template <class _StateSpace>
 auto ControllerSim<_StateSpace>::getOutputSig() const -> arma::mat{
+    boost::mutex::scoped_lock lk(this->sig_mtx_);
     return output_;
 }
 

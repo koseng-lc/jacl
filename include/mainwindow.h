@@ -37,6 +37,13 @@ class MainWindow : public QMainWindow {
 public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
+private:
+    void setupWidgets();
+    void setupControllerDialog();
+    void setupMenus();
+    void setupActions();
+
+    void closedLoopProcess();
 
 private:
     //-- GUI stuff
@@ -100,21 +107,16 @@ private:
     jacl::ControllerDialog* controller_dialog_;
 //    QDialog* controller_dialog_;
     QGridLayout* ctrl_gl_;
-    QGroupBox* ctrl_in_gb_;
+    QGroupBox* ctrl_in_gb_;    
+
+private:
+    //-- Control stuff
 
     //-- Closed-loop process
     boost::thread cl_thread_;
     boost::mutex cl_mtx_;
-    bool cl_status_;
-    void closedLoopProcess();
+    std::atomic<bool> cl_status_;
     const double TIME_STEP{.02};
-
-    void setupWidgets();
-    void setupControllerDialog();
-    void setupMenus();
-    void setupActions();
-
-    //-- Control stuff
 
     enum ParamIndex{
         iBm, // Viscous Friction (N m s / rad)

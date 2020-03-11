@@ -16,43 +16,41 @@ public:
     ARE(_StateSpace* _ss);
     ~ARE();
 
-    void setR(const arma::mat& _R, bool update_hamiltonian = false){
+    auto setR(const arma::mat& _R, bool update_hamiltonian = false) -> void{
         assert(arma::size(_R) == arma::size(ss_->A()));
         R_ = _R;
         if(update_hamiltonian)
             genHamiltonianMatrix();
     }
 
-    void setQ(const arma::mat& _Q, bool update_hamiltonian = false){
+    auto setQ(const arma::mat& _Q, bool update_hamiltonian = false) -> void{
         assert(arma::size(_Q) == arma::size(ss_->A()));
         Q_ = _Q;
         if(update_hamiltonian)
             genHamiltonianMatrix();
     }
 
-    void setHamiltonianMatrix(const arma::mat& _H){
+    auto setHamiltonianMatrix(const arma::mat& _H) -> void{
         H_ = _H;
     }
 
-    arma::cx_mat solve();
+    auto solve() -> arma::cx_mat;
+
+private:
+    auto genHamiltonianMatrix() -> void;
 
 private:
     _StateSpace* ss_;
-
     //-- Hamiltonian matrix
     arma::mat H_;
-
     //-- Symmetric matrix
     arma::mat R_;
     arma::mat Q_;
-
     //-- SKew-Symmetric matrix
     arma::mat J_;
-
     //-- Solution
     arma::mat X_;
 
-    void genHamiltonianMatrix();
 
 };
 
@@ -82,7 +80,7 @@ ARE<_StateSpace>::~ARE(){
 }
 
 template <class _StateSpace>
-void ARE<_StateSpace>::genHamiltonianMatrix(){
+auto ARE<_StateSpace>::genHamiltonianMatrix() -> void{
 
     H_.submat(                    0,                     0,     _StateSpace::n_states - 1,     _StateSpace::n_states - 1) = ss_->A();
     H_.submat(                    0, _StateSpace::n_states,     _StateSpace::n_states - 1, _StateSpace::n_states * 2 - 1) = R_;
@@ -91,7 +89,7 @@ void ARE<_StateSpace>::genHamiltonianMatrix(){
 }
 
 template <class _StateSpace>
-arma::cx_mat ARE<_StateSpace>::solve(){
+auto ARE<_StateSpace>::solve() -> arma::cx_mat{
 
     //-- Using QR-Algorithm
     /*arma::mat T, U;

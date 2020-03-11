@@ -8,6 +8,8 @@
 #include <QLabel>
 #include <QRadioButton>
 
+#include "traits.h"
+
 namespace jacl{
 
 class ControllerDialog: public QDialog{
@@ -15,24 +17,25 @@ class ControllerDialog: public QDialog{
 public:
     ControllerDialog(QWidget* parent=nullptr);
     ~ControllerDialog();
-    inline double getPosition() const{
-        return ref_dsb_[Position]->value();
-    }
-    inline double getVelocity() const{
-        return ref_dsb_[Velocity]->value();
-    }
-    inline double getCurrent() const{
-        return ref_dsb_[Current]->value();
-    }
-    enum RefType{
+    enum class RefType: int{
         Position,
         Velocity,
         Current
     };
-    enum ModeType{
-        PosControl,
-        VelControl
+    enum class ControlMode: int{
+        Position,
+        Velocity
     };
+
+    inline auto getPosition() const -> double{
+        return ref_dsb_[traits::toUType(RefType::Position)]->value();
+    }
+    inline auto getVelocity() const -> double{
+        return ref_dsb_[traits::toUType(RefType::Velocity)]->value();
+    }
+    inline auto getCurrent() const -> double{
+        return ref_dsb_[traits::toUType(RefType::Current)]->value();
+    }    
 
 private:
     QGridLayout* main_layout_;

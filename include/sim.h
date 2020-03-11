@@ -69,8 +69,8 @@ protected:
 
 protected:
     boost::thread process_thread_;
-    boost::mutex running_mtx_;
-    bool running_;
+    mutable boost::mutex sig_mtx_;
+    std::atomic<bool> running_;
 
     py::object sim_;
 
@@ -113,7 +113,6 @@ Sim<_StateSpace>::Sim(std::size_t _n_signals)
 template <class _StateSpace>
 Sim<_StateSpace>::~Sim(){
 
-    boost::mutex::scoped_lock lk(running_mtx_);
     running_ = false;    
     process_thread_.join();
 
