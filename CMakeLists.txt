@@ -82,6 +82,10 @@ add_library(linear_algebra include/linear_algebra.h)
 target_link_libraries(linear_algebra armadillo)
 set_target_properties(linear_algebra PROPERTIES LINKER_LANGUAGE CXX)
 
+# Numerical Methods
+add_library(numerical_methods include/numerical_methods.h)
+set_target_properties(numerical_methods PROPERTIES LINKER_LANGUAGE CXX)
+
 # LTI Common
 add_library(lti_common include/lti_common.h)
 target_link_libraries(lti_common armadillo)
@@ -139,7 +143,7 @@ set_target_properties(are PROPERTIES LINKER_LANGUAGE CXX)
 
 # H-infinity Synthesis
 add_library(h_infinity_synthesis include/h_infinity_synthesis.h)
-target_link_libraries(h_infinity_synthesis upper_lft are lti_common)
+target_link_libraries(h_infinity_synthesis upper_lft are lti_common numerical_methods)
 set_target_properties(h_infinity_synthesis PROPERTIES LINKER_LANGUAGE CXX)
 
 # System Simulator

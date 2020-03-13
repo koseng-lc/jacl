@@ -294,8 +294,8 @@ MainWindow::MainWindow(QWidget *parent)
 //    ICM_.C().print("ICM C : ");
 //    ICM_.D().print("ICM D : ");
 
-    h_inf_ = new HInf(&ICM_, 5.5);
-    std::tuple<arma::mat, arma::mat, arma::mat, arma::mat> K( h_inf_->solve() );
+    h_inf_ = new HInf(&ICM_, 4.5);
+    jacl::common::StateSpacePack K( h_inf_->solve() );
     K_.setA(std::get<0>(K));
     K_.setB(std::get<1>(K));
     K_.setC(std::get<2>(K));
@@ -315,7 +315,7 @@ MainWindow::MainWindow(QWidget *parent)
     //-- Test KautskyNichols
     arma::mat observer_K;
     arma::mat poles{-50,-51,-52};
-    jacl::pole_placement::KautskyNichols(&ss_, poles, &observer_K, jacl::pole_placement::Observer);
+    jacl::pole_placement::KautskyNichols(&ss_, poles, &observer_K, jacl::pole_placement::PolePlacementType::Observer);
 
     observer_K.print("\nObserver Gain : ");
 

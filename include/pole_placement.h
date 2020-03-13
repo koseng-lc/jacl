@@ -18,17 +18,13 @@ namespace jacl{
 
 namespace pole_placement{
 
-namespace{
-    namespace linalg = linear_algebra;
-}
-
-enum Type{
+enum class PolePlacementType{
     Controller,
     Observer
 };
 
 template <class _StateSpace>
-auto KautskyNichols(_StateSpace *_ss, const arma::mat& _poles, arma::mat* _K, Type _type = Controller) -> void{
+auto KautskyNichols(_StateSpace *_ss, const arma::mat& _poles, arma::mat* _K, PolePlacementType _type = PolePlacementType::Controller) -> void{
 
     assert(_poles.is_vec());
 
@@ -36,12 +32,12 @@ auto KautskyNichols(_StateSpace *_ss, const arma::mat& _poles, arma::mat* _K, Ty
     arma::mat U0, U1, Z;    
 
     arma::mat T; //type
-    if(_type == Controller)
+    if(_type == PolePlacementType::Controller)
         T = _ss->B();
-    else if(_type == Observer)
+    else if(_type == PolePlacementType::Observer)
         T = _ss->C();
     else
-        assert(_type == Observer || _type == Controller);
+        assert("Please choose appropriate type !");
 
     arma::qr(Q, R, T);
 

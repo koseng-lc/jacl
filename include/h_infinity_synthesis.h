@@ -1,12 +1,10 @@
 /**
-*   @author
-*   @brief
-*   a lot of code here, is constructed by copy constructor because it's easier to read
+*   @author : koseng (Lintang)
+*   @brief : Simple implementation of H-infinity synthesis.
+*            A lot of code here, is constructed by copy constructor because it's easier to read.
 */
 
 #pragma once
-
-#include <tuple>
 
 #include "lti_common.h"
 #include "are.h"
@@ -14,6 +12,9 @@
 #include "lower_lft.h"
 #include "state_space.h"
 #include "traits.h"
+#include "numerical_methods.h"
+
+#define HINF_DEBUG
 
 namespace jacl{
 
@@ -38,7 +39,7 @@ public:
     ~HInf();
 
     auto init() -> void;
-    auto solve() -> std::tuple<arma::mat, arma::mat, arma::mat, arma::mat >;
+    auto solve() -> common::StateSpacePack;
 
     template <typename SS1, typename SS2>
     auto starProducts(const SS1 &_ss1, const SS2 &_ss2) -> void{
@@ -165,8 +166,10 @@ auto HInf<_StateSpace,
 
     auto ctrb = common::stabilizable(llft_.A(), llft_.B2());
     auto obsv = common::detectability(llft_.A(), llft_.C2());
+#ifdef HINF_DEBUG
     std::cout << "Assumption 1 : " << std::endl;
     std::cout << std::boolalpha << ctrb << " ; " << obsv << std::endl;
+#endif
     return ctrb & obsv;
 }
 
@@ -186,10 +189,6 @@ auto HInf<_StateSpace,
 
         }else{
             //-- do normalization here using SVD
-
-//            arma::mat zeros1(performance_size - INPUT_SIZE, INPUT_SIZE, arma::fill::zeros);
-//            arma::mat zeros2(INPUT_SIZE, performance_size - INPUT_SIZE, arma::fill::zeros);
-//            arma::mat eye(performance_size - INPUT_SIZE, performance_size - INPUT_SIZE, arma::fill::eye);
 
             arma::mat U, V;
             arma::vec s;
@@ -235,16 +234,11 @@ auto HInf<_StateSpace,
         }else{
             //-- do normalization here using SVD
 
-//            arma::mat zeros1(OUTPUT_SIZE, perturbation_size - OUTPUT_SIZE, arma::fill::zeros);
-//            arma::mat zeros2(perturbation_size - OUTPUT_SIZE, OUTPUT_SIZE, arma::fill::zeros);
-//            arma::mat eye(perturbation_size - OUTPUT_SIZE, perturbation_size - OUTPUT_SIZE, arma::fill::eye);
-
             arma::mat U, V;
             arma::vec s;
             arma::svd(U,s,V,llft_.D21());
 
             arma::mat S = arma::diagmat(s);
-            S.print("S : ");
             arma::mat recip_S(arma::size(S), arma::fill::zeros);
             for(int i(0); i < S.n_rows; i++){
                 recip_S(i, i) = 1./S(i,i);
@@ -273,10 +267,10 @@ auto HInf<_StateSpace,
     }else{ //-- if not full row rank
         ~ok2;
     }
-
+#ifdef HINF_DEBUG
     std::cout << "Assumption 2 : " << std::endl;
     std::cout << std::boolalpha << ok << " ; " << ok2 << std::endl;
-
+#endif
     return ok & ok2;
 }
 
@@ -307,10 +301,10 @@ auto HInf<_StateSpace,
     arma::mat A = llft_.A() - temp2;    
 
     bool ok = !common::hasUnobservableModeInImAxis(A, C);
-
+#ifdef HINF_DEBUG
     std::cout << "Assumption 3 : " << std::endl;
     std::cout << std::boolalpha << ok << std::endl;
-
+#endif
     return !common::hasUnobservableModeInImAxis(A, C);
 }
 
@@ -336,10 +330,10 @@ auto HInf<_StateSpace,
     arma::mat B = llft_.B1()*temp2;
 
     bool ok = !common::hasUncontrollableModeInImAxis(A, B);
-
+#ifdef HINF_DEBUG
     std::cout << "Assumption 4 : " << std::endl;
     std::cout << std::boolalpha << ok << std::endl;
-
+#endif
     return ok;
 }
 
@@ -371,8 +365,6 @@ auto HInf<_StateSpace,
     auto sval1( s.max() );
     arma::svd(U, s, V, D_11);
     auto sval2( s.max() );
-
-//    std::cout << "VAL : " << sval1 << " : " << sval2 << std::endl;
 
     return gam_ > std::max(sval1, sval2);
 }
@@ -424,167 +416,170 @@ template <class _StateSpace,
           std::size_t perturbation_size>
 auto HInf<_StateSpace,
     performance_size,
-    perturbation_size>::solve() -> std::tuple<arma::mat, arma::mat, arma::mat, arma::mat >{
+    perturbation_size>::solve() -> common::StateSpacePack{
+#ifdef HINF_DEBUG
+    std::cout << "Interconnection matrix assumptions : " << std::endl;
+#endif
+    bool check_assumption = checkAllAssumption();
+    assert(check_assumption && "The assumption made for interconnection matrix is not fulfill !");
 
-    if(checkAllAssumption()){
-        arma::mat temp1, temp2, temp3, temp4;
-        arma::cx_mat ctemp1, ctemp2, ctemp3;
+    arma::mat temp1, temp2, temp3, temp4;
+    arma::cx_mat ctemp1, ctemp2, ctemp3;
 
-        arma::mat A_t = ss_->A().t();
-        arma::mat B_t = ss_->B().t();
-        arma::mat B1_t = llft_.B1().t();
-        arma::mat C_t = ss_->C().t();
-        arma::mat C1_t = llft_.C1().t();
+    arma::mat A_t = ss_->A().t();
+    arma::mat B_t = ss_->B().t();
+    arma::mat B1_t = llft_.B1().t();
+    arma::mat C_t = ss_->C().t();
+    arma::mat C1_t = llft_.C1().t();
 
-        arma::mat D1_ = ss_->D().head_rows(performance_size);
-        arma::mat D1__t = D1_.t();
-        arma::mat D_1 = ss_->D().head_cols(perturbation_size);
-        arma::mat D_1_t = D_1.t();
+    arma::mat D1_ = ss_->D().head_rows(performance_size);
+    arma::mat D1__t = D1_.t();
+    arma::mat D_1 = ss_->D().head_cols(perturbation_size);
+    arma::mat D_1_t = D_1.t();
 
-        temp1 = gam_*gam_*arma::eye(perturbation_size, perturbation_size);
-        temp2 = arma::zeros<arma::mat>(D1_.n_cols,  D1_.n_cols);
-        temp2.submat(0, 0, perturbation_size - 1, perturbation_size - 1) = temp1;
-        arma::mat R1 = (D1__t * D1_) - temp2;
-//        R1.print("R1 : ");
-        //-- create exception here for singular R1 and warn for change the gamma
-        arma::mat R1_inv = arma::inv(R1);
+    temp1 = gam_*gam_*arma::eye(perturbation_size, perturbation_size);
+    temp2 = arma::zeros<arma::mat>(D1_.n_cols,  D1_.n_cols);
+    temp2.submat(0, 0, perturbation_size - 1, perturbation_size - 1) = temp1;
+    arma::mat R1 = (D1__t * D1_) - temp2;
+    //        R1.print("R1 : ");
+    //-- create exception here for singular R1 and warn to change the gamma
+    arma::mat R1_inv = arma::inv(R1);
 
-        temp1 = gam_*gam_*arma::eye(performance_size, performance_size);
-        temp2 = arma::zeros<arma::mat>(D_1.n_rows, D_1.n_rows);
-        temp2.submat(0, 0, performance_size - 1, performance_size - 1) = temp1;
-        arma::mat R2 = (D_1 * D_1_t) - temp2;
-//        R2.print("R2 : ");
-        //-- create exception here for singular R2 and warn for change the gamma
-        arma::mat R2_inv = arma::inv(R2);
+    temp1 = gam_*gam_*arma::eye(performance_size, performance_size);
+    temp2 = arma::zeros<arma::mat>(D_1.n_rows, D_1.n_rows);
+    temp2.submat(0, 0, performance_size - 1, performance_size - 1) = temp1;
+    arma::mat R2 = (D_1 * D_1_t) - temp2;
+    //        R2.print("R2 : ");
+    //-- create exception here for singular R2 and warn to change the gamma
+    arma::mat R2_inv = arma::inv(R2);
 
-        //-- Ricatti Domain
+    //-- Ricatti Domain
 
-        temp1 = arma::join_vert(
-                                                //-- create a function to simplify the zeros
-                    arma::join_horiz(ss_->A(), arma::zeros<arma::mat>(arma::size(ss_->A()))),
-                    arma::join_horiz(-C1_t*llft_.C1(), -A_t)
-                    );
-        temp2 = arma::join_vert(
-                    ss_->B(),
-                    -C1_t*D1_
-                    );
-        temp3 = arma::join_horiz(D1__t*llft_.C1(), B_t);
-        temp4 = temp2*R1_inv*temp3;
-        arma::mat H_inf = temp1 - temp4;
-//        H_inf.print("H_inf : ");
+    temp1 = arma::join_vert(
+                //-- create a function to simplify the zeros
+                arma::join_horiz(ss_->A(), arma::zeros<arma::mat>(arma::size(ss_->A()))),
+                arma::join_horiz(-C1_t*llft_.C1(), -A_t)
+                );
+    temp2 = arma::join_vert(
+                ss_->B(),
+                -C1_t*D1_
+                );
+    temp3 = arma::join_horiz(D1__t*llft_.C1(), B_t);
+    temp4 = temp2*R1_inv*temp3;
+    arma::mat H_inf = temp1 - temp4;
 
-        temp1 = arma::join_vert(
-                    arma::join_horiz(A_t, arma::zeros<arma::mat>(arma::size(ss_->A()))),
-                    arma::join_horiz(-llft_.B1()*B1_t, -ss_->A())
-                    );
-        temp2 = arma::join_vert(
-                    C_t,
-                    -llft_.B1()*D_1_t
-                    );
-        temp3 = arma::join_horiz(
-                    D_1*B1_t,
-                    ss_->C()
-                    );
-        temp4 = temp2*R2_inv*temp3;
-        arma::mat J_inf = temp1 - temp4;        
-//        J_inf.print("J_inf : ");
+    temp1 = arma::join_vert(
+                arma::join_horiz(A_t, arma::zeros<arma::mat>(arma::size(ss_->A()))),
+                arma::join_horiz(-llft_.B1()*B1_t, -ss_->A())
+                );
+    temp2 = arma::join_vert(
+                C_t,
+                -llft_.B1()*D_1_t
+                );
+    temp3 = arma::join_horiz(
+                D_1*B1_t,
+                ss_->C()
+                );
+    temp4 = temp2*R2_inv*temp3;
+    arma::mat J_inf = temp1 - temp4;
 
-        ARE<_StateSpace> solver1(ss_);
-        ARE<_StateSpace> solver2(ss_);
+    ARE<_StateSpace> solver1(ss_);
+    ARE<_StateSpace> solver2(ss_);
 
-        solver1.setHamiltonianMatrix(H_inf);
-        solver2.setHamiltonianMatrix(J_inf);
+    solver1.setHamiltonianMatrix(H_inf);
+    solver2.setHamiltonianMatrix(J_inf);
 
-        arma::cx_mat X_inf = solver1.solve();
-        arma::cx_mat Y_inf = solver2.solve();
+    arma::cx_mat X_inf = solver1.solve();
+    arma::cx_mat Y_inf = solver2.solve();
 
-        X_inf.print("X_inf : ");
-        Y_inf.print("Y_inf : ");
+#ifdef HINF_DEBUG
+    std::cout << ">>>>> Solution of ARE : " << std::endl;
+    X_inf.print("X_inf : ");
+    Y_inf.print("Y_inf : ");
+#endif
 
-        ctemp1 = toCx(D1__t * llft_.C1());
-        ctemp2 = toCx(B_t) * X_inf;
-        arma::cx_mat F = -toCx(R1_inv)*(ctemp1 + ctemp2);
-        arma::cx_mat F1_inf = F.head_rows(perturbation_size);
-        arma::cx_mat F2_inf = F.tail_rows(INPUT_SIZE);
+    ctemp1 = toCx(D1__t * llft_.C1());
+    ctemp2 = toCx(B_t) * X_inf;
+    arma::cx_mat F = -toCx(R1_inv)*(ctemp1 + ctemp2);
+    arma::cx_mat F1_inf = F.head_rows(perturbation_size);
+    arma::cx_mat F2_inf = F.tail_rows(INPUT_SIZE);
 
-        ctemp1 = toCx(llft_.B1() * D_1_t);
-        ctemp2 = Y_inf * toCx(C_t);
-        arma::cx_mat L = -(ctemp1 + ctemp2)*toCx(R2_inv);
-        arma::cx_mat L1_inf = L.head_cols(performance_size);
-        arma::cx_mat L2_inf = L.tail_cols(OUTPUT_SIZE);
+    ctemp1 = toCx(llft_.B1() * D_1_t);
+    ctemp2 = Y_inf * toCx(C_t);
+    arma::cx_mat L = -(ctemp1 + ctemp2)*toCx(R2_inv);
+    arma::cx_mat L1_inf = L.head_cols(performance_size);
+    arma::cx_mat L2_inf = L.tail_cols(OUTPUT_SIZE);
 
-        //-- Partition of D, F1_inf and L1_inf
-        arma::cx_mat F11_inf = F1_inf.head_rows(perturbation_size - OUTPUT_SIZE);
-        arma::cx_mat F12_inf = F1_inf.tail_rows(OUTPUT_SIZE);
+    //-- Partition of D, F1_inf and L1_inf
+    arma::cx_mat F11_inf = F1_inf.head_rows(perturbation_size - OUTPUT_SIZE);
+    arma::cx_mat F12_inf = F1_inf.tail_rows(OUTPUT_SIZE);
 
-        arma::cx_mat L11_inf = L1_inf.head_cols(performance_size - INPUT_SIZE);
-        arma::cx_mat L12_inf = L1_inf.tail_cols(INPUT_SIZE);
+    arma::cx_mat L11_inf = L1_inf.head_cols(performance_size - INPUT_SIZE);
+    arma::cx_mat L12_inf = L1_inf.tail_cols(INPUT_SIZE);
 
-        arma::cx_mat D1111 = toCx(llft_.D11()).submat(0, 0,
-                                             (performance_size - INPUT_SIZE) - 1, (perturbation_size - OUTPUT_SIZE) - 1);
-        arma::cx_mat D1112 = toCx(llft_.D11()).submat(0, (perturbation_size - OUTPUT_SIZE),
-                                             (performance_size - INPUT_SIZE) - 1, perturbation_size - 1);
-        arma::cx_mat D1121 = toCx(llft_.D11()).submat((performance_size - INPUT_SIZE), 0,
-                                             performance_size - 1, (perturbation_size - OUTPUT_SIZE) - 1);
-        arma::cx_mat D1122 = toCx(llft_.D11()).submat((performance_size - INPUT_SIZE), (perturbation_size - OUTPUT_SIZE),
-                                             performance_size - 1,  perturbation_size - 1);
+    arma::cx_mat D1111 = toCx(llft_.D11()).submat(0, 0,
+                                                  (performance_size - INPUT_SIZE) - 1, (perturbation_size - OUTPUT_SIZE) - 1);
+    arma::cx_mat D1112 = toCx(llft_.D11()).submat(0, (perturbation_size - OUTPUT_SIZE),
+                                                  (performance_size - INPUT_SIZE) - 1, perturbation_size - 1);
+    arma::cx_mat D1121 = toCx(llft_.D11()).submat((performance_size - INPUT_SIZE), 0,
+                                                  performance_size - 1, (perturbation_size - OUTPUT_SIZE) - 1);
+    arma::cx_mat D1122 = toCx(llft_.D11()).submat((performance_size - INPUT_SIZE), (perturbation_size - OUTPUT_SIZE),
+                                                  performance_size - 1,  perturbation_size - 1);
 
-        X_inf_ = X_inf;
-        Y_inf_ = Y_inf;
+    X_inf_ = X_inf;
+    Y_inf_ = Y_inf;
 
-        bool check_cond = checkAllCondition();
-        std::cout << "Condition : " << std::boolalpha << check_cond << std::endl;
+    bool check_cond = checkAllCondition();
+#ifdef HINF_DEBUG
+    std::cout << "Condition : " << std::boolalpha << check_cond << std::endl;
+#endif
+    assert(check_cond && "Condition for finding Controller that make the lower LFT is less than gamma was failed !");
 
-        //-- I assume the arbitrary system that have property less than to gamma is zero
+    //-- I assume the arbitrary system that have property less than to gamma is zero
+    ctemp1 = (gam_*gam_)*Y_inf*X_inf;
+    arma::cx_mat Z_inf = arma::inv(arma::eye(_StateSpace::n_states, _StateSpace::n_states) - ctemp1);
 
-        ctemp1 = (gam_*gam_)*Y_inf*X_inf;
-        arma::cx_mat Z_inf = arma::inv(arma::eye(_StateSpace::n_states, _StateSpace::n_states) - ctemp1);
+    ctemp1 = -D1121*arma::trans(D1111);
+    ctemp2 = (gam_*gam_)*arma::eye(performance_size - INPUT_SIZE, performance_size - INPUT_SIZE)
+            - D1111*arma::trans(D1111);
+    ctemp3 = ctemp1*arma::inv(ctemp2);
+    arma::cx_mat D11_hat = ctemp3*D1112 - D1122;
 
-        ctemp1 = -D1121*arma::trans(D1111);
-        ctemp2 = (gam_*gam_)*arma::eye(performance_size - INPUT_SIZE, performance_size - INPUT_SIZE)
-                    - D1111*arma::trans(D1111);
-        ctemp3 = ctemp1*arma::inv(ctemp2);
-        arma::cx_mat D11_hat = ctemp3*D1112 - D1122;
+    //-- calculate D12_hat and D21_hat
+    ctemp1 = (gam_*gam_)*arma::eye(perturbation_size - OUTPUT_SIZE, perturbation_size - OUTPUT_SIZE)
+            - arma::trans(D1111)*D1111;
+    ctemp2 = arma::eye(INPUT_SIZE, INPUT_SIZE) - D1121*arma::inv(ctemp1)*arma::trans(D1121);
+    arma::cx_mat D12_hat = arma::chol(ctemp2, "lower");
 
-        //-- calculate D12_hat and D21_hat
+    ctemp1 = (gam_*gam_)*arma::eye(performance_size - INPUT_SIZE, performance_size - INPUT_SIZE)
+            - D1111*arma::trans(D1111);
+    ctemp2 = arma::eye(OUTPUT_SIZE, OUTPUT_SIZE) - arma::trans(D1112)*arma::inv(ctemp1)*D1112;
+    arma::cx_mat D21_hat = arma::chol(ctemp2, "upper");
 
-//        D1111.print("D1111 : ");
+    ctemp1 = llft_.B2() + L12_inf;
+    arma::cx_mat B2_hat = Z_inf*ctemp1*D12_hat;
+    arma::cx_mat C2_hat = -D21_hat*(llft_.C2() + F12_inf);
+    ctemp1 = -Z_inf*L2_inf;
+    ctemp2 = B2_hat*arma::inv(D12_hat)*D11_hat;
+    arma::cx_mat B1_hat = ctemp1 + ctemp2;
+    ctemp1 = D11_hat*arma::inv(D21_hat)*C2_hat;
+    arma::cx_mat C1_hat = F2_inf + ctemp1;
+    ctemp1 = B1_hat*arma::inv(D21_hat)*C2_hat;
+    arma::cx_mat A_hat = ss_->A() + ss_->B()*F + ctemp1;
 
-        ctemp1 = (gam_*gam_)*arma::eye(perturbation_size - OUTPUT_SIZE, perturbation_size - OUTPUT_SIZE)
-                    - arma::trans(D1111)*D1111;
-        ctemp2 = arma::eye(INPUT_SIZE, INPUT_SIZE) - D1121*arma::inv(ctemp1)*arma::trans(D1121);
-        arma::cx_mat D12_hat = arma::chol(ctemp2, "lower");
-//        D12_hat.print("D12_hat : ");
+#ifdef HINF_DEBUG
+    std::cout << ">>>>> Controller Result : " << std::endl;
+    A_hat.print("A_hat : ");
+    B1_hat.print("B1_hat : ");
+    B2_hat.print("B2_hat : ");
+    C1_hat.print("C1_hat : ");
+    C2_hat.print("C2_hat : ");
+    D11_hat.print("D11_hat : ");
+    D12_hat.print("D12_hat : ");
+    D21_hat.print("D21_hat : ");
+#endif
 
-        ctemp1 = (gam_*gam_)*arma::eye(performance_size - INPUT_SIZE, performance_size - INPUT_SIZE)
-                    - D1111*arma::trans(D1111);
-        ctemp2 = arma::eye(OUTPUT_SIZE, OUTPUT_SIZE) - arma::trans(D1112)*arma::inv(ctemp1)*D1112;
-        arma::cx_mat D21_hat = arma::chol(ctemp2, "upper");
-//        D21_hat.print("D21_hat : ");
-
-        ctemp1 = llft_.B2() + L12_inf;
-        arma::cx_mat B2_hat = Z_inf*ctemp1*D12_hat;
-        arma::cx_mat C2_hat = -D21_hat*(llft_.C2() + F12_inf);
-        ctemp1 = -Z_inf*L2_inf;
-        ctemp2 = B2_hat*arma::inv(D12_hat)*D11_hat;
-        arma::cx_mat B1_hat = ctemp1 + ctemp2;
-        ctemp1 = D11_hat*arma::inv(D21_hat)*C2_hat;
-        arma::cx_mat C1_hat = F2_inf + ctemp1;
-        ctemp1 = B1_hat*arma::inv(D21_hat)*C2_hat;
-        arma::cx_mat A_hat = ss_->A() + ss_->B()*F + ctemp1;
-
-        A_hat.print("A_hat : ");
-        B1_hat.print("B1_hat : ");
-        B2_hat.print("B2_hat : ");
-        C1_hat.print("C1_hat : ");
-        C2_hat.print("C2_hat : ");
-        D11_hat.print("D11_hat : ");
-        D12_hat.print("D12_hat : ");
-        D21_hat.print("D21_hat : ");
-
-        return std::make_tuple(toReal(A_hat), toReal(B1_hat), toReal(C1_hat), toReal(D11_hat));
-
-    }
+    return std::make_tuple(toReal(A_hat), toReal(B1_hat), toReal(C1_hat), toReal(D11_hat));
 }
 
 }

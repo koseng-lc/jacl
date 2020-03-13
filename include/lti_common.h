@@ -12,7 +12,9 @@ namespace jacl{
 
 namespace common{
 
-enum PBHTestType{
+using StateSpacePack = std::tuple<arma::mat, arma::mat, arma::mat, arma::mat >;
+
+enum class PBHTestType{
     Column,
     Row
 };

@@ -5,10 +5,6 @@
 
 namespace jacl{
 
-namespace{
-    namespace linalg = linear_algebra;
-}
-
 template <class _StateSpace>
 class ARE{
 public:
