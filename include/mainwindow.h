@@ -44,7 +44,7 @@ private:
     void setupActions();
 
     void closedLoopProcess();
-
+    double angularSpeed2Voltage(double _speed, double _torque);
 private:
     //-- GUI stuff
 

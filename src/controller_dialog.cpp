@@ -6,7 +6,7 @@ ControllerDialog::ControllerDialog(QWidget* parent)
     : QDialog(parent){
 
     ref_label_[traits::toUType(RefType::Position)] = new QLabel;
-    ref_label_[traits::toUType(RefType::Position)]->setText(tr("RefType::Position"));
+    ref_label_[traits::toUType(RefType::Position)]->setText(tr("Position"));
     ref_dsb_[traits::toUType(RefType::Position)] = new QDoubleSpinBox;
     ref_dsb_[traits::toUType(RefType::Position)]->setDecimals(3);
     ref_dsb_[traits::toUType(RefType::Position)]->setMinimum(-180.);
@@ -16,7 +16,7 @@ ControllerDialog::ControllerDialog(QWidget* parent)
     ref_dsb_[traits::toUType(RefType::Position)]->setEnabled(false);
 
     ref_label_[traits::toUType(RefType::Velocity)] = new QLabel;
-    ref_label_[traits::toUType(RefType::Velocity)]->setText(tr("RefType::Velocity"));
+    ref_label_[traits::toUType(RefType::Velocity)]->setText(tr("Velocity"));
     ref_dsb_[traits::toUType(RefType::Velocity)] = new QDoubleSpinBox;
     ref_dsb_[traits::toUType(RefType::Velocity)]->setDecimals(3);
     ref_dsb_[traits::toUType(RefType::Velocity)]->setMinimum(-100.);
@@ -25,7 +25,7 @@ ControllerDialog::ControllerDialog(QWidget* parent)
     ref_dsb_[traits::toUType(RefType::Velocity)]->setValue(.0);
 
     ref_label_[traits::toUType(RefType::Current)] = new QLabel;
-    ref_label_[traits::toUType(RefType::Current)]->setText(tr("RefType::Current"));
+    ref_label_[traits::toUType(RefType::Current)]->setText(tr("Current"));
     ref_dsb_[traits::toUType(RefType::Current)] = new QDoubleSpinBox;
     ref_dsb_[traits::toUType(RefType::Current)]->setDecimals(3);
     ref_dsb_[traits::toUType(RefType::Current)]->setMinimum(-2.);

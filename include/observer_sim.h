@@ -28,10 +28,10 @@ public:
 
 protected:
     auto signalCalc() -> arma::mat;
+    auto getSig() -> arma::mat;
 
 private:
     Observer<_StateSpace> observer_;
-
 };
 
 template <class _StateSpace>
@@ -57,5 +57,13 @@ auto ObserverSim<_StateSpace>::signalCalc() -> arma::mat{
     boost::mutex::scoped_lock lk(this->sig_mtx_);
     return observer_.calcStateEst();
 }
+
+template <class _StateSpace>
+auto ObserverSim<_StateSpace>::getSig() -> arma::mat{
+    boost::mutex::scoped_lock lk(this->sig_mtx_);
+    arma::mat dummy;
+    return dummy;
+}
+
 
 }

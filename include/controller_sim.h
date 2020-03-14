@@ -13,9 +13,11 @@ public:
     auto updateVariables() -> void;
     auto setInput(const arma::mat& _in) -> void;
     auto getOutputSig() const -> arma::mat;
+    auto propagate(const arma::mat& _in) -> arma::mat;
 
 protected:
     auto signalCalc() -> arma::mat;
+    auto getSig() -> arma::mat;
 
 private:
     _StateSpace* ss_;
@@ -25,6 +27,8 @@ private:
     arma::mat prev_state_;
     arma::mat state_trans_;
     arma::mat output_;
+
+    arma::mat plotted_sig_;
 
     double dt_;
 };
@@ -79,8 +83,21 @@ auto ControllerSim<_StateSpace>::signalCalc() -> arma::mat{
 }
 
 template <class _StateSpace>
+auto ControllerSim<_StateSpace>::getSig() -> arma::mat{
+    boost::mutex::scoped_lock lk(this->sig_mtx_);
+    return plotted_sig_;
+}
+
+template <class _StateSpace>
 auto ControllerSim<_StateSpace>::getOutputSig() const -> arma::mat{
     boost::mutex::scoped_lock lk(this->sig_mtx_);
+    return output_;
+}
+
+template <class _StateSpace>
+auto ControllerSim<_StateSpace>::propagate(const arma::mat &_in) -> arma::mat{
+    setInput(_in);
+    plotted_sig_ = signalCalc();
     return output_;
 }
 

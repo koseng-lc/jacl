@@ -167,8 +167,7 @@ auto HInf<_StateSpace,
     auto ctrb = common::stabilizable(llft_.A(), llft_.B2());
     auto obsv = common::detectability(llft_.A(), llft_.C2());
 #ifdef HINF_DEBUG
-    std::cout << "Assumption 1 : " << std::endl;
-    std::cout << std::boolalpha << ctrb << " ; " << obsv << std::endl;
+    std::cout << "Assumption 1 : " << std::boolalpha << ctrb << " ; " << obsv << std::endl;
 #endif
     return ctrb & obsv;
 }
@@ -268,8 +267,7 @@ auto HInf<_StateSpace,
         ~ok2;
     }
 #ifdef HINF_DEBUG
-    std::cout << "Assumption 2 : " << std::endl;
-    std::cout << std::boolalpha << ok << " ; " << ok2 << std::endl;
+    std::cout << "Assumption 2 : " << std::boolalpha << ok << " ; " << ok2 << std::endl;
 #endif
     return ok & ok2;
 }
@@ -302,8 +300,7 @@ auto HInf<_StateSpace,
 
     bool ok = !common::hasUnobservableModeInImAxis(A, C);
 #ifdef HINF_DEBUG
-    std::cout << "Assumption 3 : " << std::endl;
-    std::cout << std::boolalpha << ok << std::endl;
+    std::cout << "Assumption 3 : " << std::boolalpha << ok << std::endl;
 #endif
     return !common::hasUnobservableModeInImAxis(A, C);
 }
@@ -331,8 +328,7 @@ auto HInf<_StateSpace,
 
     bool ok = !common::hasUncontrollableModeInImAxis(A, B);
 #ifdef HINF_DEBUG
-    std::cout << "Assumption 4 : " << std::endl;
-    std::cout << std::boolalpha << ok << std::endl;
+    std::cout << "Assumption 4 : " << std::boolalpha << ok << std::endl;
 #endif
     return ok;
 }
@@ -418,7 +414,7 @@ auto HInf<_StateSpace,
     performance_size,
     perturbation_size>::solve() -> common::StateSpacePack{
 #ifdef HINF_DEBUG
-    std::cout << "Interconnection matrix assumptions : " << std::endl;
+    std::cout << ">>>>> Interconnection matrix assumptions : " << std::endl;
 #endif
     bool check_assumption = checkAllAssumption();
     assert(check_assumption && "The assumption made for interconnection matrix is not fulfill !");
@@ -441,7 +437,7 @@ auto HInf<_StateSpace,
     temp2 = arma::zeros<arma::mat>(D1_.n_cols,  D1_.n_cols);
     temp2.submat(0, 0, perturbation_size - 1, perturbation_size - 1) = temp1;
     arma::mat R1 = (D1__t * D1_) - temp2;
-    //        R1.print("R1 : ");
+//    R1.print("R1 : ");
     //-- create exception here for singular R1 and warn to change the gamma
     arma::mat R1_inv = arma::inv(R1);
 
@@ -449,7 +445,7 @@ auto HInf<_StateSpace,
     temp2 = arma::zeros<arma::mat>(D_1.n_rows, D_1.n_rows);
     temp2.submat(0, 0, performance_size - 1, performance_size - 1) = temp1;
     arma::mat R2 = (D_1 * D_1_t) - temp2;
-    //        R2.print("R2 : ");
+//    R2.print("R2 : ");
     //-- create exception here for singular R2 and warn to change the gamma
     arma::mat R2_inv = arma::inv(R2);
 
@@ -531,12 +527,12 @@ auto HInf<_StateSpace,
 
     bool check_cond = checkAllCondition();
 #ifdef HINF_DEBUG
-    std::cout << "Condition : " << std::boolalpha << check_cond << std::endl;
+    std::cout << " >>>>> Condition : " << std::boolalpha << check_cond << std::endl;
 #endif
     assert(check_cond && "Condition for finding Controller that make the lower LFT is less than gamma was failed !");
 
     //-- I assume the arbitrary system that have property less than to gamma is zero
-    ctemp1 = (gam_*gam_)*Y_inf*X_inf;
+    ctemp1 = (1./(gam_*gam_))*Y_inf*X_inf;
     arma::cx_mat Z_inf = arma::inv(arma::eye(_StateSpace::n_states, _StateSpace::n_states) - ctemp1);
 
     ctemp1 = -D1121*arma::trans(D1111);

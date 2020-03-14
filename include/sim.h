@@ -55,6 +55,7 @@ public:
 protected:    
     auto process() -> void;
     virtual auto signalCalc() -> arma::mat = 0;
+    virtual auto getSig() -> arma::mat = 0;
 
     // more safe with RAII style
     class AcquireGIL{
@@ -168,7 +169,8 @@ auto Sim<_StateSpace>::process() -> void{
 
     while(running_){
 
-        pres_signal = signalCalc();
+//        pres_signal = signalCalc();
+        pres_signal = getSig();
 
         for(const auto s:pres_signal)
             signal_data_.push_back(s);

@@ -294,7 +294,7 @@ MainWindow::MainWindow(QWidget *parent)
 //    ICM_.C().print("ICM C : ");
 //    ICM_.D().print("ICM D : ");
 
-    h_inf_ = new HInf(&ICM_, 4.5);
+    h_inf_ = new HInf(&ICM_, 3.5);
     jacl::common::StateSpacePack K( h_inf_->solve() );
     K_.setA(std::get<0>(K));
     K_.setB(std::get<1>(K));
@@ -737,15 +737,39 @@ void MainWindow::modeAct(int _val){
     control_mode_ = _val;
 }
 
+double MainWindow::angularSpeed2Voltage(double _speed, double _torque){
+    return _torque*ra.perturbed/ki.perturbed + ki.perturbed*_speed;
+}
+
 void MainWindow::closedLoopProcess(){
     arma::mat out(3,1,arma::fill::zeros),in(2,1,arma::fill::zeros);
     arma::mat err(3,1,arma::fill::zeros);
+    arma::mat last_err(err);
+    arma::mat diff(err);
+    auto Kp(10.), Kd(1.);
     while(cl_status_){
+        //-- PD Control
+//        err(1) = ref_(1) - out(1);
+//        diff(1) = err(1) - last_err(1);
+//        last_err(1) = err(1);
+//        err.print("Error : ");
+//        in(0) = angularSpeed2Voltage(Kp*err(1) + Kd*diff(1),.0);
+//        if(in(0) > 12.0){
+//            in(0) = 12.0;
+//        }
+//        if(in(0) < -12.0){
+//            in(0) = -12.0;
+//        }
+
+        //-- H-infinity Controller
         err = ref_ - out;
-        controller_sim_.setInput(err);
-        in = controller_sim_.getOutputSig();
-        system_sim_.setInput(in);
-        out = system_sim_.getOutputSig();
+//        ref_.print("Ref : ");
+//        out.print("Out : ");
+//        err.print("Error : ");
+        in = controller_sim_.propagate(err);
+//        in.print("In : ");
+
+        out = system_sim_.propagate(in);
         boost::this_thread::sleep_for(boost::chrono::milliseconds((int)(TIME_STEP*1000.)));
     }
 }

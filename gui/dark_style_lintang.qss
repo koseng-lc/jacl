@@ -11,6 +11,16 @@ QMainWindow {
 	border:none;
 }*/
 
+QMenuBar {
+    background-color: #070b38;
+    color: #FFFFFF;
+}
+
+QMenu {
+    background-color: #070b38;
+    color: #FFFFFF;
+}
+
 QStatusBar{
     background:grey;
 }
