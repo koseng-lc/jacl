@@ -302,7 +302,7 @@ auto HInf<_StateSpace,
 #ifdef HINF_DEBUG
     std::cout << "Assumption 3 : " << std::boolalpha << ok << std::endl;
 #endif
-    return !common::hasUnobservableModeInImAxis(A, C);
+    return ok;
 }
 
 template <class _StateSpace,
@@ -401,10 +401,17 @@ template <class _StateSpace,
 auto HInf<_StateSpace,
     performance_size,
     perturbation_size>::checkAllCondition() -> bool{
-    return checkCondition1()
-            & checkCondition2()
-            & checkCondition3()
-            & checkCondition4();
+    auto cond1 = checkCondition1();
+    auto cond2 = checkCondition2();
+    auto cond3 = checkCondition3();
+    auto cond4 = checkCondition4();
+#ifdef HINF_DEBUG
+    std::cout << "Condition 1 : " << std::boolalpha << cond1 << std::endl;
+    std::cout << "Condition 2 : " << std::boolalpha << cond2 << std::endl;
+    std::cout << "Condition 3 : " << std::boolalpha << cond3 << std::endl;
+    std::cout << "Condition 4 : " << std::boolalpha << cond4 << std::endl;
+#endif
+    return cond1 & cond2 & cond3 & cond4;
 }
 
 template <class _StateSpace,

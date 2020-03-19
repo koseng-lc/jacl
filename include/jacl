@@ -19,3 +19,4 @@
 #include "observer_sim.h"
 #include "system_sim.h"
 #include "controller_sim.h"
+#include "posctrl_sim.h"

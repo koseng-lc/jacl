@@ -85,7 +85,6 @@ static auto spectralRadius(const arma::Mat<Type>& in) -> double{
         if(mag_eigval > max_mag_eigval)
             max_mag_eigval = mag_eigval;
     }
-
     return max_mag_eigval;
 }
 

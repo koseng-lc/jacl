@@ -25,7 +25,8 @@ MainWindow::MainWindow(QWidget *parent)
     , observer_sim_(&ss_, obs_gain_)
     , controller_sim_(&K_)
     , ref_(3, 1, arma::fill::zeros)
-    , cl_status_(true){
+    , cl_status_(true)
+    , posctrl_sim_(&k_pos_){
 
     ui->setupUi(this);
 
@@ -294,8 +295,8 @@ MainWindow::MainWindow(QWidget *parent)
 //    ICM_.C().print("ICM C : ");
 //    ICM_.D().print("ICM D : ");
 
-    h_inf_ = new HInf(&ICM_, 3.5);
-    jacl::common::StateSpacePack K( h_inf_->solve() );
+    hinf_ = new HInf(&ICM_, 1.6204);
+    jacl::common::StateSpacePack K( hinf_->solve() );
     K_.setA(std::get<0>(K));
     K_.setB(std::get<1>(K));
     K_.setC(std::get<2>(K));
@@ -311,6 +312,8 @@ MainWindow::MainWindow(QWidget *parent)
     controller_sim_.setDelay() = TIME_STEP;
     controller_sim_.setPlotName({"Position Error","Velocity Error","Current Error","Voltage","Torque"});
     controller_sim_.updateVariables();
+
+    setupPositionController();
 
     //-- Test KautskyNichols
     arma::mat observer_K;
@@ -686,7 +689,8 @@ void MainWindow::simulateAct(){
 
 //    sim_.simulate();
     system_sim_.simulate();
-    controller_sim_.simulate();
+    posctrl_sim_.simulate();
+//    controller_sim_.simulate();
 //    observer_sim_.simulate();
 }
 
@@ -737,6 +741,74 @@ void MainWindow::modeAct(int _val){
     control_mode_ = _val;
 }
 
+void MainWindow::setupPositionController(){
+
+    siso_pos_.setA({{0.,1.,0.},
+                    {0.,-.6667,722.2},
+                    {0,-83.87,-3339}});
+    siso_pos_.setB(arma::colvec({0.,
+                    0.,
+                    1613.}));
+    siso_pos_.setC({1.,0.,0.});
+    siso_pos_.setD(arma::colvec({0.}));
+
+    InterConnMatPos::Formulas fA = {
+        JC(icm_pos_, -1.444e+04), JC(icm_pos_, -7780), JC(icm_pos_, -2912), JC(icm_pos_, -841.9), JC(icm_pos_,-269), JC(icm_pos_, 0),
+        JC(icm_pos_, 8192), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0),
+        JC(icm_pos_, 0), JC(icm_pos_, 4096), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0),
+        JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 1024), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0),
+        JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 256), JC(icm_pos_, 0), JC(icm_pos_, 0),
+        JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 1), JC(icm_pos_, 0)
+    };
+
+
+    InterConnMatPos::Formulas fB = {
+        JC(icm_pos_, 64), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 64),
+        JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0),
+        JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0),
+        JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0),
+        JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0),
+        JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0)
+    };
+
+    InterConnMatPos::Formulas fC = {
+        JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 2.276e-06), JC(icm_pos_, 0.04105), JC(icm_pos_, 0.5249), JC(icm_pos_, 77.95),
+        JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0),
+        JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 2.276e-06), JC(icm_pos_, 0.04105), JC(icm_pos_, 0.5249), JC(icm_pos_, 77.95)
+    };
+
+    InterConnMatPos::Formulas fD = {
+        JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 1), JC(icm_pos_, 0),
+        JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 1),
+        JC(icm_pos_, 0), JC(icm_pos_, -1), JC(icm_pos_, 1), JC(icm_pos_, 0)
+    };
+
+    icm_pos_.setA(fA);
+    icm_pos_.setB(fB);
+    icm_pos_.setC(fC);
+    icm_pos_.setD(fD);
+
+    icm_pos_.formulaToMat();
+
+    hinf_pc_ = new HInfPC(&icm_pos_, 1.6882);
+    jacl::common::StateSpacePack K( hinf_pc_->solve() );
+    k_pos_.setA(std::get<0>(K));
+    k_pos_.setB(std::get<1>(K));
+    k_pos_.setC(std::get<2>(K));
+    k_pos_.setD(std::get<3>(K));
+
+    k_pos_.A().print("A : ");
+    k_pos_.B().print("B : ");
+    k_pos_.C().print("C : ");
+    k_pos_.D().print("D : ");
+
+    posctrl_sim_.init();
+    posctrl_sim_.setTitle("Position Controller");
+    posctrl_sim_.setDelay() = TIME_STEP;
+    posctrl_sim_.setPlotName({"Position Error","Voltage"});
+    posctrl_sim_.updateVariables();
+}
+
 double MainWindow::angularSpeed2Voltage(double _speed, double _torque){
     return _torque*ra.perturbed/ki.perturbed + ki.perturbed*_speed;
 }
@@ -744,9 +816,9 @@ double MainWindow::angularSpeed2Voltage(double _speed, double _torque){
 void MainWindow::closedLoopProcess(){
     arma::mat out(3,1,arma::fill::zeros),in(2,1,arma::fill::zeros);
     arma::mat err(3,1,arma::fill::zeros);
-    arma::mat last_err(err);
-    arma::mat diff(err);
-    auto Kp(10.), Kd(1.);
+//    arma::mat last_err(err);
+//    arma::mat diff(err);
+//    auto Kp(10.), Kd(1.);
     while(cl_status_){
         //-- PD Control
 //        err(1) = ref_(1) - out(1);
@@ -766,9 +838,13 @@ void MainWindow::closedLoopProcess(){
 //        ref_.print("Ref : ");
 //        out.print("Out : ");
 //        err.print("Error : ");
-        in = controller_sim_.propagate(err);
+//        in = controller_sim_.propagate(err);
 //        in.print("In : ");
 
+        //-- Pos Controller
+//        std::cout << "TEST" << std::endl;
+        in.submat(0,0,0,0) = posctrl_sim_.propagate(err.submat(0,0,0,0));
+//        std::cout << "TEST2" << std::endl;
         out = system_sim_.propagate(in);
         boost::this_thread::sleep_for(boost::chrono::milliseconds((int)(TIME_STEP*1000.)));
     }

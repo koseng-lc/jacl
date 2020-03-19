@@ -172,7 +172,20 @@ private:
     jacl::ControllerSim<Controller> controller_sim_;
 
     using HInf = jacl::synthesis::HInf<InterConnMat, 5, 8>;
-    HInf* h_inf_;
+    HInf* hinf_;
+
+    //-- H-infinity position control of dc motor
+    using SISOPos = jacl::StateSpace<3,1,1>;
+    SISOPos siso_pos_;
+    using InterConnMatPos = jacl::StateSpace<6, 4, 3>;
+    InterConnMatPos icm_pos_;
+    using PosCtrl = jacl::StateSpace<6, 1, 1>;
+    PosCtrl k_pos_;
+    using HInfPC = jacl::synthesis::HInf<InterConnMatPos, 2, 3>;
+    HInfPC* hinf_pc_;
+    jacl::PosCtrlSim<PosCtrl> posctrl_sim_;
+    void setupPositionController();
+//    using CSpeed = jacl::StateSpace<>;
 
     arma::mat ref_;
     int control_mode_;

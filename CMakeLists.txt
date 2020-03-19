@@ -169,6 +169,24 @@ target_link_libraries(controller_sim
 )
 set_target_properties(controller_sim PROPERTIES LINKER_LANGUAGE CXX)
 
+# Position Controller Sim
+add_library(posctrl_sim include/posctrl_sim.h)
+target_link_libraries(posctrl_sim
+    Boost::system Boost::python3 Boost::chrono
+    ${Python_LIBRARIES}
+    sim
+)
+set_target_properties(posctrl_sim PROPERTIES LINKER_LANGUAGE CXX)
+
+# Speed Controller Sim
+add_library(spdctrl_sim include/spdctrl_sim.h)
+target_link_libraries(spdctrl_sim
+    Boost::system Boost::python3 Boost::chrono
+    ${Python_LIBRARIES}
+    sim
+)
+set_target_properties(spdctrl_sim PROPERTIES LINKER_LANGUAGE CXX)
+
 # JACL
 add_library(jacl include/jacl)
 set_target_properties(jacl PROPERTIES LINKER_LANGUAGE CXX)
