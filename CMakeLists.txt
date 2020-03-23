@@ -35,6 +35,8 @@ find_package(Boost REQUIRED COMPONENTS
 
 set(CMAKE_INCLUDE_CURRENT_DIR on)
 
+set(BOOST_NUMERIC_BINDINGS_PATH /home/koseng/3rd/numeric_bindings)
+
 include_directories(
         include
         src
@@ -45,6 +47,8 @@ include_directories(
 	${Qt5Core_INCLUDE_DIRS}
 	${Qt5Gui_INCLUDE_DIRS}
 	${Qt5Widgets_INCLUDE_DIRS}
+
+        ${BOOST_NUMERIC_BINDINGS_PATH}
 )
 
 # Python Binder
@@ -138,7 +142,7 @@ set_target_properties(pole_placement PROPERTIES LINKER_LANGUAGE CXX)
 
 # ARE
 add_library(are include/are.h)
-target_link_libraries(are state_space)
+target_link_libraries(are Boost::system Boost::python3 state_space ${Python_LIBRARIES})
 set_target_properties(are PROPERTIES LINKER_LANGUAGE CXX)
 
 # H-infinity Synthesis
