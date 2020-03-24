@@ -302,10 +302,10 @@ MainWindow::MainWindow(QWidget *parent)
     K_.setC(std::get<2>(K));
     K_.setD(std::get<3>(K));
 
-    K_.A().print("K_A : ");
-    K_.B().print("K_B : ");
-    K_.C().print("K_C : ");
-    K_.D().print("K_D : ");
+//    K_.A().print("K_A : ");
+//    K_.B().print("K_B : ");
+//    K_.C().print("K_C : ");
+//    K_.D().print("K_D : ");
 
     controller_sim_.init();
     controller_sim_.setTitle("Controller");
@@ -319,11 +319,10 @@ MainWindow::MainWindow(QWidget *parent)
     arma::mat observer_K;
     arma::mat poles{-50,-51,-52};
     jacl::pole_placement::KautskyNichols(&ss_, poles, &observer_K, jacl::pole_placement::PolePlacementType::Observer);
-
     observer_K.print("\nObserver Gain : ");
+    observer_sim_.setGain(observer_K.t());    
 
-    observer_sim_.setGain(observer_K.t());
-
+    //-- Simulator
     system_sim_.init();
     system_sim_.setTitle("DC Motor");
     system_sim_.setDelay() = TIME_STEP;
@@ -338,14 +337,6 @@ MainWindow::MainWindow(QWidget *parent)
     observer_sim_.setPlotName({"Est. Position", "Est. Velocity", "Est. Current"
                               ,"Est. Out Position", "Est. Out Velocity", "Est. Out Current"});
     observer_sim_.updateVariables();
-
-//    sim_.init();
-//    sim_.setTitle("DC Motor Simulation");
-//    sim_.setDelay() = .0;
-//    sim_.setPlotName({"Angular Position", "Angular Velocity", "Current",
-//                      "Torque In", "Voltage In",
-//                      "Angular Position", "Angular Velocity"});
-//    sim_.setStateSpace(ss_.A(), ss_.B(), ss_.C(), ss_.D());    
 
     setupWidgets();
     setupControllerDialog();
@@ -687,7 +678,7 @@ void MainWindow::resetAct(){
 
 void MainWindow::simulateAct(){
 
-//    sim_.simulate();
+//    sim_.simulate();    
     system_sim_.simulate();
     posctrl_sim_.simulate();
 //    controller_sim_.simulate();
@@ -781,7 +772,7 @@ void MainWindow::setupPositionController(){
         JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 1), JC(icm_pos_, 0),
         JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 1),
         JC(icm_pos_, 0), JC(icm_pos_, -1), JC(icm_pos_, 1), JC(icm_pos_, 0)
-    };
+    };    
 
     icm_pos_.setA(fA);
     icm_pos_.setB(fB);
@@ -790,12 +781,40 @@ void MainWindow::setupPositionController(){
 
     icm_pos_.formulaToMat();
 
-    hinf_pc_ = new HInfPC(&icm_pos_, 1.6882);
+    hinf_pc_ = new HInfPC(&icm_pos_, 2.7882);
     jacl::common::StateSpacePack K( hinf_pc_->solve() );
     k_pos_.setA(std::get<0>(K));
     k_pos_.setB(std::get<1>(K));
     k_pos_.setC(std::get<2>(K));
     k_pos_.setD(std::get<3>(K));
+
+//    arma::mat K_A;
+//    K_A << -2.018e+04 << -1.792e+04 << -1.387e+04 << -1.736e+04 << -2.021e+04 << -1.692e+06 << arma::endr
+//       <<       8192  <<       0    << 4.975e-10  << 8.973e-06  << 0.0001147  << 0.01704 << arma::endr
+//       <<         0   <<     4096   << 1.211e-07  <<  0.002184  <<   0.02793  <<   4.147 << arma::endr
+//       <<         0   <<        0   <<     1024   <<  0.009148  <<     0.117  <<   17.37 << arma::endr
+//       <<         0   <<        0   << -2.808e-06 <<     255.9  <<   -0.6476  <<  -96.17 << arma::endr
+//       <<         0   <<        0   << -3.117e-07 <<  -0.005621 <<     0.9281 <<  -10.67 << arma::endr;
+
+
+//    arma::mat K_B;
+//    K_B << 0.0008367 << arma::endr
+//        << -0.00024 << arma::endr
+//        << -0.05842 << arma::endr
+//        <<  -0.2447 << arma::endr
+//        <<   1.355  << arma::endr
+//        <<  0.1504  << arma::endr;
+
+//    arma::mat K_C;
+//    K_C << -125.9  <<  -222.2  <<  -240.1  <<  -362.1  <<  -437.1 << -3.708e+04 << arma::endr;
+
+//    arma::mat K_D;
+//    K_D << 0 << arma::endr;
+
+//    k_pos_.setA(K_A);
+//    k_pos_.setB(K_B);
+//    k_pos_.setC(K_C);
+//    k_pos_.setD(K_D);
 
     k_pos_.A().print("A : ");
     k_pos_.B().print("B : ");
@@ -805,7 +824,7 @@ void MainWindow::setupPositionController(){
     posctrl_sim_.init();
     posctrl_sim_.setTitle("Position Controller");
     posctrl_sim_.setDelay() = TIME_STEP;
-    posctrl_sim_.setPlotName({"Position Error","Voltage"});
+    posctrl_sim_.setPlotName({"Position Error", "Voltage"});
     posctrl_sim_.updateVariables();
 }
 
@@ -834,7 +853,7 @@ void MainWindow::closedLoopProcess(){
 //        }
 
         //-- H-infinity Controller
-        err = ref_ - out;
+        err = ref_ + out;
 //        ref_.print("Ref : ");
 //        out.print("Out : ");
 //        err.print("Error : ");
@@ -846,6 +865,9 @@ void MainWindow::closedLoopProcess(){
         in.submat(0,0,0,0) = posctrl_sim_.propagate(err.submat(0,0,0,0));
 //        std::cout << "TEST2" << std::endl;
         out = system_sim_.propagate(in);
+//        err.submat(0,0,0,0).print("Err : ");
+//        in.submat(0,0,0,0).print("In : ");
+//        out.print("Out : ");
         boost::this_thread::sleep_for(boost::chrono::milliseconds((int)(TIME_STEP*1000.)));
     }
 }

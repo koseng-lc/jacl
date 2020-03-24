@@ -559,16 +559,27 @@ auto HInf<_StateSpace,
     ctemp2 = arma::eye(OUTPUT_SIZE, OUTPUT_SIZE) - arma::trans(D1112)*arma::inv(ctemp1)*D1112;
     arma::cx_mat D21_hat = arma::chol(ctemp2, "upper");
 
-    ctemp1 = llft_.B2() + L12_inf;
-    arma::cx_mat B2_hat = Z_inf*ctemp1*D12_hat;
-    arma::cx_mat C2_hat = -D21_hat*(llft_.C2() + F12_inf);
-    ctemp1 = -Z_inf*L2_inf;
-    ctemp2 = B2_hat*arma::inv(D12_hat)*D11_hat;
-    arma::cx_mat B1_hat = ctemp1 + ctemp2;
-    ctemp1 = D11_hat*arma::inv(D21_hat)*C2_hat;
-    arma::cx_mat C1_hat = F2_inf + ctemp1;
-    ctemp1 = B1_hat*arma::inv(D21_hat)*C2_hat;
-    arma::cx_mat A_hat = ss_->A() + ss_->B()*F + ctemp1;
+//    ctemp1 = llft_.B2() + L12_inf;
+//    arma::cx_mat B2_hat = Z_inf*ctemp1*D12_hat;
+//    arma::cx_mat C2_hat = -D21_hat*(llft_.C2() + F12_inf);
+//    ctemp1 = -Z_inf*L2_inf;
+//    ctemp2 = B2_hat*arma::inv(D12_hat)*D11_hat;
+//    arma::cx_mat B1_hat = ctemp1 + ctemp2;
+//    ctemp1 = D11_hat*arma::inv(D21_hat)*C2_hat;
+//    arma::cx_mat C1_hat = F2_inf + ctemp1;
+//    ctemp1 = B1_hat*arma::inv(D21_hat)*C2_hat;
+//    arma::cx_mat A_hat = ss_->A() + ss_->B()*F + ctemp1;
+
+    arma::cx_mat B2_hat = (llft_.B2() + L12_inf)*D12_hat;
+    ctemp1 = llft_.C2() + F12_inf;
+    arma::cx_mat C2_hat = -D21_hat*ctemp1*Z_inf;
+    ctemp1 = B2_hat*arma::inv(D12_hat)*D11_hat;
+    arma::cx_mat B1_hat = -L2_inf + ctemp1;
+    ctemp1 = F2_inf*Z_inf;
+    ctemp2 = D11_hat*arma::inv(D21_hat)*C2_hat;
+    arma::cx_mat C1_hat = ctemp1 + ctemp2;
+    ctemp1 = B2_hat*arma::inv(D12_hat)*C1_hat;
+    arma::cx_mat A_hat = ss_->A() + L*ss_->C() + ctemp1;
 
 #ifdef HINF_DEBUG
     std::cout << ">>>>> Controller Result : " << std::endl;

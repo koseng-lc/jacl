@@ -78,6 +78,11 @@ private:
         return res;
     }
 
+    //-- create utils lib
+    inline auto toCx(const arma::mat& _in) const -> arma::cx_mat{
+        return arma::cx_mat(_in, arma::zeros<arma::mat>( arma::size(_in) ));
+    }
+
     //-- change to pointer arg for TZ
     auto auxSchur(const arma::mat& _H, std::tuple<arma::cx_mat, arma::cx_mat>& TZ) -> int{
         PyThreadState* py_state;
@@ -87,6 +92,7 @@ private:
             PyEval_InitThreads();
             py_state = PyEval_SaveThread();
         }
+
         AcquireGIL lk;
         int ret;
         import_array1(ret);
@@ -124,7 +130,11 @@ private:
             PyErr_Print();
             return 1;
         }
-        return 1;
+
+        if(PyGILState_GetThisThreadState() == py_state)
+            PyThreadState_Swap(py_state);
+
+        return 0;
     }
 
     class AcquireGIL{
@@ -230,11 +240,28 @@ auto ARE<_StateSpace>::solve() -> arma::cx_mat{
     arma::cx_mat Z = std::get<1>(TZ);
 
     arma::cx_mat ISS, X1, X2;
-    ISS = Z.tail_cols(Z.n_cols >> 1);
+//    T.print("T : ");
+//    Z.print("Z : ");
+    ISS = Z.head_cols(Z.n_cols >> 1);
+//    ISS.print("ISS : ");
     X1 = ISS.head_rows(ISS.n_rows >> 1);
     X2 = ISS.tail_rows(ISS.n_rows >> 1);
 
+//    X1.print("X1 : ");
+//    X2.print("X2 : ");
+
     arma::cx_mat solution = X2 * arma::inv(X1);
+    int n = H_.n_rows >> 1;
+    arma::cx_mat A = toCx(H_.submat(0,0,n-1,n-1));
+    arma::cx_mat R = toCx(H_.submat(0,n,n-1,(n*2)-1));
+    arma::cx_mat Q = toCx(-1*H_.submat(n,0,(n*2)-1,n-1));
+//    arma::cx_mat B = toCx(-1*arma::trans(H_.submat(n,n,(n*2)-1,(n*2)-1)));
+    arma::cx_mat temp1 = arma::trans(A)*solution;
+    arma::cx_mat temp2 = solution*A;
+    arma::cx_mat temp3 = solution*R*solution;
+    arma::cx_mat temp4 = temp1 + temp2 + temp3;
+    arma::cx_mat check = temp4 + Q;
+    check.print("CHECK : ");
 
 //    arma::cx_vec eigval;
 //    arma::cx_mat eigvec;
