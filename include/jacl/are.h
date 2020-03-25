@@ -22,8 +22,8 @@ namespace{
     using cxv_t = ublas::vector<cx_t>;
     using cxm_t = ublas::matrix<cx_t>;
 
-//    namespace py = boost::python;
-//    namespace np = boost::python::numpy;
+    namespace py = boost::python;
+    namespace np = boost::python::numpy;
 
 }
 
@@ -33,6 +33,9 @@ public:
     ARE(_StateSpace* _ss, const arma::mat& _R, const arma::mat& _Q);
     ARE(_StateSpace* _ss);
     ~ARE();
+
+    ARE(const ARE&) = delete;
+    ARE& operator=(const ARE&) = delete;
 
     auto setR(const arma::mat& _R, bool update_hamiltonian = false) -> void{
         assert(arma::size(_R) == arma::size(ss_->A()));
@@ -300,4 +303,4 @@ auto ARE<_StateSpace>::solve() -> arma::cx_mat{
 
 }
 
-}
+} // namespace jacl

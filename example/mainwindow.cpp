@@ -26,13 +26,13 @@ MainWindow::MainWindow(QWidget *parent)
     , controller_sim_(&K_)
     , ref_(3, 1, arma::fill::zeros)
     , cl_status_(true)
-    , posctrl_sim_(&k_pos_){
+    , posctrl_sim_(&k_pos_)
+    , spdctrl_sim_(&k_spd_){
 
     ui->setupUi(this);
 
     this->removeToolBar(ui->mainToolBar);
-
-    QFile style_file("../gui/dark_style_lintang.qss");
+    QFile style_file("../example/gui/dark_style_lintang.qss");
     style_file.open(QFile::ReadOnly);
     QString style_sheet(style_file.readAll());
     this->setStyleSheet(style_sheet);
@@ -314,6 +314,7 @@ MainWindow::MainWindow(QWidget *parent)
     controller_sim_.updateVariables();
 
     setupPositionController();
+    setupSpeedController();
 
     //-- Test KautskyNichols
     arma::mat observer_K;
@@ -565,7 +566,7 @@ void MainWindow::setupWidgets(){
 
     watermark_gl_ = new QGridLayout;
 
-    QImageReader image_reader("../gui/Logo_Universitas_Gadjah_Mada.png");
+    QImageReader image_reader("../example/gui/Logo_Universitas_Gadjah_Mada.png");
     logo_image_ = new QImage;
     *logo_image_ = image_reader.read().scaled(QSize(200,200), Qt::KeepAspectRatio);
 
@@ -680,7 +681,8 @@ void MainWindow::simulateAct(){
 
 //    sim_.simulate();    
     system_sim_.simulate();
-    posctrl_sim_.simulate();
+//    posctrl_sim_.simulate();
+    spdctrl_sim_.simulate();
 //    controller_sim_.simulate();
 //    observer_sim_.simulate();
 }
@@ -778,7 +780,6 @@ void MainWindow::setupPositionController(){
     icm_pos_.setB(fB);
     icm_pos_.setC(fC);
     icm_pos_.setD(fD);
-
     icm_pos_.formulaToMat();
 
     hinf_pc_ = new HInfPC(&icm_pos_, 2.7882);
@@ -786,35 +787,7 @@ void MainWindow::setupPositionController(){
     k_pos_.setA(std::get<0>(K));
     k_pos_.setB(std::get<1>(K));
     k_pos_.setC(std::get<2>(K));
-    k_pos_.setD(std::get<3>(K));
-
-//    arma::mat K_A;
-//    K_A << -2.018e+04 << -1.792e+04 << -1.387e+04 << -1.736e+04 << -2.021e+04 << -1.692e+06 << arma::endr
-//       <<       8192  <<       0    << 4.975e-10  << 8.973e-06  << 0.0001147  << 0.01704 << arma::endr
-//       <<         0   <<     4096   << 1.211e-07  <<  0.002184  <<   0.02793  <<   4.147 << arma::endr
-//       <<         0   <<        0   <<     1024   <<  0.009148  <<     0.117  <<   17.37 << arma::endr
-//       <<         0   <<        0   << -2.808e-06 <<     255.9  <<   -0.6476  <<  -96.17 << arma::endr
-//       <<         0   <<        0   << -3.117e-07 <<  -0.005621 <<     0.9281 <<  -10.67 << arma::endr;
-
-
-//    arma::mat K_B;
-//    K_B << 0.0008367 << arma::endr
-//        << -0.00024 << arma::endr
-//        << -0.05842 << arma::endr
-//        <<  -0.2447 << arma::endr
-//        <<   1.355  << arma::endr
-//        <<  0.1504  << arma::endr;
-
-//    arma::mat K_C;
-//    K_C << -125.9  <<  -222.2  <<  -240.1  <<  -362.1  <<  -437.1 << -3.708e+04 << arma::endr;
-
-//    arma::mat K_D;
-//    K_D << 0 << arma::endr;
-
-//    k_pos_.setA(K_A);
-//    k_pos_.setB(K_B);
-//    k_pos_.setC(K_C);
-//    k_pos_.setD(K_D);
+    k_pos_.setD(std::get<3>(K));    
 
     k_pos_.A().print("A : ");
     k_pos_.B().print("B : ");
@@ -828,6 +801,60 @@ void MainWindow::setupPositionController(){
     posctrl_sim_.updateVariables();
 }
 
+void MainWindow::setupSpeedController(){
+    InterConnMatSpd::Formulas fA = {
+        JC(icm_spd_, -1.444e+04), JC(icm_spd_, -7780), JC(icm_spd_, -2912), JC(icm_spd_, -841.9), JC(icm_spd_, -269),
+        JC(icm_spd_, 8192), JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 0),
+        JC(icm_spd_, 0), JC(icm_spd_, 4096), JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 0),
+        JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 1024), JC(icm_spd_, 0), JC(icm_spd_, 0),
+        JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 256), JC(icm_spd_, 0)
+    };
+
+    InterConnMatSpd::Formulas fB = {
+        JC(icm_spd_, 128), JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 128),
+        JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 0),
+        JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 0),
+        JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 0),
+        JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 0)
+    };
+
+    InterConnMatSpd::Formulas fC = {
+        JC(icm_spd_, 0), JC(icm_spd_, 0.004661), JC(icm_spd_, 24.99), JC(icm_spd_, 80.17), JC(icm_spd_, 48.49),
+        JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 0),
+        JC(icm_spd_, 0), JC(icm_spd_, 0.004661), JC(icm_spd_, 24.99), JC(icm_spd_, 80.17), JC(icm_spd_, 48.49)
+    };
+
+    InterConnMatSpd::Formulas fD = {
+        JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 1), JC(icm_spd_, 0),
+        JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 1),
+        JC(icm_spd_, 0), JC(icm_spd_, -1), JC(icm_spd_, 1), JC(icm_spd_, 0)
+    };
+
+    icm_spd_.setA(fA);
+    icm_spd_.setB(fB);
+    icm_spd_.setC(fC);
+    icm_spd_.setD(fD);
+    icm_spd_.formulaToMat();
+
+    hinf_sc_ = new HInfSC(&icm_spd_, 3.1);
+    jacl::common::StateSpacePack K( hinf_sc_->solve() );
+    k_spd_.setA(std::get<0>(K));
+    k_spd_.setB(std::get<1>(K));
+    k_spd_.setC(std::get<2>(K));
+    k_spd_.setD(std::get<3>(K));
+
+    k_spd_.A().print("Kspd_A : ");
+    k_spd_.B().print("Kspd_B : ");
+    k_spd_.C().print("Kspd_C : ");
+    k_spd_.D().print("Kspd_D : ");
+
+    spdctrl_sim_.init();
+    spdctrl_sim_.setTitle("Speed Controller");
+    spdctrl_sim_.setDelay() = TIME_STEP;
+    spdctrl_sim_.setPlotName({"Velocity Error", "Voltage"});
+    spdctrl_sim_.updateVariables();
+}
+
 double MainWindow::angularSpeed2Voltage(double _speed, double _torque){
     return _torque*ra.perturbed/ki.perturbed + ki.perturbed*_speed;
 }
@@ -835,6 +862,7 @@ double MainWindow::angularSpeed2Voltage(double _speed, double _torque){
 void MainWindow::closedLoopProcess(){
     arma::mat out(3,1,arma::fill::zeros),in(2,1,arma::fill::zeros);
     arma::mat err(3,1,arma::fill::zeros);
+    control_mode_ = jacl::traits::toUType(jacl::ControllerDialog::ControlMode::Velocity);
 //    arma::mat last_err(err);
 //    arma::mat diff(err);
 //    auto Kp(10.), Kd(1.);
@@ -852,7 +880,7 @@ void MainWindow::closedLoopProcess(){
 //            in(0) = -12.0;
 //        }
 
-        //-- H-infinity Controller
+
         err = ref_ + out;
 //        ref_.print("Ref : ");
 //        out.print("Out : ");
@@ -860,10 +888,17 @@ void MainWindow::closedLoopProcess(){
 //        in = controller_sim_.propagate(err);
 //        in.print("In : ");
 
-        //-- Pos Controller
-//        std::cout << "TEST" << std::endl;
-        in.submat(0,0,0,0) = posctrl_sim_.propagate(err.submat(0,0,0,0));
-//        std::cout << "TEST2" << std::endl;
+        //-- H-infinity Controller
+        if(control_mode_ == jacl::traits::toUType(jacl::ControllerDialog::ControlMode::Position)){
+            err(1) = 0;
+            in.submat(0,0,0,0) = posctrl_sim_.propagate(err.submat(0,0,0,0));
+        }else if(control_mode_ == jacl::traits::toUType(jacl::ControllerDialog::ControlMode::Velocity)){
+            err(0) = 0;
+            in.submat(0,0,0,0) = spdctrl_sim_.propagate(err.submat(1,0,1,0));
+        }else{
+            //-- do nothing
+        }
+
         out = system_sim_.propagate(in);
 //        err.submat(0,0,0,0).print("Err : ");
 //        in.submat(0,0,0,0).print("In : ");

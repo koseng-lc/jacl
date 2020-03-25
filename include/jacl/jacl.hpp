@@ -10,7 +10,6 @@
 #include "transfer_matrix.h"
 #include "state_space.h"
 #include "physical_parameter.h"
-#include "simulator.h"
 #include "observer.h"
 #include "pole_placement.h"
 #include "h_infinity_synthesis.h"
@@ -20,3 +19,4 @@
 #include "system_sim.h"
 #include "controller_sim.h"
 #include "posctrl_sim.h"
+#include "spdctrl_sim.h"

@@ -8,7 +8,7 @@
 #include <QLabel>
 #include <QRadioButton>
 
-#include "traits.h"
+#include <jacl/traits.h>
 
 namespace jacl{
 

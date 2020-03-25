@@ -21,8 +21,7 @@
 #include <QMenu>
 #include <QDialog>
 
-#include <jacl>
-
+#include <jacl/jacl.hpp>
 #include "controller_dialog.h"
 
 //-- TODO : Add GroupBox for Control Input
@@ -185,7 +184,16 @@ private:
     HInfPC* hinf_pc_;
     jacl::PosCtrlSim<PosCtrl> posctrl_sim_;
     void setupPositionController();
-//    using CSpeed = jacl::StateSpace<>;
+
+    //-- H-infinity speed control of dc motor
+    using InterConnMatSpd = jacl::StateSpace<5,4,3>;
+    InterConnMatSpd icm_spd_;
+    using SpdCtrl = jacl::StateSpace<5, 1, 1>;
+    SpdCtrl k_spd_;
+    using HInfSC = jacl::synthesis::HInf<InterConnMatSpd, 2, 3>;
+    HInfSC* hinf_sc_;
+    jacl::SpdCtrlSim<SpdCtrl> spdctrl_sim_;
+    void setupSpeedController();
 
     arma::mat ref_;
     int control_mode_;

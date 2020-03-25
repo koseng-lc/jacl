@@ -25,10 +25,10 @@
 
 namespace jacl{
 
-//namespace{
+namespace{
     namespace py = boost::python;
     namespace np = boost::python::numpy;
-//}
+}
 
 template <class _StateSpace>
 class Sim{

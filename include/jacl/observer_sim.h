@@ -27,8 +27,8 @@ public:
     }
 
 protected:
-    auto signalCalc() -> arma::mat;
-    auto getSig() -> arma::mat;
+    auto signalCalc() -> arma::mat override;
+    auto getSig() -> arma::mat override;
 
 private:
     Observer<_StateSpace> observer_;

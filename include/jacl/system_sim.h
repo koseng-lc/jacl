@@ -22,8 +22,8 @@ public:
     auto propagate(const arma::mat& _in) -> arma::mat;
 
 protected:
-    auto signalCalc() -> arma::mat;
-    auto getSig() -> arma::mat;
+    auto signalCalc() -> arma::mat override;
+    auto getSig() -> arma::mat override;
 
 private:
     auto calcState() -> void;
