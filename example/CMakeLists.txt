@@ -14,7 +14,6 @@ find_package(Qt5Gui REQUIRED)
 find_package(Qt5Widgets REQUIRED)
 
 # Main Program
-
 set(CMAKE_AUTOMOC on)
 set(CMAKE_AUTOUIC on)
 
@@ -29,13 +28,11 @@ add_executable(${PROJECT_NAME}
     controller_dialog.cpp
 )
 
-include_directories(    
+target_include_directories(${PROJECT_NAME} PUBLIC
     ${Qt5Core_INCLUDE_DIRS}
     ${Qt5Gui_INCLUDE_DIRS}
     ${Qt5Widgets_INCLUDE_DIRS}
 )
-
-target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_link_libraries(${PROJECT_NAME}
     # Qt

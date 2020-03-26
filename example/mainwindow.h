@@ -196,7 +196,7 @@ private:
     void setupSpeedController();
 
     arma::mat ref_;
-    int control_mode_;
+    int control_mode_;        
 
 private Q_SLOTS:
     void perturbAct();

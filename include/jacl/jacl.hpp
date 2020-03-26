@@ -13,6 +13,7 @@
 #include "observer.h"
 #include "pole_placement.h"
 #include "h_infinity_synthesis.h"
+#include "parser.h"
 
 // Example use of JACL
 #include "observer_sim.h"

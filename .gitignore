@@ -1,2 +1,4 @@
 build/
+lib/
+share/
 CMakeLists.txt.user

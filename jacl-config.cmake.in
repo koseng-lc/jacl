@@ -1,0 +1,3 @@
+set(JACL_INCLUDE_DIRS "@CONF_INCLUDE_DIRS@")
+#set(JACL_LIBRARIES "@CONF_LIBRARIES@")
+include("@CONF_TARGETS_DIR@/jacl-targets.cmake")

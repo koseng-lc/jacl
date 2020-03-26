@@ -794,6 +794,15 @@ void MainWindow::setupPositionController(){
     k_pos_.C().print("C : ");
     k_pos_.D().print("D : ");
 
+    jacl::parser::saveStateSpace(k_pos_, "position_controller.bin");
+
+    PosCtrl controller;
+    jacl::parser::readStateSpace(&controller, "position_controller.bin");
+    controller.A().print("Controller A : ");
+    controller.B().print("Controller B : ");
+    controller.C().print("Controller C : ");
+    controller.D().print("Controller D : ");
+
     posctrl_sim_.init();
     posctrl_sim_.setTitle("Position Controller");
     posctrl_sim_.setDelay() = TIME_STEP;
