@@ -125,7 +125,7 @@ private:
         iKb, // Back EMF Constant (V s / rad)
         iRa  // Armature Resistance (Ohm)
     };
-
+    //--
     jacl::PhysicalParameter bm;
     jacl::PhysicalParameter jm;
     jacl::PhysicalParameter ki;
@@ -143,12 +143,19 @@ private:
                          jacl::PhysicalParameter>;
 
     StateSpace ss_;
-//    jacl::Simulator sim_;
     jacl::SystemSim<StateSpace> system_sim_;    
-
-    arma::mat::fixed<3, 3> obs_gain_;
     jacl::ObserverSim<StateSpace> observer_sim_;
+    //--
+    using SIMO = jacl::StateSpace<3, 1, 3,
+                                    jacl::PhysicalParameter,
+                                    jacl::PhysicalParameter,
+                                    jacl::PhysicalParameter,
+                                    jacl::PhysicalParameter,
+                                    jacl::PhysicalParameter,
+                                    jacl::PhysicalParameter>;
+    SIMO simo_;
 
+    //--
     using GRealization =
         jacl::StateSpace<3, 8, 9,
                          jacl::PhysicalParameter,

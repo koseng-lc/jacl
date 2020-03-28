@@ -17,12 +17,9 @@ MainWindow::MainWindow(QWidget *parent)
     , ra(2.07)
     , ss_(&bm, &jm, &ki, &la, &kb, &ra)
     , G_(&bm, &jm, &ki, &la, &kb, &ra)
-//    , sim_(3,2,2)
     , system_sim_(&ss_)
-    , obs_gain_({{ .0, .0, .0},
-                 { .0, .0, .0},
-                 { .0, .0, .0}})
-    , observer_sim_(&ss_, obs_gain_)
+    , observer_sim_(&ss_, arma::zeros<arma::mat>(3,3))
+    , simo_(&bm, &jm, &ki, &la, &kb, &ra)
     , controller_sim_(&K_)
     , ref_(3, 1, arma::fill::zeros)
     , cl_status_(true)
@@ -96,9 +93,52 @@ MainWindow::MainWindow(QWidget *parent)
     ss_.C().print("C : ");
     ss_.D().print("D : ");
 
-    std::cout << "Ctrb : " << jacl::common::controllable(ss_.A(), ss_.B()) << std::endl;
-    std::cout << "Obsv : " << jacl::common::observable(ss_.A(), ss_.C()) << std::endl;
+    std::cout << "Controllable : " << jacl::common::controllable(ss_.A(), ss_.B()) << std::endl;
+    std::cout << "Observable : " << jacl::common::observable(ss_.A(), ss_.C()) << std::endl;
 
+    //-- Observer
+    arma::mat observer_K;
+    arma::mat poles{-50,-51,-52};
+    jacl::pole_placement::KautskyNichols(&ss_, poles, &observer_K, jacl::pole_placement::PolePlacementType::Observer);
+    observer_sim_.setGain(observer_K.t());
+
+    //-- SIMO DC motor open-loop
+    {
+        SIMO::Formulas fA{
+            JC(simo_,.0),JC(simo_,1.0),JC(simo_,.0),
+            JC(simo_,.0),JE(simo_,-simo_(iBm)/simo_(iJm)),JE(simo_,simo_(iKi)/simo_(iJm)),
+            JC(simo_,.0),JE(simo_,-simo_(iKb)/simo_(iLa)),JE(simo_,-simo_(iRa)/simo_(iLa))
+        };
+
+        SIMO::Formulas fB{
+            JC(simo_, .0),
+            JC(simo_, .0),
+            JE(simo_, 1.0/simo_(iLa))
+        };
+
+        SIMO::Formulas fC{
+            JC(simo_, 1.0), JC(simo_, .0), JC(simo_, .0),
+            JC(simo_, .0), JC(simo_, 1.0), JC(simo_, .0),
+            JC(simo_, .0), JC(simo_, .0), JC(simo_, 1.0)
+        };
+
+        SIMO::Formulas fD{
+            JC(simo_, .0),
+            JC(simo_, .0),
+            JC(simo_, .0)
+        };
+
+        simo_.setA(fA);
+        simo_.setB(fB);
+        simo_.setC(fC);
+        simo_.setD(fD);
+        simo_.formulaToMat();
+    }
+    arma::mat obsv_gain;
+    jacl::pole_placement::KautskyNichols(&simo_, poles, &obsv_gain, jacl::pole_placement::PolePlacementType::Observer);
+    obsv_gain.print("\nObserver Gain : ");
+    jacl::parser::saveGain(obsv_gain, "observer_gain.jacl");
+//    jacl::parser::readGain(&obsv_gain, "observer_gain.jacl");
 
     //-- G Realization
     {
@@ -251,7 +291,6 @@ MainWindow::MainWindow(QWidget *parent)
     {
         arma::mat temp1, temp2, temp3;
         arma::mat zeros9x3(9,3,arma::fill::zeros);
-        arma::mat zeros9x2(9,2,arma::fill::zeros);
         arma::mat zeros2x9(2,9,arma::fill::zeros);
         arma::mat zeros3x3(3,3,arma::fill::zeros);
         arma::mat zeros3x2(3,2,arma::fill::zeros);
@@ -314,14 +353,7 @@ MainWindow::MainWindow(QWidget *parent)
     controller_sim_.updateVariables();
 
     setupPositionController();
-    setupSpeedController();
-
-    //-- Test KautskyNichols
-    arma::mat observer_K;
-    arma::mat poles{-50,-51,-52};
-    jacl::pole_placement::KautskyNichols(&ss_, poles, &observer_K, jacl::pole_placement::PolePlacementType::Observer);
-    observer_K.print("\nObserver Gain : ");
-    observer_sim_.setGain(observer_K.t());    
+    setupSpeedController();    
 
     //-- Simulator
     system_sim_.init();
@@ -794,14 +826,15 @@ void MainWindow::setupPositionController(){
     k_pos_.C().print("C : ");
     k_pos_.D().print("D : ");
 
-    jacl::parser::saveStateSpace(k_pos_, "position_controller.bin");
+    jacl::parser::saveStateSpace(k_pos_, "position_controller.jacl");
 
-    PosCtrl controller;
-    jacl::parser::readStateSpace(&controller, "position_controller.bin");
+    //-- Example read
+    /*PosCtrl controller;
+    jacl::parser::readStateSpace(&controller, "position_controller.jacl");
     controller.A().print("Controller A : ");
     controller.B().print("Controller B : ");
     controller.C().print("Controller C : ");
-    controller.D().print("Controller D : ");
+    controller.D().print("Controller D : ");*/
 
     posctrl_sim_.init();
     posctrl_sim_.setTitle("Position Controller");
@@ -851,6 +884,8 @@ void MainWindow::setupSpeedController(){
     k_spd_.setB(std::get<1>(K));
     k_spd_.setC(std::get<2>(K));
     k_spd_.setD(std::get<3>(K));
+
+    jacl::parser::saveStateSpace(k_spd_, "speed_controller.jacl");
 
     k_spd_.A().print("Kspd_A : ");
     k_spd_.B().print("Kspd_B : ");
