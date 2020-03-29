@@ -12,12 +12,17 @@ QMainWindow {
 }*/
 
 QMenuBar {
-    background-color: #070b38;
+    background-color: #000000;
+    border-top:2px solid rgb(77,77,77);
+    border-bottom:2px solid rgb(77,77,77);
+    border-left:2px solid rgb(77,77,77);
+    border-right:2px solid rgb(77,77,77);
+    border-radius:10px;
     color: #FFFFFF;
 }
 
 QMenu {
-    background-color: #070b38;
+    background-color: #000000;
     color: #FFFFFF;
 }
 

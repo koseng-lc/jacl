@@ -12,6 +12,10 @@ namespace jacl{
         template <std::size_t ns, std::size_t ni, std::size_t no>
         struct is_state_space<StateSpace<ns,ni,no> >:std::true_type{};
 
+        template <std::size_t ns, std::size_t ni, std::size_t no,
+                  class PhysicalParam, class  ...Rest>
+        struct is_state_space<StateSpace<ns,ni,no,PhysicalParam,Rest...> >:std::true_type{};
+
         //-- convert to underlying type
         //-- the use of function instead of struct to prevent explicitly write the T
         template <typename T>

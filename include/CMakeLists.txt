@@ -137,7 +137,7 @@ set_target_properties(spdctrl_sim PROPERTIES LINKER_LANGUAGE CXX)
 # Parser
 add_library(parser ${JACL_HEADER_PREFIX}/parser.h)
 set_target_properties(parser PROPERTIES LINKER_LANGUAGE CXX)
-#target_
+target_link_libraries(parser PRIVATE state_space traits)
 
 set(JACL_HEADER_LIST
     ${JACL_HEADER_PREFIX}/physical_parameter.h

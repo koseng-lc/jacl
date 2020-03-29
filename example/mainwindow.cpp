@@ -134,6 +134,8 @@ MainWindow::MainWindow(QWidget *parent)
         simo_.setD(fD);
         simo_.formulaToMat();
     }
+    jacl::parser::saveStateSpace(simo_, "motor_dc_simo.jacl");
+
     arma::mat obsv_gain;
     jacl::pole_placement::KautskyNichols(&simo_, poles, &obsv_gain, jacl::pole_placement::PolePlacementType::Observer);
     obsv_gain.print("\nObserver Gain : ");

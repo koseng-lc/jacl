@@ -20,14 +20,13 @@ namespace detail{
         return res;
     }
 
-    static auto deserialize(const std::string& _str, int _rows, int _cols) -> arma::mat{
+    static auto deserialize(const std::string& _str, std::size_t _rows, std::size_t _cols) -> arma::mat{
         arma::mat res(_rows, _cols, arma::fill::zeros);
         std::string elem;
         int j(0);
         for(int i(0); i < _str.size(); i++){
-            if(_str.at(i) == ' '){
-                std::cout << _str.at(i) << std::endl;
-                res(j) = boost::lexical_cast<double>(elem);
+            if(_str.at(i) == ' '){                
+                res(j) = std::atof(elem.c_str());//boost::lexical_cast<double>(elem);
                 elem.clear();
                 j++;
                 continue;
@@ -117,7 +116,7 @@ static auto readGain(arma::Mat<Type>* _G, std::string _file_path)
                 ,nc( boost::lexical_cast<std::size_t>(c) );
         std::string G;
         std::getline(gain_file, G);
-        *_G = detail::deserialize(G, nr, nc);;
+        *_G = detail::deserialize(G, nr, nc);
         gain_file.close();
     }
     return 0;
