@@ -1,6 +1,6 @@
 #pragma once
 
-#include "state_space.h"
+#include "state_space.hpp"
 
 namespace jacl{
 template <class _StateSpace,

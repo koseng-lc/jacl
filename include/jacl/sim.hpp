@@ -5,6 +5,14 @@
 
 #pragma once
 
+#include <algorithm>
+#include <map>
+#include <initializer_list>
+#include <sstream>
+#include <thread>
+#include <queue>
+#include <cassert>
+
 #include <boost/thread.hpp>
 #include <boost/chrono.hpp>
 #include <boost/python.hpp>
@@ -13,15 +21,7 @@
 
 #include <numpy/ndarrayobject.h>
 
-#include <cassert>
-#include <algorithm>
-#include <map>
-#include <initializer_list>
-#include <sstream>
-#include <thread>
-#include <queue>
-
-#include "state_space.h"
+#include "state_space.hpp"
 
 namespace jacl{
 

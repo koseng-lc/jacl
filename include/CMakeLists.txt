@@ -14,43 +14,41 @@ find_package(Boost REQUIRED COMPONENTS
 )
 
 set(JACL_HEADER_PREFIX ${CMAKE_CURRENT_SOURCE_DIR}/jacl)
-
+#include_directories(${CMAKE_SOURCE_DIR}/include)
+#message("${CMAKE_SOURCE_DIR}/include")
 # Physical Parameter
-add_library(physical_parameter ${JACL_HEADER_PREFIX}/physical_parameter.h)
+add_library(physical_parameter ${JACL_HEADER_PREFIX}/physical_parameter.hpp)
 set_target_properties(physical_parameter PROPERTIES LINKER_LANGUAGE CXX)
 
 # State Space
-add_library(state_space ${JACL_HEADER_PREFIX}/state_space.h)
+add_library(state_space ${JACL_HEADER_PREFIX}/state_space.hpp)
 set_target_properties(state_space PROPERTIES LINKER_LANGUAGE CXX)
 target_link_libraries(state_space PRIVATE armadillo physical_parameter)
 
 # Transfer Matrix
-add_library(transfer_matrix ${JACL_HEADER_PREFIX}/transfer_matrix.h ${JACL_HEADER_PREFIX}/transfer_matrix.cpp)
+add_library(transfer_matrix ${JACL_HEADER_PREFIX}/transfer_matrix.hpp)
+set_target_properties(transfer_matrix PROPERTIES LINKER_LANGUAGE CXX)
 
 # Traits
-add_library(traits ${JACL_HEADER_PREFIX}/traits.h)
+add_library(traits ${JACL_HEADER_PREFIX}/traits.hpp)
 set_target_properties(traits PROPERTIES LINKER_LANGUAGE CXX)
 
 # Linear Algebra
-add_library(linear_algebra ${JACL_HEADER_PREFIX}/linear_algebra.h)
+add_library(linear_algebra ${JACL_HEADER_PREFIX}/linear_algebra.hpp)
 target_link_libraries(linear_algebra PRIVATE armadillo)
 set_target_properties(linear_algebra PROPERTIES LINKER_LANGUAGE CXX)
 
 # Numerical Methods
-add_library(numerical_methods ${JACL_HEADER_PREFIX}/numerical_methods.h)
+add_library(numerical_methods ${JACL_HEADER_PREFIX}/numerical_methods.hpp)
 set_target_properties(numerical_methods PROPERTIES LINKER_LANGUAGE CXX)
 
 # LTI Common
-add_library(lti_common ${JACL_HEADER_PREFIX}/lti_common.h)
+add_library(lti_common ${JACL_HEADER_PREFIX}/lti_common.hpp)
 target_link_libraries(lti_common PRIVATE armadillo)
 set_target_properties(lti_common PROPERTIES LINKER_LANGUAGE CXX)
 
-# Observer
-add_library(observer ${JACL_HEADER_PREFIX}/observer.h)
-set_target_properties(observer PROPERTIES LINKER_LANGUAGE CXX)
-
 # Simulator(more precisely is plotter)
-add_library(sim ${JACL_HEADER_PREFIX}/sim.h)
+add_library(sim ${JACL_HEADER_PREFIX}/sim.hpp)
 target_link_libraries(sim PRIVATE
     Boost::system Boost::python Boost::thread Boost::chrono
     ${PYTHON_LIBRARIES}
@@ -58,113 +56,59 @@ target_link_libraries(sim PRIVATE
 )
 set_target_properties(sim PROPERTIES LINKER_LANGUAGE CXX)
 
-# Observer Simulator
-add_library(observer_sim ${JACL_HEADER_PREFIX}/observer_sim.h)
-target_link_libraries(observer_sim PRIVATE
-    Boost::system Boost::python Boost::chrono
-    ${PYTHON_LIBRARIES}
-    state_space
-    sim
-    observer
-)
-set_target_properties(observer_sim PROPERTIES LINKER_LANGUAGE CXX)
-
 # LFT
-add_library(lft ${JACL_HEADER_PREFIX}/lft.h)
+add_library(lft ${JACL_HEADER_PREFIX}/lft.hpp)
 target_link_libraries(lft PRIVATE state_space)
 set_target_properties(lft PROPERTIES LINKER_LANGUAGE CXX)
 
 # Upper LFT
-add_library(upper_lft ${JACL_HEADER_PREFIX}/upper_lft.h)
+add_library(upper_lft ${JACL_HEADER_PREFIX}/upper_lft.hpp)
 target_link_libraries(upper_lft PRIVATE state_space lft)
 set_target_properties(upper_lft PROPERTIES LINKER_LANGUAGE CXX)
 
 # Lower LFT
-add_library(lower_lft ${JACL_HEADER_PREFIX}/lower_lft.h)
+add_library(lower_lft ${JACL_HEADER_PREFIX}/lower_lft.hpp)
 target_link_libraries(lower_lft PRIVATE state_space lft)
 set_target_properties(lower_lft PROPERTIES LINKER_LANGUAGE CXX)
 
 # Pole Placement
-add_library(pole_placement ${JACL_HEADER_PREFIX}/pole_placement.h)
+add_library(pole_placement ${JACL_HEADER_PREFIX}/pole_placement.hpp)
 target_link_libraries(pole_placement PRIVATE Boost::system Boost::thread Boost::chrono)
 set_target_properties(pole_placement PROPERTIES LINKER_LANGUAGE CXX)
 
 # ARE
-add_library(are ${JACL_HEADER_PREFIX}/are.h)
+add_library(are ${JACL_HEADER_PREFIX}/are.hpp)
 target_link_libraries(are PRIVATE Boost::system Boost::python ${Python_LIBRARIES} state_space)
 set_target_properties(are PROPERTIES LINKER_LANGUAGE CXX)
 
 # H-infinity Synthesis
-add_library(h_infinity_synthesis ${JACL_HEADER_PREFIX}/h_infinity_synthesis.h)
+add_library(h_infinity_synthesis ${JACL_HEADER_PREFIX}/h_infinity_synthesis.hpp)
 target_link_libraries(h_infinity_synthesis PRIVATE upper_lft are lti_common numerical_methods)
 set_target_properties(h_infinity_synthesis PROPERTIES LINKER_LANGUAGE CXX)
 
-# System Simulator
-add_library(system_sim ${JACL_HEADER_PREFIX}/system_sim.h)
-target_link_libraries(system_sim PRIVATE
-    Boost::system Boost::python Boost::chrono
-    ${PYTHON_LIBRARIES}
-    state_space
-    sim
-)
-set_target_properties(system_sim PROPERTIES LINKER_LANGUAGE CXX)
-
-# Controller
-add_library(controller ${JACL_HEADER_PREFIX}/controller.h)
-set_target_properties(controller PROPERTIES LINKER_LANGUAGE CXX)
-
-# Controller Simulator
-add_library(controller_sim ${JACL_HEADER_PREFIX}/controller_sim.h)
-target_link_libraries(controller_sim PRIVATE
-    sim
-)
-set_target_properties(controller_sim PROPERTIES LINKER_LANGUAGE CXX)
-
-# Position Controller Sim
-add_library(posctrl_sim ${JACL_HEADER_PREFIX}/posctrl_sim.h)
-target_link_libraries(posctrl_sim PRIVATE
-    sim
-)
-set_target_properties(posctrl_sim PROPERTIES LINKER_LANGUAGE CXX)
-
-# Speed Controller Sim
-add_library(spdctrl_sim ${JACL_HEADER_PREFIX}/spdctrl_sim.h)
-target_link_libraries(spdctrl_sim PRIVATE
-    sim
-)
-set_target_properties(spdctrl_sim PROPERTIES LINKER_LANGUAGE CXX)
-
 # Parser
-add_library(parser ${JACL_HEADER_PREFIX}/parser.h)
+add_library(parser ${JACL_HEADER_PREFIX}/parser.hpp)
 set_target_properties(parser PROPERTIES LINKER_LANGUAGE CXX)
 target_link_libraries(parser PRIVATE state_space traits)
 
 set(JACL_HEADER_LIST
-    ${JACL_HEADER_PREFIX}/physical_parameter.h
-    ${JACL_HEADER_PREFIX}/state_space.h
-    ${JACL_HEADER_PREFIX}/transfer_matrix.h
-    ${JACL_HEADER_PREFIX}/traits.h
-    ${JACL_HEADER_PREFIX}/linear_algebra.h
-    ${JACL_HEADER_PREFIX}/numerical_methods.h
-    ${JACL_HEADER_PREFIX}/lti_common.h
-    ${JACL_HEADER_PREFIX}/sim.h
-    ${JACL_HEADER_PREFIX}/lft.h
-    ${JACL_HEADER_PREFIX}/upper_lft.h
-    ${JACL_HEADER_PREFIX}/lower_lft.h
-    ${JACL_HEADER_PREFIX}/pole_placement.h
-    ${JACL_HEADER_PREFIX}/are.h
-    ${JACL_HEADER_PREFIX}/h_infinity_synthesis.h
-    ${JACL_HEADER_PREFIX}/defs.h
+    ${JACL_HEADER_PREFIX}/physical_parameter.hpp
+    ${JACL_HEADER_PREFIX}/state_space.hpp
+    ${JACL_HEADER_PREFIX}/transfer_matrix.hpp
+    ${JACL_HEADER_PREFIX}/traits.hpp
+    ${JACL_HEADER_PREFIX}/linear_algebra.hpp
+    ${JACL_HEADER_PREFIX}/numerical_methods.hpp
+    ${JACL_HEADER_PREFIX}/lti_common.hpp
+    ${JACL_HEADER_PREFIX}/sim.hpp
+    ${JACL_HEADER_PREFIX}/lft.hpp
+    ${JACL_HEADER_PREFIX}/upper_lft.hpp
+    ${JACL_HEADER_PREFIX}/lower_lft.hpp
+    ${JACL_HEADER_PREFIX}/pole_placement.hpp
+    ${JACL_HEADER_PREFIX}/are.hpp
+    ${JACL_HEADER_PREFIX}/h_infinity_synthesis.hpp
+    ${JACL_HEADER_PREFIX}/defs.hpp
     ${JACL_HEADER_PREFIX}/jacl.hpp
-    ${JACL_HEADER_PREFIX}/parser.h
-    # Remove this in future
-    ${JACL_HEADER_PREFIX}/observer.h
-    ${JACL_HEADER_PREFIX}/observer_sim.h
-    ${JACL_HEADER_PREFIX}/system_sim.h
-    ${JACL_HEADER_PREFIX}/controller.h
-    ${JACL_HEADER_PREFIX}/controller_sim.h
-    ${JACL_HEADER_PREFIX}/posctrl_sim.h
-    ${JACL_HEADER_PREFIX}/spdctrl_sim.h
+    ${JACL_HEADER_PREFIX}/parser.hpp
 )
 
 set(JACL_LIB_LIST
@@ -183,14 +127,6 @@ set(JACL_LIB_LIST
     are
     h_infinity_synthesis
     parser
-    # Remove this in future
-    observer
-    observer_sim
-    system_sim
-    controller
-    controller_sim
-    posctrl_sim
-    spdctrl_sim
 )
 
 #-- JACL Libraries

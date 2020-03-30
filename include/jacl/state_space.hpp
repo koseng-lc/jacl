@@ -14,8 +14,8 @@
 
 #include <armadillo>
 
-#include "physical_parameter.h"
-#include "linear_algebra.h"
+#include "physical_parameter.hpp"
+#include "linear_algebra.hpp"
 
 namespace jacl{
 
@@ -27,6 +27,7 @@ namespace{
 template<std::size_t num_states, std::size_t num_inputs, std::size_t num_outputs, class PhysicalParam = int, class ...Rest>
 class StateSpace{
 public:
+    //-- change with using instead of typedef
     typedef std::function<double(StateSpace)> Formula;
     typedef std::vector<Formula> Formulas;
 

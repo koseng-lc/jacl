@@ -1,6 +1,6 @@
 #pragma once
 
-#include "sim.h"
+#include <jacl/sim.hpp>
 
 namespace jacl{
 

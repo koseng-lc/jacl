@@ -23,6 +23,11 @@
 
 #include <jacl/jacl.hpp>
 #include "controller_dialog.h"
+#include "controller_sim.h"
+#include "system_sim.h"
+#include "observer_sim.h"
+#include "posctrl_sim.h"
+#include "spdctrl_sim.h"
 
 //-- TODO : Add GroupBox for Control Input
 

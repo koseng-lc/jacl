@@ -4,9 +4,9 @@
 */
 #pragma once
 
-#include <armadillo>
-
 #include <cassert>
+
+#include <armadillo>
 
 namespace jacl{
 

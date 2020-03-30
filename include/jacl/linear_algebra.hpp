@@ -1,8 +1,8 @@
 #pragma once
 
-#include <armadillo>
-
 #include <vector>
+
+#include <armadillo>
 
 namespace jacl{
 

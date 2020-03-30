@@ -2,7 +2,7 @@
 
 #include <type_traits>
 
-#include "state_space.h"
+#include "state_space.hpp"
 
 namespace jacl{
     namespace traits{

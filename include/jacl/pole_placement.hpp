@@ -7,12 +7,11 @@
 
 #include <vector>
 #include <iomanip>
-
 #include <type_traits>
 
 #include <boost/thread.hpp>
 
-#include "state_space.h"
+#include "state_space.hpp"
 
 namespace jacl{
 

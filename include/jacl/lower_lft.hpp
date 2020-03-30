@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include "state_space.h"
-#include "lft.h"
+#include "state_space.hpp"
+#include "lft.hpp"
 
 namespace jacl{
 

@@ -6,13 +6,12 @@
 
 #pragma once
 
-#include "lti_common.h"
-#include "are.h"
-#include "upper_lft.h"
-#include "lower_lft.h"
-#include "state_space.h"
-#include "traits.h"
-#include "numerical_methods.h"
+#include "lti_common.hpp"
+#include "are.hpp"
+#include "lower_lft.hpp"
+#include "state_space.hpp"
+#include "traits.hpp"
+#include "numerical_methods.hpp"
 
 #define HINF_DEBUG
 

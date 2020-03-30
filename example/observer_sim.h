@@ -6,7 +6,7 @@
 #pragma once
 
 #include "observer.h"
-#include "sim.h"
+#include <jacl/sim.hpp>
 
 namespace jacl{
 
