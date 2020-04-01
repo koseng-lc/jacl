@@ -1,6 +1,6 @@
 #pragma once
 
-#include "state_space.hpp"
+#include "linear_state_space.hpp"
 
 namespace jacl{
 template <class _StateSpace,

@@ -1,0 +1,326 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CMakeRunConfigurationManager" shouldGenerate="true" shouldDeleteObsolete="true">
+    <generated>
+      <config projectName="jacl" targetName="posctrl_sim" />
+      <config projectName="jacl" targetName="spdctrl_sim_autogen" />
+      <config projectName="jacl" targetName="controller_sim_autogen" />
+      <config projectName="jacl" targetName="transfer_matrix" />
+      <config projectName="jacl" targetName="observer_sim" />
+      <config projectName="jacl" targetName="lower_lft" />
+      <config projectName="jacl" targetName="posctrl_sim_autogen" />
+      <config projectName="jacl" targetName="observer_sim_autogen" />
+      <config projectName="jacl" targetName="jacl_lib" />
+      <config projectName="jacl" targetName="control_sim_autogen" />
+      <config projectName="jacl" targetName="controller_sim" />
+      <config projectName="jacl" targetName="linear_algebra" />
+      <config projectName="jacl" targetName="h_infinity_synthesis" />
+      <config projectName="jacl" targetName="parser" />
+      <config projectName="jacl" targetName="controller_autogen" />
+      <config projectName="jacl" targetName="pole_placement" />
+      <config projectName="jacl" targetName="control_sim" />
+      <config projectName="jacl" targetName="lft" />
+      <config projectName="jacl" targetName="spdctrl_sim" />
+      <config projectName="jacl" targetName="system_sim_autogen" />
+      <config projectName="jacl" targetName="linear_state_space" />
+      <config projectName="jacl" targetName="lti_common" />
+      <config projectName="jacl" targetName="physical_parameter" />
+      <config projectName="jacl" targetName="upper_lft" />
+      <config projectName="jacl" targetName="traits" />
+      <config projectName="jacl" targetName="observer_autogen" />
+      <config projectName="jacl" targetName="are" />
+      <config projectName="jacl" targetName="sim" />
+      <config projectName="jacl" targetName="dummy" />
+      <config projectName="jacl" targetName="base_system" />
+      <config projectName="jacl" targetName="observer" />
+      <config projectName="jacl" targetName="nonlinear_state_space" />
+      <config projectName="jacl" targetName="controller" />
+      <config projectName="jacl" targetName="system_sim" />
+      <config projectName="jacl" targetName="numerical_methods" />
+    </generated>
+  </component>
+  <component name="CMakeSettings">
+    <configurations>
+      <configuration PROFILE_NAME="Debug" CONFIG_NAME="Debug" />
+    </configurations>
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="9f60c392-f778-4d8f-8138-52da1eac4ff4" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/example/CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/example/CMakeLists.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/example/mainwindow.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/example/mainwindow.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/example/mainwindow.h" beforeDir="false" afterPath="$PROJECT_DIR$/example/mainwindow.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/example/observer.h" beforeDir="false" afterPath="$PROJECT_DIR$/example/observer.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/include/CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/include/CMakeLists.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/include/jacl/are.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/include/jacl/are.hpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/include/jacl/h_infinity_synthesis.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/include/jacl/h_infinity_synthesis.hpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/include/jacl/jacl.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/include/jacl/jacl.hpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/include/jacl/lft.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/include/jacl/lft.hpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/include/jacl/lower_lft.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/include/jacl/lower_lft.hpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/include/jacl/parser.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/include/jacl/parser.hpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/include/jacl/pole_placement.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/include/jacl/pole_placement.hpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/include/jacl/sim.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/include/jacl/sim.hpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/include/jacl/state_space.hpp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/include/jacl/traits.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/include/jacl/traits.hpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/include/jacl/upper_lft.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/include/jacl/upper_lft.hpp" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ClangdSettings">
+    <option name="formatViaClangd" value="false" />
+  </component>
+  <component name="ExecutionTargetManager" SELECTED_TARGET="CMakeBuildProfile:Debug" />
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectId" id="1Ztir3G2grZOYO6QfMWOYarDZrm" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showExcludedFiles" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/CMakeLists.txt" />
+  </component>
+  <component name="RunManager" selected="CMake Application.control_sim">
+    <configuration name="are" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="jacl" TARGET_NAME="are" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="base_system" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="jacl" TARGET_NAME="base_system" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="control_sim" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="jacl" TARGET_NAME="control_sim" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="jacl" RUN_TARGET_NAME="control_sim">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="control_sim_autogen" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="jacl" TARGET_NAME="control_sim_autogen" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="controller" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="jacl" TARGET_NAME="controller" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="controller_autogen" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="jacl" TARGET_NAME="controller_autogen" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="controller_sim" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="jacl" TARGET_NAME="controller_sim" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="controller_sim_autogen" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="jacl" TARGET_NAME="controller_sim_autogen" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="dummy" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="jacl" TARGET_NAME="dummy" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="jacl" RUN_TARGET_NAME="dummy">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="h_infinity_synthesis" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="jacl" TARGET_NAME="h_infinity_synthesis" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="jacl_lib" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="jacl" TARGET_NAME="jacl_lib" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="lft" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="jacl" TARGET_NAME="lft" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="linear_algebra" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="jacl" TARGET_NAME="linear_algebra" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="linear_state_space" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="jacl" TARGET_NAME="linear_state_space" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="lower_lft" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="jacl" TARGET_NAME="lower_lft" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="lti_common" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="jacl" TARGET_NAME="lti_common" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="nonlinear_state_space" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="jacl" TARGET_NAME="nonlinear_state_space" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="numerical_methods" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="jacl" TARGET_NAME="numerical_methods" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="observer" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="jacl" TARGET_NAME="observer" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="observer_autogen" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="jacl" TARGET_NAME="observer_autogen" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="observer_sim" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="jacl" TARGET_NAME="observer_sim" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="observer_sim_autogen" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="jacl" TARGET_NAME="observer_sim_autogen" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="parser" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="jacl" TARGET_NAME="parser" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="physical_parameter" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="jacl" TARGET_NAME="physical_parameter" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="pole_placement" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="jacl" TARGET_NAME="pole_placement" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="posctrl_sim" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="jacl" TARGET_NAME="posctrl_sim" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="posctrl_sim_autogen" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="jacl" TARGET_NAME="posctrl_sim_autogen" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="sim" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="jacl" TARGET_NAME="sim" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="spdctrl_sim" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="jacl" TARGET_NAME="spdctrl_sim" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="spdctrl_sim_autogen" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="jacl" TARGET_NAME="spdctrl_sim_autogen" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="system_sim" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="jacl" TARGET_NAME="system_sim" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="system_sim_autogen" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="jacl" TARGET_NAME="system_sim_autogen" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="traits" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="jacl" TARGET_NAME="traits" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="transfer_matrix" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="jacl" TARGET_NAME="transfer_matrix" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="upper_lft" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="jacl" TARGET_NAME="upper_lft" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <list>
+      <item itemvalue="CMake Application.control_sim" />
+      <item itemvalue="CMake Application.control_sim_autogen" />
+      <item itemvalue="CMake Application.controller" />
+      <item itemvalue="CMake Application.controller_autogen" />
+      <item itemvalue="CMake Application.controller_sim" />
+      <item itemvalue="CMake Application.controller_sim_autogen" />
+      <item itemvalue="CMake Application.observer" />
+      <item itemvalue="CMake Application.observer_autogen" />
+      <item itemvalue="CMake Application.observer_sim" />
+      <item itemvalue="CMake Application.observer_sim_autogen" />
+      <item itemvalue="CMake Application.posctrl_sim" />
+      <item itemvalue="CMake Application.posctrl_sim_autogen" />
+      <item itemvalue="CMake Application.spdctrl_sim" />
+      <item itemvalue="CMake Application.spdctrl_sim_autogen" />
+      <item itemvalue="CMake Application.system_sim" />
+      <item itemvalue="CMake Application.system_sim_autogen" />
+      <item itemvalue="CMake Application.are" />
+      <item itemvalue="CMake Application.base_system" />
+      <item itemvalue="CMake Application.dummy" />
+      <item itemvalue="CMake Application.h_infinity_synthesis" />
+      <item itemvalue="CMake Application.jacl_lib" />
+      <item itemvalue="CMake Application.lft" />
+      <item itemvalue="CMake Application.linear_algebra" />
+      <item itemvalue="CMake Application.linear_state_space" />
+      <item itemvalue="CMake Application.lower_lft" />
+      <item itemvalue="CMake Application.lti_common" />
+      <item itemvalue="CMake Application.nonlinear_state_space" />
+      <item itemvalue="CMake Application.numerical_methods" />
+      <item itemvalue="CMake Application.parser" />
+      <item itemvalue="CMake Application.physical_parameter" />
+      <item itemvalue="CMake Application.pole_placement" />
+      <item itemvalue="CMake Application.sim" />
+      <item itemvalue="CMake Application.traits" />
+      <item itemvalue="CMake Application.transfer_matrix" />
+      <item itemvalue="CMake Application.upper_lft" />
+    </list>
+  </component>
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="9f60c392-f778-4d8f-8138-52da1eac4ff4" name="Default Changelist" comment="" />
+      <created>1585664987577</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1585664987577</updated>
+      <workItem from="1585664997860" duration="76000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="1" />
+  </component>
+  <component name="WindowStateProjectService">
+    <state x="616" y="357" key="com.intellij.ide.util.TipDialog" timestamp="1585665000134">
+      <screen x="0" y="27" width="1920" height="1006" />
+    </state>
+    <state x="616" y="357" key="com.intellij.ide.util.TipDialog/0.27.1920.1006@0.27.1920.1006" timestamp="1585665000134" />
+  </component>
+</project>

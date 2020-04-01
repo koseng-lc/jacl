@@ -29,7 +29,7 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 # Lib
 # Observer
 add_library(observer observer.h)
-target_link_libraries(observer state_space)
+target_link_libraries(observer linear_state_space)
 set_target_properties(observer PROPERTIES LINKER_LANGUAGE CXX)
 
 # Observer Simulator

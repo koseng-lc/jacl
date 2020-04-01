@@ -8,7 +8,7 @@
 #include <boost/python/numpy.hpp>
 #include <numpy/ndarrayobject.h>
 
-#include "state_space.hpp"
+#include "linear_state_space.hpp"
 
 namespace jacl{
 

@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "state_space.hpp"
+#include "linear_state_space.hpp"
 #include "lft.hpp"
 
 namespace jacl{

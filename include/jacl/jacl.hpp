@@ -8,7 +8,7 @@
 
 #include "defs.hpp"
 #include "transfer_matrix.hpp"
-#include "state_space.hpp"
+#include "linear_state_space.hpp"
 #include "physical_parameter.hpp"
 #include "pole_placement.hpp"
 #include "h_infinity_synthesis.hpp"

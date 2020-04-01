@@ -4,7 +4,7 @@
 
 #include <boost/lexical_cast.hpp>
 
-#include "state_space.hpp"
+#include "linear_state_space.hpp"
 #include "traits.hpp"
 
 namespace jacl{

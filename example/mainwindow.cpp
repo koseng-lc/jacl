@@ -37,45 +37,45 @@ MainWindow::MainWindow(QWidget *parent)
     //-- DC Motor Open-Loop
     std::cout << "Preparing system ..." << std::endl;
     {
-        StateSpace::Formula A11 = JC(ss_,.0); StateSpace::Formula A12 = JC(ss_,1.0);
-        StateSpace::Formula A13 = JC(ss_,.0); StateSpace::Formula A21 = JC(ss_,.0);
-        StateSpace::Formula A22 = JE(ss_,-ss_(iBm)/ss_(iJm)); StateSpace::Formula A23 = JE(ss_,ss_(iKi)/ss_(iJm));
-        StateSpace::Formula A31 = JC(ss_,.0); StateSpace::Formula A32 = JE(ss_,-ss_(iKb)/ss_(iLa));
-        StateSpace::Formula A33 = JE(ss_,-ss_(iRa)/ss_(iLa));
+        LinearStateSpace::Formula A11 = JC(ss_,.0); LinearStateSpace::Formula A12 = JC(ss_,1.0);
+        LinearStateSpace::Formula A13 = JC(ss_,.0); LinearStateSpace::Formula A21 = JC(ss_,.0);
+        LinearStateSpace::Formula A22 = JE(ss_,-ss_(iBm)/ss_(iJm)); LinearStateSpace::Formula A23 = JE(ss_,ss_(iKi)/ss_(iJm));
+        LinearStateSpace::Formula A31 = JC(ss_,.0); LinearStateSpace::Formula A32 = JE(ss_,-ss_(iKb)/ss_(iLa));
+        LinearStateSpace::Formula A33 = JE(ss_,-ss_(iRa)/ss_(iLa));
 
-        StateSpace::Formulas fA{
+        LinearStateSpace::Formulas fA{
             A11,A12,A13,
             A21,A22,A23,
             A31,A32,A33
         };
 
-        StateSpace::Formula B11 = JC(ss_, .0); StateSpace::Formula B12 = JC(ss_, .0);
-        StateSpace::Formula B21 = JC(ss_, .0); StateSpace::Formula B22 = JE(ss_, -1.0/ss_(iJm));
-        StateSpace::Formula B31 = JE(ss_, 1.0/ss_(iLa)); StateSpace::Formula B32 = JC(ss_, .0);
+        LinearStateSpace::Formula B11 = JC(ss_, .0); LinearStateSpace::Formula B12 = JC(ss_, .0);
+        LinearStateSpace::Formula B21 = JC(ss_, .0); LinearStateSpace::Formula B22 = JE(ss_, -1.0/ss_(iJm));
+        LinearStateSpace::Formula B31 = JE(ss_, 1.0/ss_(iLa)); LinearStateSpace::Formula B32 = JC(ss_, .0);
 
-        StateSpace::Formulas fB{
+        LinearStateSpace::Formulas fB{
             B11, B12,
             B21, B22,
             B31, B32
         };
 
-        StateSpace::Formula C11 = JC(ss_, 1.0); StateSpace::Formula C12 = JC(ss_, .0);
-        StateSpace::Formula C13 = JC(ss_, .0); StateSpace::Formula C21 = JC(ss_, .0);
-        StateSpace::Formula C22 = JC(ss_, 1.0); StateSpace::Formula C23 = JC(ss_, .0);
-        StateSpace::Formula C31 = JC(ss_, .0); StateSpace::Formula C32 = JC(ss_, .0);
-        StateSpace::Formula C33 = JC(ss_, 1.0);
+        LinearStateSpace::Formula C11 = JC(ss_, 1.0); LinearStateSpace::Formula C12 = JC(ss_, .0);
+        LinearStateSpace::Formula C13 = JC(ss_, .0); LinearStateSpace::Formula C21 = JC(ss_, .0);
+        LinearStateSpace::Formula C22 = JC(ss_, 1.0); LinearStateSpace::Formula C23 = JC(ss_, .0);
+        LinearStateSpace::Formula C31 = JC(ss_, .0); LinearStateSpace::Formula C32 = JC(ss_, .0);
+        LinearStateSpace::Formula C33 = JC(ss_, 1.0);
 
-        StateSpace::Formulas fC{
+        LinearStateSpace::Formulas fC{
             C11, C12, C13,
             C21, C22, C23,
             C31, C32, C33
         };
 
-        StateSpace::Formula D11 = JC(ss_, .0); StateSpace::Formula D12 = JC(ss_, .0);
-        StateSpace::Formula D21 = JC(ss_, .0); StateSpace::Formula D22 = JC(ss_, .0);
-        StateSpace::Formula D31 = JC(ss_, .0); StateSpace::Formula D32 = JC(ss_, .0);
+        LinearStateSpace::Formula D11 = JC(ss_, .0); LinearStateSpace::Formula D12 = JC(ss_, .0);
+        LinearStateSpace::Formula D21 = JC(ss_, .0); LinearStateSpace::Formula D22 = JC(ss_, .0);
+        LinearStateSpace::Formula D31 = JC(ss_, .0); LinearStateSpace::Formula D32 = JC(ss_, .0);
 
-        StateSpace::Formulas fD{
+        LinearStateSpace::Formulas fD{
             D11, D12,
             D21, D22,
             D31, D32,
@@ -696,7 +696,7 @@ void MainWindow::perturbAct(){
     ss_.formulaToMat();
     system_sim_.updateVariables();
     observer_sim_.updateVariables();
-//    sim_.setStateSpace(ss_.A(), ss_.B(), ss_.C(), ss_.D());
+//    sim_.setLinearStateSpace(ss_.A(), ss_.B(), ss_.C(), ss_.D());
 }
 
 void MainWindow::resetAct(){

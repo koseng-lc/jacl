@@ -9,7 +9,8 @@
 #include "lti_common.hpp"
 #include "are.hpp"
 #include "lower_lft.hpp"
-#include "state_space.hpp"
+#include "linear_state_space.hpp"
+#include "linear_algebra.hpp"
 #include "traits.hpp"
 #include "numerical_methods.hpp"
 

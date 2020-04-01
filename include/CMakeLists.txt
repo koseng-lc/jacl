@@ -14,16 +14,27 @@ find_package(Boost REQUIRED COMPONENTS
 )
 
 set(JACL_HEADER_PREFIX ${CMAKE_CURRENT_SOURCE_DIR}/jacl)
-#include_directories(${CMAKE_SOURCE_DIR}/include)
-#message("${CMAKE_SOURCE_DIR}/include")
+
+include_directories(${PROJECT_SOURCE_DIR})
+
 # Physical Parameter
 add_library(physical_parameter ${JACL_HEADER_PREFIX}/physical_parameter.hpp)
 set_target_properties(physical_parameter PROPERTIES LINKER_LANGUAGE CXX)
 
 # State Space
-add_library(state_space ${JACL_HEADER_PREFIX}/state_space.hpp)
-set_target_properties(state_space PROPERTIES LINKER_LANGUAGE CXX)
-target_link_libraries(state_space PRIVATE armadillo physical_parameter)
+add_library(linear_state_space ${JACL_HEADER_PREFIX}/linear_state_space.hpp)
+set_target_properties(linear_state_space PROPERTIES LINKER_LANGUAGE CXX)
+target_link_libraries(linear_state_space PRIVATE armadillo physical_parameter)
+
+add_library(nonlinear_state_space ${JACL_HEADER_PREFIX}/nonlinear_state_space.hpp)
+set_target_properties(nonlinear_state_space PROPERTIES LINKER_LANGUAGE CXX)
+target_link_libraries(nonlinear_state_space PRIVATE armadillo physical_parameter)
+
+# System
+add_library(base_system ${JACL_HEADER_PREFIX}/system/base_system.hpp)
+set_target_properties(base_system PROPERTIES LINKER_LANGUAGE CXX)
+#target_include_directories(base_system PUBLIC ${PROJECT_SOURCE_DIR})
+target_link_libraries(base_system PRIVATE armadillo physical_parameter)
 
 # Transfer Matrix
 add_library(transfer_matrix ${JACL_HEADER_PREFIX}/transfer_matrix.hpp)
@@ -52,23 +63,23 @@ add_library(sim ${JACL_HEADER_PREFIX}/sim.hpp)
 target_link_libraries(sim PRIVATE
     Boost::system Boost::python Boost::thread Boost::chrono
     ${PYTHON_LIBRARIES}
-    state_space
+    linear_state_space
 )
 set_target_properties(sim PROPERTIES LINKER_LANGUAGE CXX)
 
 # LFT
 add_library(lft ${JACL_HEADER_PREFIX}/lft.hpp)
-target_link_libraries(lft PRIVATE state_space)
+target_link_libraries(lft PRIVATE linear_state_space)
 set_target_properties(lft PROPERTIES LINKER_LANGUAGE CXX)
 
 # Upper LFT
 add_library(upper_lft ${JACL_HEADER_PREFIX}/upper_lft.hpp)
-target_link_libraries(upper_lft PRIVATE state_space lft)
+target_link_libraries(upper_lft PRIVATE linear_state_space lft)
 set_target_properties(upper_lft PROPERTIES LINKER_LANGUAGE CXX)
 
 # Lower LFT
 add_library(lower_lft ${JACL_HEADER_PREFIX}/lower_lft.hpp)
-target_link_libraries(lower_lft PRIVATE state_space lft)
+target_link_libraries(lower_lft PRIVATE linear_state_space lft)
 set_target_properties(lower_lft PROPERTIES LINKER_LANGUAGE CXX)
 
 # Pole Placement
@@ -78,7 +89,7 @@ set_target_properties(pole_placement PROPERTIES LINKER_LANGUAGE CXX)
 
 # ARE
 add_library(are ${JACL_HEADER_PREFIX}/are.hpp)
-target_link_libraries(are PRIVATE Boost::system Boost::python ${Python_LIBRARIES} state_space)
+target_link_libraries(are PRIVATE Boost::system Boost::python ${Python_LIBRARIES} linear_state_space)
 set_target_properties(are PROPERTIES LINKER_LANGUAGE CXX)
 
 # H-infinity Synthesis
@@ -89,11 +100,11 @@ set_target_properties(h_infinity_synthesis PROPERTIES LINKER_LANGUAGE CXX)
 # Parser
 add_library(parser ${JACL_HEADER_PREFIX}/parser.hpp)
 set_target_properties(parser PROPERTIES LINKER_LANGUAGE CXX)
-target_link_libraries(parser PRIVATE state_space traits)
+target_link_libraries(parser PRIVATE linear_state_space traits)
 
 set(JACL_HEADER_LIST
     ${JACL_HEADER_PREFIX}/physical_parameter.hpp
-    ${JACL_HEADER_PREFIX}/state_space.hpp
+    ${JACL_HEADER_PREFIX}/linear_state_space.hpp
     ${JACL_HEADER_PREFIX}/transfer_matrix.hpp
     ${JACL_HEADER_PREFIX}/traits.hpp
     ${JACL_HEADER_PREFIX}/linear_algebra.hpp
@@ -113,7 +124,7 @@ set(JACL_HEADER_LIST
 
 set(JACL_LIB_LIST
     physical_parameter
-    state_space
+    linear_state_space
     transfer_matrix
     traits
     linear_algebra

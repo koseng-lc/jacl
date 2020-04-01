@@ -14,21 +14,16 @@
 
 #include <armadillo>
 
-#include "physical_parameter.hpp"
-#include "linear_algebra.hpp"
+#include <jacl/physical_parameter.hpp>
 
 namespace jacl{
 
-namespace{
-    namespace linalg = linear_algebra;
-}
-
 //-- force to have fixed size
 template<std::size_t num_states, std::size_t num_inputs, std::size_t num_outputs, class PhysicalParam = int, class ...Rest>
-class StateSpace{
+class LinearStateSpace{
 public:
     //-- change with using instead of typedef
-    typedef std::function<double(StateSpace)> Formula;
+    typedef std::function<double(LinearStateSpace)> Formula;
     typedef std::vector<Formula> Formulas;
 
 public:    
@@ -36,7 +31,7 @@ public:
               typename std::enable_if<
                   std::is_same<typename std::decay<_PhysicalParam>::type,
                                PhysicalParameter>::value, int>::type* = nullptr>
-    StateSpace(_PhysicalParam* _param, Rest*... _rest)
+    LinearStateSpace(_PhysicalParam* _param, Rest*... _rest)
         : A_(num_states, num_states)
         , B_(num_states, num_inputs)
         , C_(num_outputs, num_states)
@@ -45,8 +40,8 @@ public:
         push(_param, _rest...);
     }
 
-    StateSpace();
-    ~StateSpace();
+    LinearStateSpace();
+    ~LinearStateSpace();
 
     auto A() const -> arma::mat const&{ return A_; }
     auto B() const -> arma::mat const&{ return B_; }
@@ -161,7 +156,7 @@ protected:
 };
 
 template <std::size_t num_states, std::size_t num_inputs, std::size_t num_outputs, class PhysicalParam, class ...Rest>
-StateSpace<num_states, num_inputs, num_outputs, PhysicalParam, Rest...>::StateSpace()
+LinearStateSpace<num_states, num_inputs, num_outputs, PhysicalParam, Rest...>::LinearStateSpace()
     : A_(num_states, num_states)
     , B_(num_states, num_inputs)
     , C_(num_outputs, num_states)
@@ -169,12 +164,12 @@ StateSpace<num_states, num_inputs, num_outputs, PhysicalParam, Rest...>::StateSp
 }
 
 template<std::size_t num_states, std::size_t num_inputs, std::size_t num_outputs, class PhysicalParam, class ...Rest>
-StateSpace<num_states, num_inputs, num_outputs, PhysicalParam, Rest...>::~StateSpace(){
+LinearStateSpace<num_states, num_inputs, num_outputs, PhysicalParam, Rest...>::~LinearStateSpace(){
 
 }
 
 template<std::size_t num_states, std::size_t num_inputs, std::size_t num_outputs, class PhysicalParam, class ...Rest>
-auto StateSpace<num_states, num_inputs, num_outputs, PhysicalParam, Rest...>::formulaToMat() -> void{
+auto LinearStateSpace<num_states, num_inputs, num_outputs, PhysicalParam, Rest...>::formulaToMat() -> void{
 
     assert(fA_.size () > 0 && fB_.size() > 0 && fC_.size() > 0 && fD_.size() > 0);
 

@@ -138,8 +138,8 @@ private:
     jacl::PhysicalParameter kb;
     jacl::PhysicalParameter ra;
 
-    using StateSpace =
-        jacl::StateSpace<3, 2, 3,
+    using LinearStateSpace =
+        jacl::LinearStateSpace<3, 2, 3,
                          jacl::PhysicalParameter,
                          jacl::PhysicalParameter,
                          jacl::PhysicalParameter,
@@ -147,11 +147,11 @@ private:
                          jacl::PhysicalParameter,
                          jacl::PhysicalParameter>;
 
-    StateSpace ss_;
-    jacl::SystemSim<StateSpace> system_sim_;    
-    jacl::ObserverSim<StateSpace> observer_sim_;
+    LinearStateSpace ss_;
+    jacl::SystemSim<LinearStateSpace> system_sim_;
+    jacl::ObserverSim<LinearStateSpace> observer_sim_;
     //--
-    using SIMO = jacl::StateSpace<3, 1, 3,
+    using SIMO = jacl::LinearStateSpace<3, 1, 3,
                                     jacl::PhysicalParameter,
                                     jacl::PhysicalParameter,
                                     jacl::PhysicalParameter,
@@ -162,7 +162,7 @@ private:
 
     //--
     using GRealization =
-        jacl::StateSpace<3, 8, 9,
+        jacl::LinearStateSpace<3, 8, 9,
                          jacl::PhysicalParameter,
                          jacl::PhysicalParameter,
                          jacl::PhysicalParameter,
@@ -172,13 +172,13 @@ private:
 
     GRealization G_;
 
-    using PRealization = jacl::StateSpace<9, 2, 3>;
+    using PRealization = jacl::LinearStateSpace<9, 2, 3>;
     PRealization P_;
 
-    using InterConnMat = jacl::StateSpace<9, 10, 8>;
+    using InterConnMat = jacl::LinearStateSpace<9, 10, 8>;
     InterConnMat ICM_;
 
-    using Controller = jacl::StateSpace<9, 3, 2>;
+    using Controller = jacl::LinearStateSpace<9, 3, 2>;
     Controller K_;
     jacl::ControllerSim<Controller> controller_sim_;
 
@@ -186,11 +186,11 @@ private:
     HInf* hinf_;
 
     //-- H-infinity position control of dc motor
-    using SISOPos = jacl::StateSpace<3,1,1>;
+    using SISOPos = jacl::LinearStateSpace<3,1,1>;
     SISOPos siso_pos_;
-    using InterConnMatPos = jacl::StateSpace<6, 4, 3>;
+    using InterConnMatPos = jacl::LinearStateSpace<6, 4, 3>;
     InterConnMatPos icm_pos_;
-    using PosCtrl = jacl::StateSpace<6, 1, 1>;
+    using PosCtrl = jacl::LinearStateSpace<6, 1, 1>;
     PosCtrl k_pos_;
     using HInfPC = jacl::synthesis::HInf<InterConnMatPos, 2, 3>;
     HInfPC* hinf_pc_;
@@ -198,9 +198,9 @@ private:
     void setupPositionController();
 
     //-- H-infinity speed control of dc motor
-    using InterConnMatSpd = jacl::StateSpace<5,4,3>;
+    using InterConnMatSpd = jacl::LinearStateSpace<5,4,3>;
     InterConnMatSpd icm_spd_;
-    using SpdCtrl = jacl::StateSpace<5, 1, 1>;
+    using SpdCtrl = jacl::LinearStateSpace<5, 1, 1>;
     SpdCtrl k_spd_;
     using HInfSC = jacl::synthesis::HInf<InterConnMatSpd, 2, 3>;
     HInfSC* hinf_sc_;
