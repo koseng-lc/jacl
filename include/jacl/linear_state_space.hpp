@@ -22,7 +22,6 @@ namespace jacl{
 template<std::size_t num_states, std::size_t num_inputs, std::size_t num_outputs, class PhysicalParam = int, class ...Rest>
 class LinearStateSpace{
 public:
-    //-- change with using instead of typedef
     typedef std::function<double(LinearStateSpace)> Formula;
     typedef std::vector<Formula> Formulas;
 

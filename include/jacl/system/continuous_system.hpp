@@ -3,14 +3,69 @@
 #include <jacl/system/base_system.hpp>
 
 namespace jacl{
+
 template <class _StateSpace>
 class ContinuousSystem:public BaseSystem<_StateSpace>{
 public:
-    ContinuousSystem(){};
+    ContinuousSystem(_StateSpace* _ss, double _time_step = 1e-4)
+        : BaseSystem<_StateSpace>(_ss, _time_step){}
     ~ContinuousSystem(){}
-
-    auto dstate(const arma::vec& _state, const arma::vec& _in) -> decltype(_state){
-        arma::vec xdot;
+    inline auto setIn(const arma::vec& _in)-> void override{
+        this->in_ = _in;
+    }
+    inline auto dstate() -> arma::vec override{
+        static arma::mat term1, term2, term3, term4;
+        term1 = this->state_trans_ * this->prev_state_;
+        term2 = this->ss_->B() * this->u_;
+        term3 = this->state_trans_ * this->ss_->B() * this->prev_in_;
+        term4 = (term2 + term3) * (this->dt_ * .5);
+        this->state_ = term1 + term4;
+        this->prev_state_ = this->state_;
+        this->prev_in_ = this->in_;
+        return this->state_;
+    }
+    inline auto output() -> arma::vec override{
+        static arma::mat term1;
+        term1 = this->ss_->C() * this->prev_state_;
+        return term1 + (this->ss_->D() * this->in_);
+    }
+    inline auto evaluate() -> arma::vec override{
+        return arma::join_cols(dstate(), output());
     }
 };
+
+template <std::size_t ns,
+          std::size_t ni,
+          std::size_t no,
+          class PhysicalParam,
+          class ...Rest>
+class ContinuousSystem<NonLinearStateSpace<ns,ni,no,PhysicalParam,Rest...> >
+        :public BaseSystem<NonLinearStateSpace<ns,ni,no,PhysicalParam,Rest...> >{
+private:
+    typedef NonLinearStateSpace<ns,ni,no,PhysicalParam,Rest...> _StateSpace;
+
+public:
+    ContinuousSystem(_StateSpace* _ss, double _time_step = 1e-4)
+        : BaseSystem<_StateSpace>(_ss, _time_step){}
+    ~ContinuousSystem(){}    
+
+    inline auto setIn(const arma::vec& _in)
+        -> void override{
+        detail::NonLinearStateSpaceClient<_StateSpace>::setSig(this->ss_, arma::join_cols(this->prev_state_, _in));
+    }
+    inline auto dstate()
+        -> arma::vec override{
+        this->state_ = detail::NonLinearStateSpaceClient<_StateSpace>::dstate(this->ss_) * this->dt_;
+        this->prev_state_ = this->state_;
+        return this->state_;
+    }
+    inline auto output()
+        -> arma::vec override{
+        return detail::NonLinearStateSpaceClient<_StateSpace>::output(this->ss_);
+    }
+    inline auto evaluate() -> arma::vec override{
+        return arma::join_cols(dstate(), output());
+    }
+};
+
 }

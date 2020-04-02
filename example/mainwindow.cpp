@@ -9,12 +9,7 @@
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
-    , bm(.000048)
-    , jm(7.2e-6)
-    , ki(.052)
-    , la(.00062)
-    , kb(.052)
-    , ra(2.07)
+    , bm(.000048), jm(7.2e-6), ki(.052), la(.00062), kb(.052), ra(2.07)
     , ss_(&bm, &jm, &ki, &la, &kb, &ra)
     , G_(&bm, &jm, &ki, &la, &kb, &ra)
     , system_sim_(&ss_)
@@ -24,7 +19,10 @@ MainWindow::MainWindow(QWidget *parent)
     , ref_(3, 1, arma::fill::zeros)
     , cl_status_(true)
     , posctrl_sim_(&k_pos_)
-    , spdctrl_sim_(&k_spd_){
+    , spdctrl_sim_(&k_spd_)
+    , pg_(9.8), pl_(1.0), pk_(0.1), pm_(0.5)
+    , nlp_(&pg_, &pl_, &pk_, &pm_)
+    , nlp_sys_(&nlp_){
 
     ui->setupUi(this);
 
@@ -899,6 +897,18 @@ void MainWindow::setupSpeedController(){
     spdctrl_sim_.setDelay() = TIME_STEP;
     spdctrl_sim_.setPlotName({"Velocity Error", "Voltage"});
     spdctrl_sim_.updateVariables();
+}
+
+void MainWindow::setupNLP(){
+    {        
+        NLPendulum::Formulas state = {
+            JE(nlp_, nlp_(ix2)),
+            JE(nlp_, -1*(nlp_(ipg)/nlp_(ipl))*sin(nlp_(ix1)) - (nlp_(ipk)/nlp_(ipm))*nlp_(ix1)), 
+        };
+        NLPendulum::Formulas output = {
+            JE(nlp_, nlp_(ix1))
+        };
+    }
 }
 
 double MainWindow::angularSpeed2Voltage(double _speed, double _torque){

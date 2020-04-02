@@ -36,6 +36,18 @@ set_target_properties(base_system PROPERTIES LINKER_LANGUAGE CXX)
 #target_include_directories(base_system PUBLIC ${PROJECT_SOURCE_DIR})
 target_link_libraries(base_system PRIVATE armadillo physical_parameter)
 
+# Continuous System
+add_library(continuous_system ${JACL_HEADER_PREFIX}/system/continuous_system.hpp)
+set_target_properties(continuous_system PROPERTIES LINKER_LANGUAGE CXX)
+#target_include_directories(continuous_system PUBLIC ${PROJECT_SOURCE_DIR})
+target_link_libraries(continuous_system PRIVATE base_system)
+
+# Discrete System
+add_library(discrete_system ${JACL_HEADER_PREFIX}/system/discrete_system.hpp)
+set_target_properties(discrete_system PROPERTIES LINKER_LANGUAGE CXX)
+#target_include_directories(discrete_system PUBLIC ${PROJECT_SOURCE_DIR})
+target_link_libraries(discrete_system PRIVATE base_system)
+
 # Transfer Matrix
 add_library(transfer_matrix ${JACL_HEADER_PREFIX}/transfer_matrix.hpp)
 set_target_properties(transfer_matrix PROPERTIES LINKER_LANGUAGE CXX)
@@ -105,6 +117,7 @@ target_link_libraries(parser PRIVATE linear_state_space traits)
 set(JACL_HEADER_LIST
     ${JACL_HEADER_PREFIX}/physical_parameter.hpp
     ${JACL_HEADER_PREFIX}/linear_state_space.hpp
+    ${JACL_HEADER_PREFIX}/nonlinear_state_space.hpp
     ${JACL_HEADER_PREFIX}/transfer_matrix.hpp
     ${JACL_HEADER_PREFIX}/traits.hpp
     ${JACL_HEADER_PREFIX}/linear_algebra.hpp
@@ -120,11 +133,15 @@ set(JACL_HEADER_LIST
     ${JACL_HEADER_PREFIX}/defs.hpp
     ${JACL_HEADER_PREFIX}/jacl.hpp
     ${JACL_HEADER_PREFIX}/parser.hpp
+    ${JACL_HEADER_PREFIX}/system/base_system.hpp
+    ${JACL_HEADER_PREFIX}/system/continuous_system.hpp
+    ${JACL_HEADER_PREFIX}/system/discrete_system.hpp
 )
 
 set(JACL_LIB_LIST
     physical_parameter
     linear_state_space
+    nonlinear_state_space
     transfer_matrix
     traits
     linear_algebra
@@ -138,6 +155,9 @@ set(JACL_LIB_LIST
     are
     h_infinity_synthesis
     parser
+    base_system
+    continuous_system
+    discrete_system
 )
 
 #-- JACL Libraries

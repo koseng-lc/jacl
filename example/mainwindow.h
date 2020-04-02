@@ -207,6 +207,30 @@ private:
     jacl::SpdCtrlSim<SpdCtrl> spdctrl_sim_;
     void setupSpeedController();
 
+    //-- Non-Linear Pendulum Model
+    enum {
+        ix1,
+        ix2,
+        iu1,
+        ipg,
+        ipl,
+        ipk,
+        ipm
+    };
+    jacl::PhysicalParameter pg_;
+    jacl::PhysicalParameter pl_;
+    jacl::PhysicalParameter pk_;
+    jacl::PhysicalParameter pm_;
+    using NLPendulum = jacl::NonLinearStateSpace<2,1,1,
+                            jacl::PhysicalParameter,
+                            jacl::PhysicalParameter,
+                            jacl::PhysicalParameter,
+                            jacl::PhysicalParameter>;
+    NLPendulum nlp_;
+    using NLPSys = jacl::ContinuousSystem<NLPendulum>;
+    NLPSys nlp_sys_;
+    void setupNLP();                        
+
     arma::mat ref_;
     int control_mode_;        
 
