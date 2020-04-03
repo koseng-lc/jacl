@@ -10,27 +10,25 @@ public:
     ContinuousSystem(_StateSpace* _ss, double _time_step = 1e-4)
         : BaseSystem<_StateSpace>(_ss, _time_step){}
     ~ContinuousSystem(){}
-    inline auto setIn(const arma::vec& _in)-> void override{
+
+protected:
+    auto setIn(const arma::vec& _in)-> void override{
         this->in_ = _in;
     }
-    inline auto dstate() -> arma::vec override{
+    auto dstate() -> arma::vec override{
         static arma::mat term1, term2, term3, term4;
+        this->state_trans_ = arma::expmat(this->ss_->A() * this->dt_);
         term1 = this->state_trans_ * this->prev_state_;
-        term2 = this->ss_->B() * this->u_;
+        term2 = this->ss_->B() * this->in_;
         term3 = this->state_trans_ * this->ss_->B() * this->prev_in_;
-        term4 = (term2 + term3) * (this->dt_ * .5);
-        this->state_ = term1 + term4;
-        this->prev_state_ = this->state_;
+        term4 = (term2 + term3) * (this->dt_ * .5);        
         this->prev_in_ = this->in_;
-        return this->state_;
+        return term1 + term4;
     }
-    inline auto output() -> arma::vec override{
+    auto output() -> arma::vec override{
         static arma::mat term1;
         term1 = this->ss_->C() * this->prev_state_;
         return term1 + (this->ss_->D() * this->in_);
-    }
-    inline auto evaluate() -> arma::vec override{
-        return arma::join_cols(dstate(), output());
     }
 };
 
@@ -49,22 +47,18 @@ public:
         : BaseSystem<_StateSpace>(_ss, _time_step){}
     ~ContinuousSystem(){}    
 
-    inline auto setIn(const arma::vec& _in)
+protected:
+    auto setIn(const arma::vec& _in)
         -> void override{
         detail::NonLinearStateSpaceClient<_StateSpace>::setSig(this->ss_, arma::join_cols(this->prev_state_, _in));
     }
-    inline auto dstate()
+    auto dstate()
         -> arma::vec override{
-        this->state_ = detail::NonLinearStateSpaceClient<_StateSpace>::dstate(this->ss_) * this->dt_;
-        this->prev_state_ = this->state_;
-        return this->state_;
+        return detail::NonLinearStateSpaceClient<_StateSpace>::dstate(this->ss_) * this->dt_;
     }
-    inline auto output()
+    auto output()
         -> arma::vec override{
         return detail::NonLinearStateSpaceClient<_StateSpace>::output(this->ss_);
-    }
-    inline auto evaluate() -> arma::vec override{
-        return arma::join_cols(dstate(), output());
     }
 };
 

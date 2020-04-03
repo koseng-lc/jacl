@@ -48,6 +48,11 @@ set_target_properties(discrete_system PROPERTIES LINKER_LANGUAGE CXX)
 #target_include_directories(discrete_system PUBLIC ${PROJECT_SOURCE_DIR})
 target_link_libraries(discrete_system PRIVATE base_system)
 
+# Observer
+add_library(observer ${JACL_HEADER_PREFIX}/system/observer.hpp)
+target_link_libraries(observer linear_state_space)
+set_target_properties(observer PROPERTIES LINKER_LANGUAGE CXX)
+
 # Transfer Matrix
 add_library(transfer_matrix ${JACL_HEADER_PREFIX}/transfer_matrix.hpp)
 set_target_properties(transfer_matrix PROPERTIES LINKER_LANGUAGE CXX)
@@ -78,6 +83,16 @@ target_link_libraries(sim PRIVATE
     linear_state_space
 )
 set_target_properties(sim PROPERTIES LINKER_LANGUAGE CXX)
+
+# Simulator(more precisely is plotter)
+add_library(plotter ${JACL_HEADER_PREFIX}/plotter.hpp)
+target_link_libraries(plotter PRIVATE
+    Boost::system Boost::python Boost::thread Boost::chrono
+    ${PYTHON_LIBRARIES}
+    continuous_system
+    discrete_system
+)
+set_target_properties(plotter PROPERTIES LINKER_LANGUAGE CXX)
 
 # LFT
 add_library(lft ${JACL_HEADER_PREFIX}/lft.hpp)
@@ -124,6 +139,7 @@ set(JACL_HEADER_LIST
     ${JACL_HEADER_PREFIX}/numerical_methods.hpp
     ${JACL_HEADER_PREFIX}/lti_common.hpp
     ${JACL_HEADER_PREFIX}/sim.hpp
+    ${JACL_HEADER_PREFIX}/plotter.hpp
     ${JACL_HEADER_PREFIX}/lft.hpp
     ${JACL_HEADER_PREFIX}/upper_lft.hpp
     ${JACL_HEADER_PREFIX}/lower_lft.hpp
@@ -148,6 +164,7 @@ set(JACL_LIB_LIST
     numerical_methods
     lti_common
     sim
+    plotter
     lft
     upper_lft
     lower_lft

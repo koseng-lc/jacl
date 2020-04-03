@@ -17,10 +17,12 @@
 #include <jacl/physical_parameter.hpp>
 
 namespace jacl{
-    namespace detail{
-template <class _StateSpace>
-class NonLinearStateSpaceClient;
-    }
+
+namespace detail{
+    template <class _StateSpace>
+    class NonLinearStateSpaceClient;
+}
+
 //-- force to have fixed size
 template<std::size_t num_states, std::size_t num_inputs, std::size_t num_outputs, class PhysicalParam = int, class ...Rest>
 class NonLinearStateSpace{

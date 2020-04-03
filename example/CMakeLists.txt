@@ -27,19 +27,6 @@ set(CMAKE_AUTOUIC on)
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
 # Lib
-# Observer
-add_library(observer observer.h)
-target_link_libraries(observer linear_state_space)
-set_target_properties(observer PROPERTIES LINKER_LANGUAGE CXX)
-
-# Observer Simulator
-add_library(observer_sim observer_sim.h)
-target_link_libraries(observer_sim PRIVATE
-    Boost::system Boost::python Boost::chrono
-    ${PYTHON_LIBRARIES}
-    observer
-)
-set_target_properties(observer_sim PROPERTIES LINKER_LANGUAGE CXX)
 
 # System Simulator
 add_library(system_sim system_sim.h)
@@ -92,7 +79,6 @@ target_link_libraries(control_sim
     Qt5::Gui
     Qt5::Widgets
     # JACL
-    observer_sim
     system_sim
     controller_sim
     posctrl_sim

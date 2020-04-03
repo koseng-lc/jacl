@@ -25,7 +25,7 @@
 #include "controller_dialog.h"
 #include "controller_sim.h"
 #include "system_sim.h"
-#include "observer_sim.h"
+// #include "observer_sim.h"
 #include "posctrl_sim.h"
 #include "spdctrl_sim.h"
 
@@ -148,8 +148,10 @@ private:
                          jacl::PhysicalParameter>;
 
     LinearStateSpace ss_;
-    jacl::SystemSim<LinearStateSpace> system_sim_;
-    jacl::ObserverSim<LinearStateSpace> observer_sim_;
+    jacl::ContinuousSystem<LinearStateSpace> sys_;
+    jacl::Plotter<jacl::ContinuousSystem<LinearStateSpace> > sys_plt_;    
+    jacl::Observer<LinearStateSpace> observer_;
+    jacl::Plotter<jacl::Observer<LinearStateSpace> > observer_plt_;
     //--
     using SIMO = jacl::LinearStateSpace<3, 1, 3,
                                     jacl::PhysicalParameter,
@@ -194,7 +196,8 @@ private:
     PosCtrl k_pos_;
     using HInfPC = jacl::synthesis::HInf<InterConnMatPos, 2, 3>;
     HInfPC* hinf_pc_;
-    jacl::PosCtrlSim<PosCtrl> posctrl_sim_;
+    jacl::ContinuousSystem<PosCtrl> posctrl_sys_;
+    jacl::Plotter<jacl::ContinuousSystem<PosCtrl> > posctrl_plt_;
     void setupPositionController();
 
     //-- H-infinity speed control of dc motor
@@ -204,7 +207,8 @@ private:
     SpdCtrl k_spd_;
     using HInfSC = jacl::synthesis::HInf<InterConnMatSpd, 2, 3>;
     HInfSC* hinf_sc_;
-    jacl::SpdCtrlSim<SpdCtrl> spdctrl_sim_;
+    jacl::ContinuousSystem<SpdCtrl> spdctrl_sys_;
+    jacl::Plotter<jacl::ContinuousSystem<SpdCtrl> > spdctrl_plt_;
     void setupSpeedController();
 
     //-- Non-Linear Pendulum Model

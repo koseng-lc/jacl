@@ -10,24 +10,21 @@ public:
     DiscreteSystem(_StateSpace* _ss, double _time_step = 1e-4)
         : BaseSystem<_StateSpace>(_ss, _time_step){}
     ~DiscreteSystem(){}
-    inline auto setIn(const arma::vec& _in) -> void override{
+
+protected:    
+    auto setIn(const arma::vec& _in) -> void override{
         this->in_ = _in;
     }
-    inline auto dstate() -> arma::vec override{
+    auto dstate() -> arma::vec override{
         static arma::mat term1, term2;
         term1 = this->ss_->A() * this->prev_state_;
         term2 = this->ss_->B() * this->in_;
-        this->state_ = term1 + term2;
-        this->prev_state_ = this->state_;
-        return this->state_;
+        return term1 + term2;
     }
-    inline auto output() -> arma::vec override{
+    auto output() -> arma::vec override{
         static arma::mat term1;
         term1 = this->ss_->C() * this->prev_state_;
         return term1 + (this->ss_->D() * this->in_);
-    }
-    inline auto evaluate() -> arma::vec override{
-        return arma::join_cols(dstate(), output());
     }
 };
 
@@ -44,24 +41,20 @@ private:
 public:
     DiscreteSystem(_StateSpace* _ss, double _time_step = 1e-4)
         : BaseSystem<_StateSpace>(_ss, _time_step){}
-    ~DiscreteSystem(){}    
- 
-    inline auto setIn(const arma::vec& _in)
+    ~DiscreteSystem(){}
+
+ protected:
+    auto setIn(const arma::vec& _in)
         -> void override{
         detail::NonLinearStateSpaceClient<_StateSpace>::setSig(this->ss_, arma::join_cols(this->prev_state_, _in));
     }
-    virtual inline auto dstate()
+    auto dstate()
         -> arma::vec override{
-        this->state_ = detail::NonLinearStateSpaceClient<_StateSpace>::dstate(this->ss_);
-        this->prev_state_ = this->state_;
-        return this->state_;
+        return detail::NonLinearStateSpaceClient<_StateSpace>::dstate(this->ss_);
     }
-    inline auto output()
+    auto output()
         -> arma::vec override{
         return detail::NonLinearStateSpaceClient<_StateSpace>::output(this->ss_);
-    }
-    inline auto evaluate() -> arma::vec override{
-        return arma::join_cols(dstate(), output());
     }
 };
 

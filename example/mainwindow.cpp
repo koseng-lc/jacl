@@ -12,14 +12,18 @@ MainWindow::MainWindow(QWidget *parent)
     , bm(.000048), jm(7.2e-6), ki(.052), la(.00062), kb(.052), ra(2.07)
     , ss_(&bm, &jm, &ki, &la, &kb, &ra)
     , G_(&bm, &jm, &ki, &la, &kb, &ra)
-    , system_sim_(&ss_)
-    , observer_sim_(&ss_, arma::zeros<arma::mat>(3,3))
+    , sys_(&ss_)
+    , sys_plt_(&sys_,{1,2,3,4,5,6,7,8})
+    , observer_(&ss_, arma::zeros<arma::mat>(3,3))
+    , observer_plt_(&observer_, {1,2,3,6,7,8})
     , simo_(&bm, &jm, &ki, &la, &kb, &ra)
     , controller_sim_(&K_)
     , ref_(3, 1, arma::fill::zeros)
     , cl_status_(true)
-    , posctrl_sim_(&k_pos_)
-    , spdctrl_sim_(&k_spd_)
+    , posctrl_sys_(&k_pos_)
+    , posctrl_plt_(&posctrl_sys_,{7,8})
+    , spdctrl_sys_(&k_spd_)
+    , spdctrl_plt_(&spdctrl_sys_,{6,7})
     , pg_(9.8), pl_(1.0), pk_(0.1), pm_(0.5)
     , nlp_(&pg_, &pl_, &pk_, &pm_)
     , nlp_sys_(&nlp_){
@@ -98,7 +102,7 @@ MainWindow::MainWindow(QWidget *parent)
     arma::mat observer_K;
     arma::mat poles{-50,-51,-52};
     jacl::pole_placement::KautskyNichols(&ss_, poles, &observer_K, jacl::pole_placement::PolePlacementType::Observer);
-    observer_sim_.setGain(observer_K.t());
+    observer_.setGain(observer_K.t());
 
     //-- SIMO DC motor open-loop
     {
@@ -356,20 +360,18 @@ MainWindow::MainWindow(QWidget *parent)
     setupSpeedController();    
 
     //-- Simulator
-    system_sim_.init();
-    system_sim_.setTitle("DC Motor");
-    system_sim_.setDelay() = TIME_STEP;
-    system_sim_.setPlotName({"Angular Position", "Angular Velocity", "Current",
+    sys_plt_.init();
+    sys_plt_.setTitle("DC Motor");
+    sys_plt_.setDelay() = TIME_STEP;
+    sys_plt_.setPlotName({"Angular Position", "Angular Velocity", "Current",
                        "Voltage In", "Torque In",
                        "Angular Position", "Angular Velocity", "Current"});
-    system_sim_.updateVariables();
 
-    observer_sim_.init();
-    observer_sim_.setTitle("Full-order Luenberger Observer of DC Motor");
-    observer_sim_.setDelay() = TIME_STEP;
-    observer_sim_.setPlotName({"Est. Position", "Est. Velocity", "Est. Current"
+    observer_plt_.init();
+    observer_plt_.setTitle("Full-order Luenberger Observer of DC Motor");
+    observer_plt_.setDelay() = TIME_STEP;
+    observer_plt_.setPlotName({"Est. Position", "Est. Velocity", "Est. Current"
                               ,"Est. Out Position", "Est. Out Velocity", "Est. Out Current"});
-    observer_sim_.updateVariables();
 
     setupWidgets();
     setupControllerDialog();
@@ -692,8 +694,7 @@ void MainWindow::perturbAct(){
 
 
     ss_.formulaToMat();
-    system_sim_.updateVariables();
-    observer_sim_.updateVariables();
+    // observer_plt_.updateVar();
 //    sim_.setLinearStateSpace(ss_.A(), ss_.B(), ss_.C(), ss_.D());
 }
 
@@ -712,11 +713,12 @@ void MainWindow::resetAct(){
 void MainWindow::simulateAct(){
 
 //    sim_.simulate();    
-    system_sim_.simulate();
-//    posctrl_sim_.simulate();
-    spdctrl_sim_.simulate();
+    sys_plt_.start();
+    observer_plt_.start();
+//    posctrl_plt_.start();
+    spdctrl_plt_.start();
 //    controller_sim_.simulate();
-//    observer_sim_.simulate();
+//    observer_plt_.simulate();
 }
 
 void MainWindow::setInputAct(){
@@ -724,8 +726,6 @@ void MainWindow::setInputAct(){
     in(0) = voltage_in_dsb_->value();
     in(1) = torque_in_dsb_->value();
 //    sim_.setInput(in);
-    system_sim_.setInput(in);
-    observer_sim_.setInput(in);
 }
 
 void MainWindow::biasDialConv(double _val){
@@ -836,11 +836,10 @@ void MainWindow::setupPositionController(){
     controller.C().print("Controller C : ");
     controller.D().print("Controller D : ");*/
 
-    posctrl_sim_.init();
-    posctrl_sim_.setTitle("Position Controller");
-    posctrl_sim_.setDelay() = TIME_STEP;
-    posctrl_sim_.setPlotName({"Position Error", "Voltage"});
-    posctrl_sim_.updateVariables();
+    posctrl_plt_.init();
+    posctrl_plt_.setTitle("Position Controller");
+    posctrl_plt_.setDelay() = TIME_STEP;
+    posctrl_plt_.setPlotName({"Position Error", "Voltage"});
 }
 
 void MainWindow::setupSpeedController(){
@@ -892,11 +891,10 @@ void MainWindow::setupSpeedController(){
     k_spd_.C().print("Kspd_C : ");
     k_spd_.D().print("Kspd_D : ");
 
-    spdctrl_sim_.init();
-    spdctrl_sim_.setTitle("Speed Controller");
-    spdctrl_sim_.setDelay() = TIME_STEP;
-    spdctrl_sim_.setPlotName({"Velocity Error", "Voltage"});
-    spdctrl_sim_.updateVariables();
+    spdctrl_plt_.init();
+    spdctrl_plt_.setTitle("Speed Controller");
+    spdctrl_plt_.setDelay() = TIME_STEP;
+    spdctrl_plt_.setPlotName({"Velocity Error", "Voltage"});
 }
 
 void MainWindow::setupNLP(){
@@ -917,7 +915,7 @@ double MainWindow::angularSpeed2Voltage(double _speed, double _torque){
 
 void MainWindow::closedLoopProcess(){
     arma::mat out(3,1,arma::fill::zeros),in(2,1,arma::fill::zeros);
-    arma::mat err(3,1,arma::fill::zeros);
+    arma::mat err(out),est(out);
     control_mode_ = jacl::traits::toUType(jacl::ControllerDialog::ControlMode::Velocity);
 //    arma::mat last_err(err);
 //    arma::mat diff(err);
@@ -936,7 +934,6 @@ void MainWindow::closedLoopProcess(){
 //            in(0) = -12.0;
 //        }
 
-
         err = ref_ + out;
 //        ref_.print("Ref : ");
 //        out.print("Out : ");
@@ -947,15 +944,16 @@ void MainWindow::closedLoopProcess(){
         //-- H-infinity Controller
         if(control_mode_ == jacl::traits::toUType(jacl::ControllerDialog::ControlMode::Position)){
             err(1) = 0;
-            in.submat(0,0,0,0) = posctrl_sim_.propagate(err.submat(0,0,0,0));
+            in.submat(0,0,0,0) = posctrl_sys_.convolve(err.submat(0,0,0,0));
         }else if(control_mode_ == jacl::traits::toUType(jacl::ControllerDialog::ControlMode::Velocity)){
             err(0) = 0;
-            in.submat(0,0,0,0) = spdctrl_sim_.propagate(err.submat(1,0,1,0));
+            in.submat(0,0,0,0) = spdctrl_sys_.convolve(err.submat(1,0,1,0));
         }else{
             //-- do nothing
         }
 
-        out = system_sim_.propagate(in);
+        out = sys_.convolve(in);
+        est = observer_.convolve(in, out);
 //        err.submat(0,0,0,0).print("Err : ");
 //        in.submat(0,0,0,0).print("In : ");
 //        out.print("Out : ");
