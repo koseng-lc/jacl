@@ -1,5 +1,6 @@
 #pragma once
 
+#include <jacl/pattern/observer.hpp>
 #include <jacl/linear_state_space.hpp>
 #include <jacl/nonlinear_state_space.hpp>
 
@@ -39,10 +40,11 @@ template<class _StateSpace>
 } // namespace detail
 
 template <class _StateSpace>
-class BaseSystem{
+class BaseSystem:public pattern::Observer{
 public:
     BaseSystem(_StateSpace* _ss, double _time_step = 1e-4)
-        : state_(_StateSpace::n_states,1, arma::fill::zeros)
+        : pattern::Observer(_ss)
+        , state_(_StateSpace::n_states,1, arma::fill::zeros)
         , prev_state_(state_)
         , state_trans_(_StateSpace::n_states, _StateSpace::n_states, arma::fill::zeros)
         , in_(_StateSpace::n_inputs, 1, arma::fill::zeros)
@@ -52,10 +54,7 @@ public:
         , dt_(_time_step){
 
     }
-    ~BaseSystem(){}
-
-    virtual auto updateVar() -> void{        
-    }
+    ~BaseSystem(){}    
 
     inline auto recapitulate() -> arma::vec{
         return arma::join_cols(prev_state_, arma::join_cols(in_, out_));
@@ -71,7 +70,11 @@ public:
 protected:
     virtual auto setIn(const arma::vec& _in) -> void = 0;
     virtual auto dstate() -> arma::vec = 0;
-    virtual auto output() -> arma::vec = 0;    
+    virtual auto output() -> arma::vec = 0;
+    virtual auto updateVar() -> void = 0;
+    auto update() -> void override{
+        updateVar();
+    }
 
 protected:
     arma::vec state_;

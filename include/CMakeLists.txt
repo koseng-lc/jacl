@@ -17,6 +17,10 @@ set(JACL_HEADER_PREFIX ${CMAKE_CURRENT_SOURCE_DIR}/jacl)
 
 include_directories(${PROJECT_SOURCE_DIR})
 
+# Pattern
+add_library(observer_pattern ${JACL_HEADER_PREFIX}/pattern/observer.hpp)
+set_target_properties(observer_pattern PROPERTIES LINKER_LANGUAGE CXX)
+
 # Physical Parameter
 add_library(physical_parameter ${JACL_HEADER_PREFIX}/physical_parameter.hpp)
 set_target_properties(physical_parameter PROPERTIES LINKER_LANGUAGE CXX)
@@ -24,11 +28,11 @@ set_target_properties(physical_parameter PROPERTIES LINKER_LANGUAGE CXX)
 # State Space
 add_library(linear_state_space ${JACL_HEADER_PREFIX}/linear_state_space.hpp)
 set_target_properties(linear_state_space PROPERTIES LINKER_LANGUAGE CXX)
-target_link_libraries(linear_state_space PRIVATE armadillo physical_parameter)
+target_link_libraries(linear_state_space PRIVATE armadillo physical_parameter observer_pattern)
 
 add_library(nonlinear_state_space ${JACL_HEADER_PREFIX}/nonlinear_state_space.hpp)
 set_target_properties(nonlinear_state_space PROPERTIES LINKER_LANGUAGE CXX)
-target_link_libraries(nonlinear_state_space PRIVATE armadillo physical_parameter)
+target_link_libraries(nonlinear_state_space PRIVATE armadillo physical_parameter observer_pattern)
 
 # System
 add_library(base_system ${JACL_HEADER_PREFIX}/system/base_system.hpp)
@@ -148,6 +152,7 @@ set(JACL_HEADER_LIST
     ${JACL_HEADER_PREFIX}/h_infinity_synthesis.hpp
     ${JACL_HEADER_PREFIX}/defs.hpp
     ${JACL_HEADER_PREFIX}/jacl.hpp
+    ${JACL_HEADER_PREFIX}/pattern/observer_pattern
     ${JACL_HEADER_PREFIX}/parser.hpp
     ${JACL_HEADER_PREFIX}/system/base_system.hpp
     ${JACL_HEADER_PREFIX}/system/continuous_system.hpp
@@ -171,6 +176,7 @@ set(JACL_LIB_LIST
     pole_placement
     are
     h_infinity_synthesis
+    observer_pattern
     parser
     base_system
     continuous_system

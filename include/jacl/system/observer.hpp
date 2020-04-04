@@ -18,26 +18,14 @@ public:
         , meas_(this->out_)
         , prev_meas_(meas_){}
     ~Observer(){}
-    
-    void updateVar() override{
-        A_hat_ = this->ss_->A() - (K_ * this->ss_->C());
-        H_ = this->ss_->B();
-        this->state_trans_ = arma::expmat(A_hat_ * this->dt_);
-    }
+        
     //-- overload
     auto convolve(const arma::vec& _in, const arma::vec& _meas) -> arma::vec{
         meas_ = _meas;
         arma::vec est( convolve(_in) );
         prev_meas_ = meas_;
         return est;
-    }
-    auto convolve(const arma::vec& _in) -> arma::vec override{
-        setIn(_in);
-        this->state_ = dstate();        
-        this->out_ = output();
-        this->prev_state_ = this->state_;
-        return this->out_;
-    }
+    }    
     void setGain(const arma::mat& _K){
         assert(_K.n_rows == ss_->A().n_rows && _K.n_cols == ss_->C().n_rows);
         K_ = _K;
@@ -45,6 +33,13 @@ public:
     }
 
 protected:
+    auto convolve(const arma::vec& _in) -> arma::vec override{
+        setIn(_in);
+        this->state_ = dstate();        
+        this->out_ = output();
+        this->prev_state_ = this->state_;
+        return this->out_;
+    }
     auto setIn(const arma::vec& _in) -> void{
         this->in_ = _in;
     }
@@ -63,6 +58,11 @@ protected:
     }
     auto output() -> arma::vec{
         return this->ss_->C() * this->prev_state_;
+    }
+    auto updateVar() -> void override{
+        A_hat_ = this->ss_->A() - (K_ * this->ss_->C());
+        H_ = this->ss_->B();
+        this->state_trans_ = arma::expmat(A_hat_ * this->dt_);
     }
 
 private:

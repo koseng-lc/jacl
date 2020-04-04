@@ -16,19 +16,21 @@ protected:
         this->in_ = _in;
     }
     auto dstate() -> arma::vec override{
-        static arma::mat term1, term2, term3, term4;
-        this->state_trans_ = arma::expmat(this->ss_->A() * this->dt_);
+        static arma::mat term1, term2, term3, term4;        
         term1 = this->state_trans_ * this->prev_state_;
         term2 = this->ss_->B() * this->in_;
         term3 = this->state_trans_ * this->ss_->B() * this->prev_in_;
         term4 = (term2 + term3) * (this->dt_ * .5);        
         this->prev_in_ = this->in_;
         return term1 + term4;
-    }
+    }    
     auto output() -> arma::vec override{
         static arma::mat term1;
         term1 = this->ss_->C() * this->prev_state_;
         return term1 + (this->ss_->D() * this->in_);
+    }
+    auto updateVar() -> void override{
+        this->state_trans_ = arma::expmat(this->ss_->A() * this->dt_);
     }
 };
 
@@ -59,6 +61,9 @@ protected:
     auto output()
         -> arma::vec override{
         return detail::NonLinearStateSpaceClient<_StateSpace>::output(this->ss_);
+    }
+    auto updateVar() -> void override{
+        
     }
 };
 

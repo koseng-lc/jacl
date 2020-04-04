@@ -14,13 +14,14 @@
 
 #include <armadillo>
 
+#include <jacl/pattern/observer.hpp>
 #include <jacl/physical_parameter.hpp>
 
 namespace jacl{
 
 //-- force to have fixed size
 template<std::size_t num_states, std::size_t num_inputs, std::size_t num_outputs, class PhysicalParam = int, class ...Rest>
-class LinearStateSpace{
+class LinearStateSpace:public pattern::Subject{
 public:
     typedef std::function<double(LinearStateSpace)> Formula;
     typedef std::vector<Formula> Formulas;
@@ -45,77 +46,77 @@ public:
     auto A() const -> arma::mat const&{ return A_; }
     auto B() const -> arma::mat const&{ return B_; }
     auto C() const -> arma::mat const&{ return C_; }
-    auto D() const -> arma::mat const&{ return D_; }
+    auto D() const -> arma::mat const&{ return D_; }    
 
-    auto param(int _index) const -> decltype(std::declval<PhysicalParameter>().perturbed) const&{
-        return params_[_index]->perturbed;
-    }
-
-    auto param(int _index) -> decltype(std::declval<PhysicalParameter>().perturbed)&{
-        return params_[_index]->perturbed;
-    }
+    enum class FormulaToMatMode:std::uint8_t{
+        A = 0b0001,
+        B = 0b0010,
+        C = 0b0100,
+        D = 0b1000,
+        All = 0b1111,
+    };
 
     auto setA(const Formulas& f) -> void{
         fA_.clear();
         fA_.insert(fA_.end(), f.begin(), f.end());
+        formulaToMat(FormulaToMatMode::A);
+        this->notify();
     }
 
     auto setA(const arma::mat& _A) -> void{
         A_ = _A;
+        this->notify();
     }
 
     auto setB(const Formulas& f) -> void{
         fB_.clear();
         fB_.insert(fB_.end(), f.begin(), f.end());
+        formulaToMat(FormulaToMatMode::B);
+        this->notify();
     }
 
     auto setB(const arma::mat& _B) -> void{
         B_ = _B;
+        this->notify();
     }
 
     auto setC(const Formulas& f) -> void{
         fC_.clear();
         fC_.insert(fC_.end(), f.begin(), f.end());
+        formulaToMat(FormulaToMatMode::C);
+        this->notify();
     }
 
     auto setC(const arma::mat& _C) -> void{
         C_ = _C;
+        this->notify();
     }
 
     auto setD(const Formulas& f) -> void{
         fD_.clear();
         fD_.insert(fD_.end(), f.begin(), f.end());
+        formulaToMat(FormulaToMatMode::D);
+        this->notify();
     }
 
     auto setD(const arma::mat& _D) -> void{
         D_ = _D;
+        this->notify();
     }
 
-    auto formulaToMat() -> void;
+    auto formulaToMat(FormulaToMatMode _mode = FormulaToMatMode::All) -> void;
 
-    inline auto numStates() const -> int{
-        return num_states;
-    }
+    // inline auto numStates() const -> int{
+    //     return num_states;
+    // }
 
-    inline auto numInputs() const -> int{
-        return num_inputs;
-    }
+    // inline auto numInputs() const -> int{
+    //     return num_inputs;
+    // }
 
-    inline auto numOutputs() const -> int{
-        return num_outputs;
-    }
-
-    inline auto operator () (int _index) const -> double const&{
-        return param(_index);
-    }
-
-    inline auto operator () (double _constant) -> double const&{
-        return _constant;
-    }
-
-    inline auto operator () (int _index) -> double&{
-        return param(_index);
-    }
+    // inline auto numOutputs() const -> int{
+    //     return num_outputs;
+    // }
 
 protected:
     template <typename _PhysicalParam = PhysicalParam>
@@ -135,6 +136,28 @@ protected:
         push(_rest...);
     }
 
+    auto param(int _index) const -> decltype(std::declval<PhysicalParameter>().perturbed) const&{
+        return params_[_index]->perturbed;
+    }
+
+    auto param(int _index) -> decltype(std::declval<PhysicalParameter>().perturbed)&{
+        ReturnGuard guard(this);
+        return params_[_index]->perturbed;
+    }
+
+public:
+    inline auto operator () (int _index) const -> decltype(param(_index)) const&{
+        return param(_index);
+    }
+
+    inline auto operator () (double _constant) -> double const&{
+        return _constant;
+    }
+
+    inline auto operator () (int _index) -> decltype(param(_index))&{        
+        return param(_index);
+    }
+
 public:
     static constexpr auto n_states{ num_states };
     static constexpr auto n_inputs{ num_inputs };
@@ -152,6 +175,14 @@ protected:
     arma::mat B_;
     arma::mat C_;
     arma::mat D_;
+private:
+    class ReturnGuard{
+    public:
+        ReturnGuard(LinearStateSpace* _ss):ss_(_ss){}
+        ~ReturnGuard(){ ss_->formulaToMat(); }
+    private:
+        LinearStateSpace* ss_;
+    };
 };
 
 template <std::size_t num_states, std::size_t num_inputs, std::size_t num_outputs, class PhysicalParam, class ...Rest>
@@ -168,27 +199,33 @@ LinearStateSpace<num_states, num_inputs, num_outputs, PhysicalParam, Rest...>::~
 }
 
 template<std::size_t num_states, std::size_t num_inputs, std::size_t num_outputs, class PhysicalParam, class ...Rest>
-auto LinearStateSpace<num_states, num_inputs, num_outputs, PhysicalParam, Rest...>::formulaToMat() -> void{
+auto LinearStateSpace<num_states, num_inputs, num_outputs, PhysicalParam, Rest...>::formulaToMat(FormulaToMatMode _mode) -> void{
 
     assert(fA_.size () > 0 && fB_.size() > 0 && fC_.size() > 0 && fD_.size() > 0);
 
     for(std::size_t i(0); i < num_states; i++){
-        for(std::size_t j(0); j < num_states; j++){
-            A_(i, j) = fA_[i * num_states + j](*this);
-        }
-
-        for(std::size_t j(0); j < num_inputs; j++){
-            B_(i, j) = fB_[i * num_inputs + j](*this);
+        if(static_cast<typename std::underlying_type<FormulaToMatMode>::type>(FormulaToMatMode::A)
+            & static_cast<typename std::underlying_type<FormulaToMatMode>::type>(_mode)){
+            for(std::size_t j(0); j < num_states; j++)
+                A_(i, j) = fA_[i * num_states + j](*this);
+        }        
+        if(static_cast<typename std::underlying_type<FormulaToMatMode>::type>(FormulaToMatMode::B)
+            & static_cast<typename std::underlying_type<FormulaToMatMode>::type>(_mode)){
+            for(std::size_t j(0); j < num_inputs; j++)
+                B_(i, j) = fB_[i * num_inputs + j](*this);
         }
     }
 
     for(std::size_t i(0); i < num_outputs; i++){
-        for(std::size_t j(0); j < num_states; j++){
-            C_(i, j) = fC_[i * num_states + j](*this);
+        if(static_cast<typename std::underlying_type<FormulaToMatMode>::type>(FormulaToMatMode::C)
+            & static_cast<typename std::underlying_type<FormulaToMatMode>::type>(_mode)){
+            for(std::size_t j(0); j < num_states; j++)
+                C_(i, j) = fC_[i * num_states + j](*this);
         }
-
-        for(std::size_t j(0); j < num_inputs; j++){
-            D_(i, j) = fD_[i * num_inputs + j](*this);
+        if(static_cast<typename std::underlying_type<FormulaToMatMode>::type>(FormulaToMatMode::D)
+            & static_cast<typename std::underlying_type<FormulaToMatMode>::type>(_mode)){
+            for(std::size_t j(0); j < num_inputs; j++)
+                D_(i, j) = fD_[i * num_inputs + j](*this);
         }
     }
 }

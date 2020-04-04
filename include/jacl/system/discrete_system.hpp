@@ -26,6 +26,9 @@ protected:
         term1 = this->ss_->C() * this->prev_state_;
         return term1 + (this->ss_->D() * this->in_);
     }
+    auto updateVar() -> void override{
+
+    }
 };
 
 template <std::size_t ns,
@@ -55,6 +58,9 @@ public:
     auto output()
         -> arma::vec override{
         return detail::NonLinearStateSpaceClient<_StateSpace>::output(this->ss_);
+    }
+    auto updateVar() -> void override{
+        
     }
 };
 

@@ -14,6 +14,7 @@
 
 #include <armadillo>
 
+#include <jacl/pattern/observer.hpp>
 #include <jacl/physical_parameter.hpp>
 
 namespace jacl{
@@ -25,7 +26,7 @@ namespace detail{
 
 //-- force to have fixed size
 template<std::size_t num_states, std::size_t num_inputs, std::size_t num_outputs, class PhysicalParam = int, class ...Rest>
-class NonLinearStateSpace{
+class NonLinearStateSpace:public pattern::Subject{
 public:
     typedef std::function<double(NonLinearStateSpace)> Formula;
     typedef std::vector<Formula> Formulas;
@@ -43,21 +44,7 @@ public:
     }
 
     NonLinearStateSpace();
-    ~NonLinearStateSpace();       
-
-    inline auto operator () (int _index) const -> double const&{        
-        return _index < (n_states + n_inputs) ?
-            sig_[_index] : param(_index - (n_states + n_inputs));
-    }
-
-    inline auto operator () (double _constant) -> double const&{
-        return _constant;
-    }
-
-    inline auto operator () (int _index) -> double&{
-        return _index < (n_states + n_inputs) ?
-            sig_[_index] : param(_index - (n_states + n_inputs));
-    }
+    ~NonLinearStateSpace();           
 
     inline auto stateFn() -> Formulas& {
         return state_fn_;
@@ -102,6 +89,20 @@ private:
     } 
 
     friend class detail::NonLinearStateSpaceClient<NonLinearStateSpace>;
+public:
+    inline auto operator () (int _index) const -> double const&{        
+        return _index < (n_states + n_inputs) ?
+            sig_[_index] : param(_index - (n_states + n_inputs));
+    }
+
+    inline auto operator () (double _constant) -> double const&{
+        return _constant;
+    }
+
+    inline auto operator () (int _index) -> double&{
+        return _index < (n_states + n_inputs) ?
+            sig_[_index] : param(_index - (n_states + n_inputs));
+    }
 
 public:
     static constexpr auto n_states{ num_states };
