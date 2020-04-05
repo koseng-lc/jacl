@@ -39,11 +39,9 @@ MainWindow::MainWindow(QWidget *parent)
     //-- DC Motor Open-Loop
     std::cout << "Preparing system ..." << std::endl;
     {
-        LinearStateSpace::Formula A11 = JC(ss_,.0); LinearStateSpace::Formula A12 = JC(ss_,1.0);
-        LinearStateSpace::Formula A13 = JC(ss_,.0); LinearStateSpace::Formula A21 = JC(ss_,.0);
-        LinearStateSpace::Formula A22 = JE(ss_,-ss_(iBm)/ss_(iJm)); LinearStateSpace::Formula A23 = JE(ss_,ss_(iKi)/ss_(iJm));
-        LinearStateSpace::Formula A31 = JC(ss_,.0); LinearStateSpace::Formula A32 = JE(ss_,-ss_(iKb)/ss_(iLa));
-        LinearStateSpace::Formula A33 = JE(ss_,-ss_(iRa)/ss_(iLa));
+        LinearStateSpace::Formula A11 = JC(ss_,.0); LinearStateSpace::Formula A12 = JC(ss_,1.0); LinearStateSpace::Formula A13 = JC(ss_,.0);
+        LinearStateSpace::Formula A21 = JC(ss_,.0); LinearStateSpace::Formula A22 = JE(ss_,-_p(iBm)/_p(iJm)); LinearStateSpace::Formula A23 = JE(ss_,_p(iKi)/_p(iJm));
+        LinearStateSpace::Formula A31 = JC(ss_,.0); LinearStateSpace::Formula A32 = JE(ss_,-_p(iKb)/_p(iLa)); LinearStateSpace::Formula A33 = JE(ss_,-_p(iRa)/_p(iLa));
 
         LinearStateSpace::Formulas fA{
             A11,A12,A13,
@@ -52,8 +50,8 @@ MainWindow::MainWindow(QWidget *parent)
         };
 
         LinearStateSpace::Formula B11 = JC(ss_, .0); LinearStateSpace::Formula B12 = JC(ss_, .0);
-        LinearStateSpace::Formula B21 = JC(ss_, .0); LinearStateSpace::Formula B22 = JE(ss_, -1.0/ss_(iJm));
-        LinearStateSpace::Formula B31 = JE(ss_, 1.0/ss_(iLa)); LinearStateSpace::Formula B32 = JC(ss_, .0);
+        LinearStateSpace::Formula B21 = JC(ss_, .0); LinearStateSpace::Formula B22 = JE(ss_, -1.0/_p(iJm));
+        LinearStateSpace::Formula B31 = JE(ss_, 1.0/_p(iLa)); LinearStateSpace::Formula B32 = JC(ss_, .0);
 
         LinearStateSpace::Formulas fB{
             B11, B12,
@@ -61,11 +59,9 @@ MainWindow::MainWindow(QWidget *parent)
             B31, B32
         };
 
-        LinearStateSpace::Formula C11 = JC(ss_, 1.0); LinearStateSpace::Formula C12 = JC(ss_, .0);
-        LinearStateSpace::Formula C13 = JC(ss_, .0); LinearStateSpace::Formula C21 = JC(ss_, .0);
-        LinearStateSpace::Formula C22 = JC(ss_, 1.0); LinearStateSpace::Formula C23 = JC(ss_, .0);
-        LinearStateSpace::Formula C31 = JC(ss_, .0); LinearStateSpace::Formula C32 = JC(ss_, .0);
-        LinearStateSpace::Formula C33 = JC(ss_, 1.0);
+        LinearStateSpace::Formula C11 = JC(ss_, 1.0); LinearStateSpace::Formula C12 = JC(ss_, .0); LinearStateSpace::Formula C13 = JC(ss_, .0);
+        LinearStateSpace::Formula C21 = JC(ss_, .0); LinearStateSpace::Formula C22 = JC(ss_, 1.0); LinearStateSpace::Formula C23 = JC(ss_, .0);
+        LinearStateSpace::Formula C31 = JC(ss_, .0); LinearStateSpace::Formula C32 = JC(ss_, .0); LinearStateSpace::Formula C33 = JC(ss_, 1.0);
 
         LinearStateSpace::Formulas fC{
             C11, C12, C13,
@@ -87,7 +83,6 @@ MainWindow::MainWindow(QWidget *parent)
         ss_.setB(fB);
         ss_.setC(fC);
         ss_.setD(fD);
-        ss_.formulaToMat();
     }
 
     ss_.A().print("A : ");
@@ -108,14 +103,14 @@ MainWindow::MainWindow(QWidget *parent)
     {
         SIMO::Formulas fA{
             JC(simo_,.0),JC(simo_,1.0),JC(simo_,.0),
-            JC(simo_,.0),JE(simo_,-simo_(iBm)/simo_(iJm)),JE(simo_,simo_(iKi)/simo_(iJm)),
-            JC(simo_,.0),JE(simo_,-simo_(iKb)/simo_(iLa)),JE(simo_,-simo_(iRa)/simo_(iLa))
+            JC(simo_,.0),JE(simo_,-_p(iBm)/_p(iJm)),JE(simo_,_p(iKi)/_p(iJm)),
+            JC(simo_,.0),JE(simo_,-_p(iKb)/_p(iLa)),JE(simo_,-_p(iRa)/_p(iLa))
         };
 
         SIMO::Formulas fB{
             JC(simo_, .0),
             JC(simo_, .0),
-            JE(simo_, 1.0/simo_(iLa))
+            JE(simo_, 1.0/_p(iLa))
         };
 
         SIMO::Formulas fC{
@@ -134,7 +129,6 @@ MainWindow::MainWindow(QWidget *parent)
         simo_.setB(fB);
         simo_.setC(fC);
         simo_.setD(fD);
-        simo_.formulaToMat();
     }
     jacl::parser::saveStateSpace(simo_, "motor_dc_simo.jacl");
 
@@ -149,25 +143,25 @@ MainWindow::MainWindow(QWidget *parent)
         GRealization::Formula A11, A12, A13;
         A11 = JC(G_, .0); A12 = JC(G_, 1.0); A13 = JC(G_, .0);
         GRealization::Formula A21, A22, A23;
-        A21 = JC(G_, .0); A22 = JE(G_, -G_(iBm)/G_(iJm)); A23 = JE(G_, G_(iKi)/G_(iJm));
+        A21 = JC(G_, .0); A22 = JE(G_, -_p(iBm)/_p(iJm)); A23 = JE(G_, _p(iKi)/_p(iJm));
         GRealization::Formula A31, A32, A33;
-        A31 = JC(G_, .0); A32 = JE(G_, -G_(iKb)/G_(iLa)); A33 = JE(G_, -G_(iRa)/G_(iLa));
+        A31 = JC(G_, .0); A32 = JE(G_, -_p(iKb)/_p(iLa)); A33 = JE(G_, -_p(iRa)/_p(iLa));
 
         GRealization::Formula B11, B12, B13, B14, B15, B16, B17, B18;
         B11 = B12 = B13 = B14 = B15 = B16 = B17 = B18 = JC(G_, .0);
         GRealization::Formula B21, B22, B23, B24, B25, B26, B27, B28;
-        B21 = B22 = B23 = JE(G_, -1.0/G_(iJm)); B24 = B25 = B26 = B27 = JC(G_, .0); B28 = JE(G_, -1.0/G_(iJm));
+        B21 = B22 = B23 = JE(G_, -1.0/_p(iJm)); B24 = B25 = B26 = B27 = JC(G_, .0); B28 = JE(G_, -1.0/_p(iJm));
         GRealization::Formula B31, B32, B33, B34, B35, B36, B37, B38;
-        B31 = B32 = B33 = JC(G_, .0); B34 = B35 = B36 = B37 = JE(G_, -1.0/G_(iLa)); B38 = JC(G_, .0);
+        B31 = B32 = B33 = JC(G_, .0); B34 = B35 = B36 = B37 = JE(G_, -1.0/_p(iLa)); B38 = JC(G_, .0);
 
         GRealization::Formula C11, C12, C13;
         C11 = JC(G_, .0); C12 = JC(G_, 1.0); C13 = JC(G_, .0);
         GRealization::Formula C21, C22, C23;
-        C21 = JC(G_, .0); C22 = JE(G_, -G_(iBm)/G_(iJm)); C23 = JE(G_, G_(iKi)/G_(iJm));
+        C21 = JC(G_, .0); C22 = JE(G_, -_p(iBm)/_p(iJm)); C23 = JE(G_, _p(iKi)/_p(iJm));
         GRealization::Formula C31, C32, C33;
         C31 = JC(G_, .0); C32 = JC(G_, .0); C33 = JC(G_, 1.0);
         GRealization::Formula C41, C42, C43;
-        C41 = JC(G_, .0); C42 = JE(G_, -G_(iKb)/G_(iLa)); C43 = JE(G_, -G_(iRa)/G_(iLa));
+        C41 = JC(G_, .0); C42 = JE(G_, -_p(iKb)/_p(iLa)); C43 = JE(G_, -_p(iRa)/_p(iLa));
         GRealization::Formula C51, C52, C53;
         C51 = JC(G_, .0); C52 = JC(G_, 1.0); C53 = JC(G_, .0);
         GRealization::Formula C61, C62, C63;
@@ -182,11 +176,11 @@ MainWindow::MainWindow(QWidget *parent)
         GRealization::Formula D11, D12, D13, D14, D15, D16, D17, D18;
         D11 = D12 = D13 = D14 = D15 = D16 = D17 = D18 = JC(G_, .0);
         GRealization::Formula D21, D22, D23, D24, D25, D26, D27, D28;
-        D21 = D22 = D23 = JE(G_, -1/G_(iJm)); D24 = D25 = D26 = JC(G_, .0); D27 = JE(G_, -1/G_(iJm)); D28 = JC(G_, .0);
+        D21 = D22 = D23 = JE(G_, -1/_p(iJm)); D24 = D25 = D26 = JC(G_, .0); D27 = JE(G_, -1/_p(iJm)); D28 = JC(G_, .0);
         GRealization::Formula D31, D32, D33, D34, D35, D36, D37, D38;
         D31 = D32 = D33 = D34 = D35 = D36 = D37 = D38 = JC(G_, .0);
         GRealization::Formula D41, D42, D43, D44, D45, D46, D47, D48;
-        D41 = D42 = D43 = JC(G_, .0); D44 = D45 = D46 = JE(G_, -1/G_(iLa)); D47 = JC(G_, .0); D48 = JE(G_, -1/G_(iLa));
+        D41 = D42 = D43 = JC(G_, .0); D44 = D45 = D46 = JE(G_, -1/_p(iLa)); D47 = JC(G_, .0); D48 = JE(G_, -1/_p(iLa));
         GRealization::Formula D51, D52, D53, D54, D55, D56, D57, D58;
         D51 = D52 = D53 = D54 = D55 = D56 = D57 = D58 = JC(G_, .0);
         GRealization::Formula D61, D62, D63, D64, D65, D66, D67, D68;
@@ -238,7 +232,6 @@ MainWindow::MainWindow(QWidget *parent)
         G_.setB(fB);
         G_.setC(fC);
         G_.setD(fD);
-        G_.formulaToMat();
     }
 
 //    G_.A().print("\nGA : ");
@@ -288,7 +281,6 @@ MainWindow::MainWindow(QWidget *parent)
         P_.setB(fB);
         P_.setC(fC);
         P_.setD(fD);
-        P_.formulaToMat();
     }
 
     //-- Realization of Inter-connection Matrix    
@@ -692,8 +684,6 @@ void MainWindow::perturbAct(){
                         {&ra,params_dsb_[iRa]}})
         pair.first->perturbed = pair.second->value();
 
-
-    ss_.formulaToMat();
     // observer_plt_.updateVar();
 //    sim_.setLinearStateSpace(ss_.A(), ss_.B(), ss_.C(), ss_.D());
 }
@@ -812,7 +802,6 @@ void MainWindow::setupPositionController(){
     icm_pos_.setB(fB);
     icm_pos_.setC(fC);
     icm_pos_.setD(fD);
-    icm_pos_.formulaToMat();
 
     hinf_pc_ = new HInfPC(&icm_pos_, 2.7882);
     jacl::common::StateSpacePack K( hinf_pc_->solve() );
@@ -875,7 +864,6 @@ void MainWindow::setupSpeedController(){
     icm_spd_.setB(fB);
     icm_spd_.setC(fC);
     icm_spd_.setD(fD);
-    icm_spd_.formulaToMat();
 
     hinf_sc_ = new HInfSC(&icm_spd_, 3.1);
     jacl::common::StateSpacePack K( hinf_sc_->solve() );
@@ -900,11 +888,11 @@ void MainWindow::setupSpeedController(){
 void MainWindow::setupNLP(){
     {        
         NLPendulum::Formulas state = {
-            JE(nlp_, nlp_(ix2)),
-            JE(nlp_, -1*(nlp_(ipg)/nlp_(ipl))*sin(nlp_(ix1)) - (nlp_(ipk)/nlp_(ipm))*nlp_(ix1)), 
+            JE(nlp_, _p(ix2)),
+            JE(nlp_, -1*(_p(ipg)/_p(ipl))*sin(_p(ix1)) - (_p(ipk)/_p(ipm))*_p(ix1)), 
         };
         NLPendulum::Formulas output = {
-            JE(nlp_, nlp_(ix1))
+            JE(nlp_, _p(ix1))
         };
     }
 }

@@ -148,10 +148,10 @@ private:
                          jacl::PhysicalParameter>;
 
     LinearStateSpace ss_;
-    jacl::ContinuousSystem<LinearStateSpace> sys_;
-    jacl::Plotter<jacl::ContinuousSystem<LinearStateSpace> > sys_plt_;    
-    jacl::Observer<LinearStateSpace> observer_;
-    jacl::Plotter<jacl::Observer<LinearStateSpace> > observer_plt_;
+    jacl::system::ContinuousSystem<LinearStateSpace> sys_;
+    jacl::Plotter<jacl::system::ContinuousSystem<LinearStateSpace> > sys_plt_;    
+    jacl::system::Observer<LinearStateSpace> observer_;
+    jacl::Plotter<jacl::system::Observer<LinearStateSpace> > observer_plt_;
     //--
     using SIMO = jacl::LinearStateSpace<3, 1, 3,
                                     jacl::PhysicalParameter,
@@ -184,7 +184,7 @@ private:
     Controller K_;
     jacl::ControllerSim<Controller> controller_sim_;
 
-    using HInf = jacl::synthesis::HInf<InterConnMat, 5, 8>;
+    using HInf = jacl::synthesis::Hinf<InterConnMat, 5, 8>;
     HInf* hinf_;
 
     //-- H-infinity position control of dc motor
@@ -194,10 +194,10 @@ private:
     InterConnMatPos icm_pos_;
     using PosCtrl = jacl::LinearStateSpace<6, 1, 1>;
     PosCtrl k_pos_;
-    using HInfPC = jacl::synthesis::HInf<InterConnMatPos, 2, 3>;
+    using HInfPC = jacl::synthesis::Hinf<InterConnMatPos, 2, 3>;
     HInfPC* hinf_pc_;
-    jacl::ContinuousSystem<PosCtrl> posctrl_sys_;
-    jacl::Plotter<jacl::ContinuousSystem<PosCtrl> > posctrl_plt_;
+    jacl::system::ContinuousSystem<PosCtrl> posctrl_sys_;
+    jacl::Plotter<jacl::system::ContinuousSystem<PosCtrl> > posctrl_plt_;
     void setupPositionController();
 
     //-- H-infinity speed control of dc motor
@@ -205,10 +205,10 @@ private:
     InterConnMatSpd icm_spd_;
     using SpdCtrl = jacl::LinearStateSpace<5, 1, 1>;
     SpdCtrl k_spd_;
-    using HInfSC = jacl::synthesis::HInf<InterConnMatSpd, 2, 3>;
+    using HInfSC = jacl::synthesis::Hinf<InterConnMatSpd, 2, 3>;
     HInfSC* hinf_sc_;
-    jacl::ContinuousSystem<SpdCtrl> spdctrl_sys_;
-    jacl::Plotter<jacl::ContinuousSystem<SpdCtrl> > spdctrl_plt_;
+    jacl::system::ContinuousSystem<SpdCtrl> spdctrl_sys_;
+    jacl::Plotter<jacl::system::ContinuousSystem<SpdCtrl> > spdctrl_plt_;
     void setupSpeedController();
 
     //-- Non-Linear Pendulum Model
@@ -231,7 +231,7 @@ private:
                             jacl::PhysicalParameter,
                             jacl::PhysicalParameter>;
     NLPendulum nlp_;
-    using NLPSys = jacl::ContinuousSystem<NLPendulum>;
+    using NLPSys = jacl::system::ContinuousSystem<NLPendulum>;
     NLPSys nlp_sys_;
     void setupNLP();                        
 

@@ -2,7 +2,7 @@
 
 #include <jacl/system/base_system.hpp>
 
-namespace jacl{
+namespace jacl{ namespace system{
 
 template <class _StateSpace>
 class DiscreteSystem:public BaseSystem<_StateSpace>{
@@ -64,4 +64,4 @@ public:
     }
 };
 
-}
+} } // namespace jacl::system

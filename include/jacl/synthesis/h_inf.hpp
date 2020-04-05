@@ -6,40 +6,36 @@
 
 #pragma once
 
-#include "lti_common.hpp"
-#include "are.hpp"
-#include "lower_lft.hpp"
-#include "linear_state_space.hpp"
-#include "linear_algebra.hpp"
-#include "traits.hpp"
-#include "numerical_methods.hpp"
+#include <jacl/lti_common.hpp>
+#include <jacl/are.hpp>
+#include <jacl/lower_lft.hpp>
+#include <jacl/linear_state_space.hpp>
+#include <jacl/linear_algebra.hpp>
+#include <jacl/traits.hpp>
+#include <jacl/numerical_methods.hpp>
 
 #define HINF_DEBUG
 
-namespace jacl{
-
-namespace synthesis{
+namespace jacl{ namespace synthesis{
 
 template <class _StateSpace,
           std::size_t performance_size,
           std::size_t perturbation_size>
-class HInf{
+class Hinf{
 public:
     template<typename T = _StateSpace,
              typename std::enable_if<traits::is_state_space<T>::value>::type* = nullptr>
-    HInf(T* _ss, double _gam)
+    Hinf(T* _ss, double _gam)
         : ss_(_ss)
         , llft_(ss_)
         , are_solver1_(ss_)
         , are_solver2_(ss_)
-        , gam_(_gam){
+        , gam_(_gam){}    
 
-    }    
-
-    ~HInf();
+    ~Hinf();
 
     auto init() -> void;
-    auto solve() -> common::StateSpacePack;
+    auto solve() -> ::jacl::common::StateSpacePack;
 
     template <typename SS1, typename SS2>
     auto starProducts(const SS1 &_ss1, const SS2 &_ss2) -> void{
@@ -142,16 +138,16 @@ private:
 template <class _StateSpace,
           std::size_t performance_size,
           std::size_t perturbation_size>
-HInf<_StateSpace,
+Hinf<_StateSpace,
     performance_size,
-    perturbation_size>::~HInf(){
+    perturbation_size>::~Hinf(){
     ss_ = nullptr;
 }
 
 template <class _StateSpace,
           std::size_t performance_size,
           std::size_t perturbation_size>
-auto HInf<_StateSpace,
+auto Hinf<_StateSpace,
     performance_size,
     perturbation_size>::init() -> void{
 
@@ -160,7 +156,7 @@ auto HInf<_StateSpace,
 template <class _StateSpace,
           std::size_t performance_size,
           std::size_t perturbation_size>
-auto HInf<_StateSpace,
+auto Hinf<_StateSpace,
     performance_size,
     perturbation_size>::checkAssumption1() -> bool{
 
@@ -175,7 +171,7 @@ auto HInf<_StateSpace,
 template <class _StateSpace,
           std::size_t performance_size,
           std::size_t perturbation_size>
-auto HInf<_StateSpace,
+auto Hinf<_StateSpace,
     performance_size,
     perturbation_size>::checkAssumption2() -> bool{
 
@@ -215,7 +211,7 @@ auto HInf<_StateSpace,
         }
     }else if(performance_size == INPUT_SIZE){
         if(arma::approx_equal(llft_.D12(), I_in, "absdiff", .0)){
-            std::cout << "[HInf] Special cases trigerred !!!" << std::endl;
+            std::cout << "[Hinf] Special cases trigerred !!!" << std::endl;
         }else{
             //-- do normalization here
         }
@@ -258,7 +254,7 @@ auto HInf<_StateSpace,
         }
     }else if(perturbation_size == OUTPUT_SIZE){
         if(arma::approx_equal(llft_.D12(), I_out, "absdiff", .0)){
-            std::cout << "[HInf] Special cases trigerred !!!" << std::endl;
+            std::cout << "[Hinf] Special cases trigerred !!!" << std::endl;
             //-- do special cases here
         }else{
             //-- do normalization here
@@ -280,7 +276,7 @@ auto HInf<_StateSpace,
 template <class _StateSpace,
           std::size_t performance_size,
           std::size_t perturbation_size>
-auto HInf<_StateSpace,
+auto Hinf<_StateSpace,
     performance_size,
     perturbation_size>::checkAssumption3() -> bool{
 
@@ -308,7 +304,7 @@ auto HInf<_StateSpace,
 template <class _StateSpace,
           std::size_t performance_size,
           std::size_t perturbation_size>
-auto HInf<_StateSpace,
+auto Hinf<_StateSpace,
     performance_size,
     perturbation_size>::checkAssumption4() -> bool{
 
@@ -336,7 +332,7 @@ auto HInf<_StateSpace,
 template <class _StateSpace,
           std::size_t performance_size,
           std::size_t perturbation_size>
-auto HInf<_StateSpace,
+auto Hinf<_StateSpace,
     performance_size,
     perturbation_size>::checkAllAssumption() -> bool{
     return checkAssumption1()
@@ -348,7 +344,7 @@ auto HInf<_StateSpace,
 template <class _StateSpace,
           std::size_t performance_size,
           std::size_t perturbation_size>
-auto HInf<_StateSpace,
+auto Hinf<_StateSpace,
     performance_size,
     perturbation_size>::checkCondition1() -> bool{
 
@@ -368,7 +364,7 @@ auto HInf<_StateSpace,
 template <class _StateSpace,
           std::size_t performance_size,
           std::size_t perturbation_size>
-auto HInf<_StateSpace,
+auto Hinf<_StateSpace,
     performance_size,
     perturbation_size>::checkCondition2() -> bool{
 
@@ -378,7 +374,7 @@ auto HInf<_StateSpace,
 template <class _StateSpace,
           std::size_t performance_size,
           std::size_t perturbation_size>
-auto HInf<_StateSpace,
+auto Hinf<_StateSpace,
     performance_size,
     perturbation_size>::checkCondition3() -> bool{
 
@@ -388,7 +384,7 @@ auto HInf<_StateSpace,
 template <class _StateSpace,
           std::size_t performance_size,
           std::size_t perturbation_size>
-auto HInf<_StateSpace,
+auto Hinf<_StateSpace,
     performance_size,
     perturbation_size>::checkCondition4() -> bool{
     arma::cx_mat temp( X_inf_*Y_inf_ );
@@ -398,7 +394,7 @@ auto HInf<_StateSpace,
 template <class _StateSpace,
           std::size_t performance_size,
           std::size_t perturbation_size>
-auto HInf<_StateSpace,
+auto Hinf<_StateSpace,
     performance_size,
     perturbation_size>::checkAllCondition() -> bool{
     auto cond1 = checkCondition1();
@@ -417,9 +413,9 @@ auto HInf<_StateSpace,
 template <class _StateSpace,
           std::size_t performance_size,
           std::size_t perturbation_size>
-auto HInf<_StateSpace,
+auto Hinf<_StateSpace,
     performance_size,
-    perturbation_size>::solve() -> common::StateSpacePack{
+    perturbation_size>::solve() -> ::jacl::common::StateSpacePack{
 #ifdef HINF_DEBUG
     std::cout << ">>>>> Interconnection matrix assumptions : " << std::endl;
 #endif
@@ -596,6 +592,4 @@ auto HInf<_StateSpace,
     return std::make_tuple(toReal(A_hat), toReal(B1_hat), toReal(C1_hat), toReal(D11_hat));
 }
 
-}
-
-}
+} } // namespace jacl::synthesis

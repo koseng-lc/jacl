@@ -1,3 +1,7 @@
+/**
+*   @author : koseng (Lintang)
+*   @brief : Simple implementation of Algebraic Ricatti Solver
+*/
 #pragma once
 
 #include <boost/numeric/bindings/ublas/matrix.hpp>
@@ -8,7 +12,7 @@
 #include <boost/python/numpy.hpp>
 #include <numpy/ndarrayobject.h>
 
-#include "linear_state_space.hpp"
+#include <jacl/linear_state_space.hpp>
 
 namespace jacl{
 
@@ -23,7 +27,6 @@ namespace{
 
     namespace py = boost::python;
     namespace np = boost::python::numpy;
-
 }
 
 template <class _StateSpace>
@@ -251,19 +254,19 @@ auto ARE<_StateSpace>::solve() -> arma::cx_mat{
 
 //    X1.print("X1 : ");
 //    X2.print("X2 : ");
-
+    
     arma::cx_mat solution = X2 * arma::inv(X1);
-    int n = H_.n_rows >> 1;
+    //-- Check, are the solution is fulfull the equation
+    /*int n = H_.n_rows >> 1;
     arma::cx_mat A = toCx(H_.submat(0,0,n-1,n-1));
     arma::cx_mat R = toCx(H_.submat(0,n,n-1,(n*2)-1));
     arma::cx_mat Q = toCx(-1*H_.submat(n,0,(n*2)-1,n-1));
-//    arma::cx_mat B = toCx(-1*arma::trans(H_.submat(n,n,(n*2)-1,(n*2)-1)));
     arma::cx_mat temp1 = arma::trans(A)*solution;
     arma::cx_mat temp2 = solution*A;
     arma::cx_mat temp3 = solution*R*solution;
     arma::cx_mat temp4 = temp1 + temp2 + temp3;
     arma::cx_mat check = temp4 + Q;
-    check.print("CHECK : ");
+    check.print("CHECK : ");*/
 
 //    arma::cx_vec eigval;
 //    arma::cx_mat eigvec;

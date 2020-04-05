@@ -120,6 +120,7 @@ Plotter<_System>::~Plotter(){
 
     if(PyGILState_GetThisThreadState() == py_state_)
         PyThreadState_Swap(py_state_);
+
 }
 
 template <class _System>

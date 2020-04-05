@@ -49,11 +49,11 @@ public:
     auto D() const -> arma::mat const&{ return D_; }    
 
     enum class FormulaToMatMode:std::uint8_t{
-        A = 0b0001,
-        B = 0b0010,
-        C = 0b0100,
-        D = 0b1000,
-        All = 0b1111,
+        A = 0b00000001,
+        B = 0b00000010,
+        C = 0b00000100,
+        D = 0b00001000,
+        All = 0b00001111,
     };
 
     auto setA(const Formulas& f) -> void{
@@ -106,18 +106,6 @@ public:
 
     auto formulaToMat(FormulaToMatMode _mode = FormulaToMatMode::All) -> void;
 
-    // inline auto numStates() const -> int{
-    //     return num_states;
-    // }
-
-    // inline auto numInputs() const -> int{
-    //     return num_inputs;
-    // }
-
-    // inline auto numOutputs() const -> int{
-    //     return num_outputs;
-    // }
-
 protected:
     template <typename _PhysicalParam = PhysicalParam>
     auto push(_PhysicalParam* _param)
@@ -141,7 +129,6 @@ protected:
     }
 
     auto param(int _index) -> decltype(std::declval<PhysicalParameter>().perturbed)&{
-        ReturnGuard guard(this);
         return params_[_index]->perturbed;
     }
 
@@ -175,14 +162,16 @@ protected:
     arma::mat B_;
     arma::mat C_;
     arma::mat D_;
+
 private:
     class ReturnGuard{
     public:
         ReturnGuard(LinearStateSpace* _ss):ss_(_ss){}
-        ~ReturnGuard(){ ss_->formulaToMat(); }
+        ~ReturnGuard(){ ss_->formulaToMat(); ss_ = nullptr;}
     private:
         LinearStateSpace* ss_;
     };
+
 };
 
 template <std::size_t num_states, std::size_t num_inputs, std::size_t num_outputs, class PhysicalParam, class ...Rest>
@@ -202,28 +191,28 @@ template<std::size_t num_states, std::size_t num_inputs, std::size_t num_outputs
 auto LinearStateSpace<num_states, num_inputs, num_outputs, PhysicalParam, Rest...>::formulaToMat(FormulaToMatMode _mode) -> void{
 
     assert(fA_.size () > 0 && fB_.size() > 0 && fC_.size() > 0 && fD_.size() > 0);
-
+    uint8_t mode = static_cast<typename std::underlying_type<FormulaToMatMode>::type>(_mode);
+    bool change_A = static_cast<typename std::underlying_type<FormulaToMatMode>::type>(FormulaToMatMode::A) & mode;
+    bool change_B = static_cast<typename std::underlying_type<FormulaToMatMode>::type>(FormulaToMatMode::B) & mode;
+    bool change_C = static_cast<typename std::underlying_type<FormulaToMatMode>::type>(FormulaToMatMode::C) & mode;
+    bool change_D = static_cast<typename std::underlying_type<FormulaToMatMode>::type>(FormulaToMatMode::D) & mode;
     for(std::size_t i(0); i < num_states; i++){
-        if(static_cast<typename std::underlying_type<FormulaToMatMode>::type>(FormulaToMatMode::A)
-            & static_cast<typename std::underlying_type<FormulaToMatMode>::type>(_mode)){
+        if(change_A){
             for(std::size_t j(0); j < num_states; j++)
                 A_(i, j) = fA_[i * num_states + j](*this);
         }        
-        if(static_cast<typename std::underlying_type<FormulaToMatMode>::type>(FormulaToMatMode::B)
-            & static_cast<typename std::underlying_type<FormulaToMatMode>::type>(_mode)){
+        if(change_B){
             for(std::size_t j(0); j < num_inputs; j++)
                 B_(i, j) = fB_[i * num_inputs + j](*this);
         }
     }
 
     for(std::size_t i(0); i < num_outputs; i++){
-        if(static_cast<typename std::underlying_type<FormulaToMatMode>::type>(FormulaToMatMode::C)
-            & static_cast<typename std::underlying_type<FormulaToMatMode>::type>(_mode)){
+        if(change_C){
             for(std::size_t j(0); j < num_states; j++)
                 C_(i, j) = fC_[i * num_states + j](*this);
         }
-        if(static_cast<typename std::underlying_type<FormulaToMatMode>::type>(FormulaToMatMode::D)
-            & static_cast<typename std::underlying_type<FormulaToMatMode>::type>(_mode)){
+        if(change_D){
             for(std::size_t j(0); j < num_inputs; j++)
                 D_(i, j) = fD_[i * num_inputs + j](*this);
         }

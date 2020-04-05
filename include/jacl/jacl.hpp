@@ -16,6 +16,6 @@
 #include <jacl/system/discrete_system.hpp>
 #include <jacl/system/observer.hpp>
 #include <jacl/pole_placement.hpp>
-#include <jacl/h_infinity_synthesis.hpp>
+#include <jacl/synthesis/h_inf.hpp>
 #include <jacl/plotter.hpp>
 #include <jacl/parser.hpp>

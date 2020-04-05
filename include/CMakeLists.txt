@@ -13,7 +13,7 @@ find_package(Boost REQUIRED COMPONENTS
     chrono
 )
 
-set(JACL_HEADER_PREFIX ${CMAKE_CURRENT_SOURCE_DIR}/jacl)
+set(JACL_HEADER_PREFIX ${PROJECT_SOURCE_DIR}/jacl)
 
 include_directories(${PROJECT_SOURCE_DIR})
 
@@ -124,40 +124,14 @@ target_link_libraries(are PRIVATE Boost::system Boost::python ${Python_LIBRARIES
 set_target_properties(are PROPERTIES LINKER_LANGUAGE CXX)
 
 # H-infinity Synthesis
-add_library(h_infinity_synthesis ${JACL_HEADER_PREFIX}/h_infinity_synthesis.hpp)
-target_link_libraries(h_infinity_synthesis PRIVATE upper_lft are lti_common numerical_methods)
-set_target_properties(h_infinity_synthesis PROPERTIES LINKER_LANGUAGE CXX)
+add_library(h_inf ${JACL_HEADER_PREFIX}/synthesis/h_inf.hpp)
+target_link_libraries(h_inf PRIVATE upper_lft are lti_common numerical_methods)
+set_target_properties(h_inf PROPERTIES LINKER_LANGUAGE CXX)
 
 # Parser
 add_library(parser ${JACL_HEADER_PREFIX}/parser.hpp)
 set_target_properties(parser PROPERTIES LINKER_LANGUAGE CXX)
 target_link_libraries(parser PRIVATE linear_state_space traits)
-
-set(JACL_HEADER_LIST
-    ${JACL_HEADER_PREFIX}/physical_parameter.hpp
-    ${JACL_HEADER_PREFIX}/linear_state_space.hpp
-    ${JACL_HEADER_PREFIX}/nonlinear_state_space.hpp
-    ${JACL_HEADER_PREFIX}/transfer_matrix.hpp
-    ${JACL_HEADER_PREFIX}/traits.hpp
-    ${JACL_HEADER_PREFIX}/linear_algebra.hpp
-    ${JACL_HEADER_PREFIX}/numerical_methods.hpp
-    ${JACL_HEADER_PREFIX}/lti_common.hpp
-    ${JACL_HEADER_PREFIX}/sim.hpp
-    ${JACL_HEADER_PREFIX}/plotter.hpp
-    ${JACL_HEADER_PREFIX}/lft.hpp
-    ${JACL_HEADER_PREFIX}/upper_lft.hpp
-    ${JACL_HEADER_PREFIX}/lower_lft.hpp
-    ${JACL_HEADER_PREFIX}/pole_placement.hpp
-    ${JACL_HEADER_PREFIX}/are.hpp
-    ${JACL_HEADER_PREFIX}/h_infinity_synthesis.hpp
-    ${JACL_HEADER_PREFIX}/defs.hpp
-    ${JACL_HEADER_PREFIX}/jacl.hpp
-    ${JACL_HEADER_PREFIX}/pattern/observer_pattern
-    ${JACL_HEADER_PREFIX}/parser.hpp
-    ${JACL_HEADER_PREFIX}/system/base_system.hpp
-    ${JACL_HEADER_PREFIX}/system/continuous_system.hpp
-    ${JACL_HEADER_PREFIX}/system/discrete_system.hpp
-)
 
 set(JACL_LIB_LIST
     physical_parameter
@@ -175,7 +149,7 @@ set(JACL_LIB_LIST
     lower_lft
     pole_placement
     are
-    h_infinity_synthesis
+    h_inf
     observer_pattern
     parser
     base_system
@@ -199,4 +173,4 @@ target_link_libraries(jacl_lib PRIVATE ${JACL_LIB_LIST})
 install(TARGETS jacl_lib ${JACL_LIB_LIST} EXPORT jacl_lib_export
         ARCHIVE DESTINATION ${JACL_LIB_PATH}
 )
-install(FILES ${JACL_HEADER_LIST} DESTINATION ${JACL_HEADER_PATH})
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/jacl/ DESTINATION ${JACL_HEADER_PATH}/)

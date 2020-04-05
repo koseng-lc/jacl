@@ -19,10 +19,10 @@
 
 namespace jacl{
 
-namespace detail{
+namespace system{ namespace detail{
     template <class _StateSpace>
     class NonLinearStateSpaceClient;
-}
+} }
 
 //-- force to have fixed size
 template<std::size_t num_states, std::size_t num_inputs, std::size_t num_outputs, class PhysicalParam = int, class ...Rest>
@@ -88,7 +88,7 @@ private:
         return params_[_index]->perturbed;
     } 
 
-    friend class detail::NonLinearStateSpaceClient<NonLinearStateSpace>;
+    friend class ::jacl::system::detail::NonLinearStateSpaceClient<NonLinearStateSpace>;
 public:
     inline auto operator () (int _index) const -> double const&{        
         return _index < (n_states + n_inputs) ?

@@ -4,7 +4,7 @@
 #include <jacl/linear_state_space.hpp>
 #include <jacl/nonlinear_state_space.hpp>
 
-namespace jacl{
+namespace jacl{ namespace system{
 
 template <class _StateSpace>
 class BaseSystem;
@@ -87,5 +87,5 @@ protected:
     _StateSpace* ss_;
 };
 
-} // namespace jacl
+} } // namespace jacl::system
 

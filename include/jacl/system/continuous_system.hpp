@@ -2,7 +2,7 @@
 
 #include <jacl/system/base_system.hpp>
 
-namespace jacl{
+namespace jacl{ namespace system {
 
 template <class _StateSpace>
 class ContinuousSystem:public BaseSystem<_StateSpace>{
@@ -67,4 +67,4 @@ protected:
     }
 };
 
-}
+} } // namespace jacl::system

@@ -7,7 +7,7 @@
 
 #include <jacl/system/base_system.hpp>
 
-namespace jacl{
+namespace jacl{ namespace system{
 
 template <class _StateSpace>
 class Observer:public BaseSystem<_StateSpace>{
@@ -74,4 +74,4 @@ private:
 
 };
 
-}
+} } // namespace jacl::system
