@@ -1,6 +1,4 @@
-#
-# JACL CMake
-#
+#-- JACL CMake
 
 cmake_minimum_required(VERSION 2.8.3)
 project(jacl)
@@ -19,18 +17,18 @@ set(JACL_HEADER_PATH "${JACL_INCLUDE_PATH}/jacl")
 set(JACL_LIB_PATH "${JACL_MAIN_INSTALL_PATH}/lib/jacl")
 set(JACL_CMAKE_CONFIG_INSTALL_PATH "${JACL_MAIN_INSTALL_PATH}/share/jacl/cmake")
 
-# Fix this !!!
+#-- Fix this !!!
 find_package(PythonLibs REQUIRED)
 
 add_subdirectory(example)
 add_subdirectory(include)
 
-# for build-tree
+#-- for build-tree
 set(CONF_INCLUDE_DIRS "${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR}")
 set(CONF_TARGETS_DIR "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTOY}/Export/_${JACL_CMAKE_CONFIG_INSTALL_PATH}")
 configure_file(jacl-config.cmake.in
     "${CMAKE_BINARY_DIR}/jacl-config.cmake" @ONLY)
-# for install-tree
+#--- for install-tree
 set(CONF_INCLUDE_DIRS "${JACL_INCLUDE_PATH}")
 set(CONF_TARGETS_DIR "${JACL_CMAKE_CONFIG_INSTALL_PATH}")
 configure_file(jacl-config.cmake.in

@@ -8,9 +8,7 @@
 
 #include <armadillo>
 
-namespace jacl{
-
-namespace common{
+namespace jacl{ namespace common{
 
 using StateSpacePack = std::tuple<arma::mat, arma::mat, arma::mat, arma::mat >;
 
@@ -172,6 +170,15 @@ static auto hasUnobservableModeInImAxis(const arma::mat& _A, const arma::mat& _C
     return ok;
 }
 
+template <typename _StateSpace>
+static auto discretize(const _StateSpace& _ss, double _sampling_time) -> StateSpacePack{
+    arma::mat aug = arma::join_cols(arma::join_rows(_ss.A(), _ss.B()),
+                                    arma::zeros(_StateSpace::n_inputs, _StateSpace::n_states + _StateSpace::n_inputs));
+    arma::mat expmAB = arma::expmat(aug * _sampling_time);
+    arma::mat Ad = expmAB.submat(0, 0, _StateSpace::n_states - 1, _StateSpace::n_states - 1);
+    arma::mat Bd = expmAB.submat(0, _StateSpace::n_states,
+                                 _StateSpace::n_states-1, (_StateSpace::n_states + _StateSpace::n_inputs) - 1);
+    return std::make_tuple(Ad,Bd, _ss.C(), _ss.D());
 }
 
-}
+} }

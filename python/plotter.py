@@ -25,7 +25,7 @@ class Plotter:
         self.d_time = d_time
         self.view_interval = view_interval
 
-        # self.sim_thread = Process(target = self.simulate, args = ())
+        self.sim_thread = Process(target = self.simulate, args = ())
 
         self.shared_signal_data = Array('d', np.zeros(n_signals * self.max_data))
         self.shared_time_data = Array('d', np.zeros(self.max_data))
@@ -37,11 +37,10 @@ class Plotter:
         self.title = "Plotter"
 
     def __del__(self):
-        # self.sim_thread.join()
+        self.sim_thread.join()
 
     def signalHandler(self, sig, frame):
         self.running = False
-        # self.sim_thread.join()
     
     def setData(self, _signal_data, _time_data):
         
@@ -63,11 +62,10 @@ class Plotter:
     def beginSimulation(self):
         print('Starting {} simulation...'.format(self.title))
         signal.signal(signal.SIGINT, self.signalHandler)        
-        # self.sim_thread.start()
+        self.sim_thread.start()
 
     def pltCloseHandle(self, event):        
         self.running = False
-        # self.sim_thread.join()
         print('Plotter {} closed.'.format(self.title))
 
     def simulate(self):

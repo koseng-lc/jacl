@@ -23,11 +23,6 @@
 
 #include <jacl/jacl.hpp>
 #include "controller_dialog.h"
-#include "controller_sim.h"
-#include "system_sim.h"
-// #include "observer_sim.h"
-#include "posctrl_sim.h"
-#include "spdctrl_sim.h"
 
 //-- TODO : Add GroupBox for Control Input
 
@@ -120,7 +115,7 @@ private:
     boost::thread cl_thread_;
     boost::mutex cl_mtx_;
     std::atomic<bool> cl_status_;
-    const double TIME_STEP{.02};
+    const double SAMPLING_PERIOD{.02};
 
     enum ParamIndex{
         iBm, // Viscous Friction (N m s / rad)
@@ -148,11 +143,12 @@ private:
                          jacl::PhysicalParameter>;
 
     LinearStateSpace ss_;
-    jacl::system::ContinuousSystem<LinearStateSpace> sys_;
-    jacl::Plotter<jacl::system::ContinuousSystem<LinearStateSpace> > sys_plt_;    
-    jacl::system::Observer<LinearStateSpace> observer_;
-    jacl::Plotter<jacl::system::Observer<LinearStateSpace> > observer_plt_;
-    //--
+    jacl::system::ContinuousSystem<LinearStateSpace> csys_;
+    jacl::Plotter<jacl::system::ContinuousSystem<LinearStateSpace> > csys_plt_;    
+    jacl::system::ContinuousObserver<LinearStateSpace> cobserver_;
+    jacl::Plotter<jacl::system::ContinuousObserver<LinearStateSpace> > cobserver_plt_;
+
+    //-- SIMO DC motor
     using SIMO = jacl::LinearStateSpace<3, 1, 3,
                                     jacl::PhysicalParameter,
                                     jacl::PhysicalParameter,
@@ -161,7 +157,12 @@ private:
                                     jacl::PhysicalParameter,
                                     jacl::PhysicalParameter>;
     SIMO simo_;
-
+    jacl::LinearStateSpace<3,1,3> dsimo_;
+    jacl::system::DiscreteSystem<jacl::LinearStateSpace<3,1,3> > dsys_simo_;
+    jacl::system::DiscreteObserver<jacl::LinearStateSpace<3,1,3> > dobserver_simo_;
+    jacl::Plotter<jacl::system::DiscreteSystem<jacl::LinearStateSpace<3,1,3> > > dsys_simo_plt_;
+    jacl::Plotter<jacl::system::DiscreteObserver<jacl::LinearStateSpace<3,1,3> > > dobserver_simo_plt_;
+    void setupSIMODCMotor();
     //--
     using GRealization =
         jacl::LinearStateSpace<3, 8, 9,
@@ -171,19 +172,11 @@ private:
                          jacl::PhysicalParameter,
                          jacl::PhysicalParameter,
                          jacl::PhysicalParameter>;
-
     GRealization G_;
-
     using PRealization = jacl::LinearStateSpace<9, 2, 3>;
     PRealization P_;
-
     using InterConnMat = jacl::LinearStateSpace<9, 10, 8>;
     InterConnMat ICM_;
-
-    using Controller = jacl::LinearStateSpace<9, 3, 2>;
-    Controller K_;
-    jacl::ControllerSim<Controller> controller_sim_;
-
     using HInf = jacl::synthesis::Hinf<InterConnMat, 5, 8>;
     HInf* hinf_;
 

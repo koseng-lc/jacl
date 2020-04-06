@@ -9,15 +9,22 @@
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
+    //-- DC motor parameters
     , bm(.000048), jm(7.2e-6), ki(.052), la(.00062), kb(.052), ra(2.07)
-    , ss_(&bm, &jm, &ki, &la, &kb, &ra)
-    , G_(&bm, &jm, &ki, &la, &kb, &ra)
-    , sys_(&ss_)
-    , sys_plt_(&sys_,{1,2,3,4,5,6,7,8})
-    , observer_(&ss_, arma::zeros<arma::mat>(3,3))
-    , observer_plt_(&observer_, {1,2,3,6,7,8})
+    //-- MIMO DC motor
+    , ss_(&bm, &jm, &ki, &la, &kb, &ra)    
+    , csys_(&ss_)
+    , csys_plt_(&csys_,{1,2,3,4,5,6,7,8})
+    , cobserver_(&ss_, arma::zeros<arma::mat>(3,3))
+    , cobserver_plt_(&cobserver_, {1,2,3,6,7,8})
+    //-- SIMO DC motor
     , simo_(&bm, &jm, &ki, &la, &kb, &ra)
-    , controller_sim_(&K_)
+    , dsys_simo_(&dsimo_)
+    , dobserver_simo_(&dsimo_, arma::zeros<arma::mat>(3,3))
+    , dsys_simo_plt_(&dsys_simo_, {1,2,3,4})
+    , dobserver_simo_plt_(&dobserver_simo_, {1,2,3})
+    //--
+    , G_(&bm, &jm, &ki, &la, &kb, &ra)
     , ref_(3, 1, arma::fill::zeros)
     , cl_status_(true)
     , posctrl_sys_(&k_pos_)
@@ -27,9 +34,8 @@ MainWindow::MainWindow(QWidget *parent)
     , pg_(9.8), pl_(1.0), pk_(0.1), pm_(0.5)
     , nlp_(&pg_, &pl_, &pk_, &pm_)
     , nlp_sys_(&nlp_){
-
+    //-- GUI    
     ui->setupUi(this);
-
     this->removeToolBar(ui->mainToolBar);
     QFile style_file("../example/gui/dark_style_lintang.qss");
     style_file.open(QFile::ReadOnly);
@@ -93,50 +99,11 @@ MainWindow::MainWindow(QWidget *parent)
     std::cout << "Controllable : " << jacl::common::controllable(ss_.A(), ss_.B()) << std::endl;
     std::cout << "Observable : " << jacl::common::observable(ss_.A(), ss_.C()) << std::endl;
 
-    //-- Observer
+    //-- Observer for MIMO DC motor
     arma::mat observer_K;
-    arma::mat poles{-50,-51,-52};
-    jacl::pole_placement::KautskyNichols(&ss_, poles, &observer_K, jacl::pole_placement::PolePlacementType::Observer);
-    observer_.setGain(observer_K.t());
-
-    //-- SIMO DC motor open-loop
-    {
-        SIMO::Formulas fA{
-            JC(simo_,.0),JC(simo_,1.0),JC(simo_,.0),
-            JC(simo_,.0),JE(simo_,-_p(iBm)/_p(iJm)),JE(simo_,_p(iKi)/_p(iJm)),
-            JC(simo_,.0),JE(simo_,-_p(iKb)/_p(iLa)),JE(simo_,-_p(iRa)/_p(iLa))
-        };
-
-        SIMO::Formulas fB{
-            JC(simo_, .0),
-            JC(simo_, .0),
-            JE(simo_, 1.0/_p(iLa))
-        };
-
-        SIMO::Formulas fC{
-            JC(simo_, 1.0), JC(simo_, .0), JC(simo_, .0),
-            JC(simo_, .0), JC(simo_, 1.0), JC(simo_, .0),
-            JC(simo_, .0), JC(simo_, .0), JC(simo_, 1.0)
-        };
-
-        SIMO::Formulas fD{
-            JC(simo_, .0),
-            JC(simo_, .0),
-            JC(simo_, .0)
-        };
-
-        simo_.setA(fA);
-        simo_.setB(fB);
-        simo_.setC(fC);
-        simo_.setD(fD);
-    }
-    jacl::parser::saveStateSpace(simo_, "motor_dc_simo.jacl");
-
-    arma::mat obsv_gain;
-    jacl::pole_placement::KautskyNichols(&simo_, poles, &obsv_gain, jacl::pole_placement::PolePlacementType::Observer);
-    obsv_gain.print("\nObserver Gain : ");
-    jacl::parser::saveGain(obsv_gain, "observer_gain.jacl");
-//    jacl::parser::readGain(&obsv_gain, "observer_gain.jacl");
+    arma::mat cpoles{-50,-51,-52};
+    jacl::pole_placement::KautskyNichols(&ss_, cpoles, &observer_K, jacl::pole_placement::PolePlacementType::Observer);
+    cobserver_.setGain(observer_K.t());
 
     //-- G Realization
     {
@@ -332,37 +299,23 @@ MainWindow::MainWindow(QWidget *parent)
 
     hinf_ = new HInf(&ICM_, 1.6204);
     jacl::common::StateSpacePack K( hinf_->solve() );
-    K_.setA(std::get<0>(K));
-    K_.setB(std::get<1>(K));
-    K_.setC(std::get<2>(K));
-    K_.setD(std::get<3>(K));
 
-//    K_.A().print("K_A : ");
-//    K_.B().print("K_B : ");
-//    K_.C().print("K_C : ");
-//    K_.D().print("K_D : ");
-
-    controller_sim_.init();
-    controller_sim_.setTitle("Controller");
-    controller_sim_.setDelay() = TIME_STEP;
-    controller_sim_.setPlotName({"Position Error","Velocity Error","Current Error","Voltage","Torque"});
-    controller_sim_.updateVariables();
-
+    setupSIMODCMotor();
     setupPositionController();
     setupSpeedController();    
 
     //-- Simulator
-    sys_plt_.init();
-    sys_plt_.setTitle("DC Motor");
-    sys_plt_.setDelay() = TIME_STEP;
-    sys_plt_.setPlotName({"Angular Position", "Angular Velocity", "Current",
+    csys_plt_.init();
+    csys_plt_.setTitle("DC Motor");
+    csys_plt_.setDelay() = SAMPLING_PERIOD;
+    csys_plt_.setPlotName({"Angular Position", "Angular Velocity", "Current",
                        "Voltage In", "Torque In",
                        "Angular Position", "Angular Velocity", "Current"});
 
-    observer_plt_.init();
-    observer_plt_.setTitle("Full-order Luenberger Observer of DC Motor");
-    observer_plt_.setDelay() = TIME_STEP;
-    observer_plt_.setPlotName({"Est. Position", "Est. Velocity", "Est. Current"
+    cobserver_plt_.init();
+    cobserver_plt_.setTitle("Full-order Luenberger Observer of DC Motor");
+    cobserver_plt_.setDelay() = SAMPLING_PERIOD;
+    cobserver_plt_.setPlotName({"Est. Position", "Est. Velocity", "Est. Current"
                               ,"Est. Out Position", "Est. Out Velocity", "Est. Out Current"});
 
     setupWidgets();
@@ -684,7 +637,7 @@ void MainWindow::perturbAct(){
                         {&ra,params_dsb_[iRa]}})
         pair.first->perturbed = pair.second->value();
 
-    // observer_plt_.updateVar();
+    // cobserver_plt_.updateVar();
 //    sim_.setLinearStateSpace(ss_.A(), ss_.B(), ss_.C(), ss_.D());
 }
 
@@ -701,14 +654,16 @@ void MainWindow::resetAct(){
 }
 
 void MainWindow::simulateAct(){
+    //-- Continuous
+    // csys_plt_.start();
+    // cobserver_plt_.start();
+    // posctrl_plt_.start();
+    // spdctrl_plt_.start();
+    // cobserver_plt_.simulate();
 
-//    sim_.simulate();    
-    sys_plt_.start();
-    observer_plt_.start();
-//    posctrl_plt_.start();
-    spdctrl_plt_.start();
-//    controller_sim_.simulate();
-//    observer_plt_.simulate();
+    //-- Discrete
+    dsys_simo_plt_.start();
+    dobserver_simo_plt_.start();
 }
 
 void MainWindow::setInputAct(){
@@ -754,6 +709,62 @@ void MainWindow::refAct(){
 
 void MainWindow::modeAct(int _val){
     control_mode_ = _val;
+}
+
+void MainWindow::setupSIMODCMotor(){
+    //-- SIMO DC motor open-loop
+    {
+        SIMO::Formulas fA{
+            JC(simo_,.0),JC(simo_,1.0),JC(simo_,.0),
+            JC(simo_,.0),JE(simo_,-_p(iBm)/_p(iJm)),JE(simo_,_p(iKi)/_p(iJm)),
+            JC(simo_,.0),JE(simo_,-_p(iKb)/_p(iLa)),JE(simo_,-_p(iRa)/_p(iLa))
+        };
+
+        SIMO::Formulas fB{
+            JC(simo_, .0),
+            JC(simo_, .0),
+            JE(simo_, 1.0/_p(iLa))
+        };
+
+        SIMO::Formulas fC{
+            JC(simo_, 1.0), JC(simo_, .0), JC(simo_, .0),
+            JC(simo_, .0), JC(simo_, 1.0), JC(simo_, .0),
+            JC(simo_, .0), JC(simo_, .0), JC(simo_, 1.0)
+        };
+
+        SIMO::Formulas fD{
+            JC(simo_, .0),
+            JC(simo_, .0),
+            JC(simo_, .0)
+        };
+
+        simo_.setA(fA);
+        simo_.setB(fB);
+        simo_.setC(fC);
+        simo_.setD(fD);
+    }
+    jacl::parser::saveStateSpace(simo_, "motor_dc_simo.jacl");
+    jacl::common::StateSpacePack dsimo = jacl::common::discretize(simo_, SAMPLING_PERIOD);
+    dsimo_.setA(std::get<0>(dsimo)); dsimo_.setB(std::get<1>(dsimo));
+    dsimo_.setC(std::get<2>(dsimo)); dsimo_.setD(std::get<3>(dsimo));
+    dsimo_.A().print("Ad : "); dsimo_.B().print("Bd : ");
+    dsimo_.C().print("Cd : "); dsimo_.D().print("Dd : ");
+    arma::mat dobsv_gain;
+    arma::mat dpoles{-0.8,-0.85,0.8};
+    jacl::pole_placement::KautskyNichols(&dsimo_, dpoles, &dobsv_gain, jacl::pole_placement::PolePlacementType::Observer);
+    dobserver_simo_.setGain(dobsv_gain.t());
+    dobsv_gain.print("\nDiscrete Observer Gain : ");
+    jacl::parser::saveGain(dobsv_gain, "discrete_observer_gain.jacl");
+//    jacl::parser::readGain(&obsv_gain, "observer_gain.jacl");
+    dsys_simo_plt_.init();
+    dsys_simo_plt_.setTitle("SIMO DC motor");
+    dsys_simo_plt_.setDelay() = SAMPLING_PERIOD;
+    dsys_simo_plt_.setPlotName({"Position", "Velocity", "Current", "Voltage"});
+
+    dobserver_simo_plt_.init();
+    dobserver_simo_plt_.setTitle("Observer SIMO DC motor");
+    dobserver_simo_plt_.setDelay() = SAMPLING_PERIOD;
+    dobserver_simo_plt_.setPlotName({"Est. Position", "Est. Velocity", "Est. Current"});
 }
 
 void MainWindow::setupPositionController(){
@@ -827,7 +838,7 @@ void MainWindow::setupPositionController(){
 
     posctrl_plt_.init();
     posctrl_plt_.setTitle("Position Controller");
-    posctrl_plt_.setDelay() = TIME_STEP;
+    posctrl_plt_.setDelay() = SAMPLING_PERIOD;
     posctrl_plt_.setPlotName({"Position Error", "Voltage"});
 }
 
@@ -881,7 +892,7 @@ void MainWindow::setupSpeedController(){
 
     spdctrl_plt_.init();
     spdctrl_plt_.setTitle("Speed Controller");
-    spdctrl_plt_.setDelay() = TIME_STEP;
+    spdctrl_plt_.setDelay() = SAMPLING_PERIOD;
     spdctrl_plt_.setPlotName({"Velocity Error", "Voltage"});
 }
 
@@ -910,24 +921,19 @@ void MainWindow::closedLoopProcess(){
 //    auto Kp(10.), Kd(1.);
     while(cl_status_){
         //-- PD Control
-//        err(1) = ref_(1) - out(1);
-//        diff(1) = err(1) - last_err(1);
-//        last_err(1) = err(1);
-//        err.print("Error : ");
-//        in(0) = angularSpeed2Voltage(Kp*err(1) + Kd*diff(1),.0);
-//        if(in(0) > 12.0){
-//            in(0) = 12.0;
-//        }
-//        if(in(0) < -12.0){
-//            in(0) = -12.0;
-//        }
+       /*err(1) = ref_(1) - out(1);
+       diff(1) = err(1) - last_err(1);
+       last_err(1) = err(1);
+       err.print("Error : ");
+       in(0) = angularSpeed2Voltage(Kp*err(1) + Kd*diff(1),.0);
+       if(in(0) > 12.0){
+           in(0) = 12.0;
+       }
+       if(in(0) < -12.0){
+           in(0) = -12.0;
+       }*/
 
         err = ref_ + out;
-//        ref_.print("Ref : ");
-//        out.print("Out : ");
-//        err.print("Error : ");
-//        in = controller_sim_.propagate(err);
-//        in.print("In : ");
 
         //-- H-infinity Controller
         if(control_mode_ == jacl::traits::toUType(jacl::ControllerDialog::ControlMode::Position)){
@@ -940,11 +946,11 @@ void MainWindow::closedLoopProcess(){
             //-- do nothing
         }
 
-        out = sys_.convolve(in);
-        est = observer_.convolve(in, out);
+        out = csys_.convolve(in);
+        est = cobserver_.convolve(in, out);
 //        err.submat(0,0,0,0).print("Err : ");
 //        in.submat(0,0,0,0).print("In : ");
 //        out.print("Out : ");
-        boost::this_thread::sleep_for(boost::chrono::milliseconds((int)(TIME_STEP*1000.)));
+        boost::this_thread::sleep_for(boost::chrono::milliseconds((int)(SAMPLING_PERIOD*1000.)));
     }
 }

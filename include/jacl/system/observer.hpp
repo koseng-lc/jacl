@@ -27,7 +27,7 @@ public:
         return est;
     }    
     void setGain(const arma::mat& _K){
-        assert(_K.n_rows == ss_->A().n_rows && _K.n_cols == ss_->C().n_rows);
+        assert(_K.n_rows == _StateSpace::n_states && _K.n_cols == _StateSpace::n_outputs);
         K_ = _K;
         updateVar();
     }
@@ -43,29 +43,13 @@ protected:
     auto setIn(const arma::vec& _in) -> void{
         this->in_ = _in;
     }
-    auto dstate() -> arma::vec{
-        static arma::mat term1, term2, term3, term4, term5;
-
-        term1 = this->state_trans_ * this->prev_state_;
-        term2 = K_ * meas_ + H_ * this->in_;
-        term3 = K_ * prev_meas_ + H_ * this->prev_in_;
-        term4 = this->state_trans_ * term3;
-        term5 = (term2 + term4) * (this->dt_ * .5);
-
-        this->prev_in_ = this->in_;        
-
-        return term1 + term5;
-    }
-    auto output() -> arma::vec{
+    virtual auto dstate() -> arma::vec = 0;
+    auto output() -> arma::vec override{
         return this->ss_->C() * this->prev_state_;
     }
-    auto updateVar() -> void override{
-        A_hat_ = this->ss_->A() - (K_ * this->ss_->C());
-        H_ = this->ss_->B();
-        this->state_trans_ = arma::expmat(A_hat_ * this->dt_);
-    }
+    virtual auto updateVar() -> void = 0;
 
-private:
+protected:
     arma::mat K_;
     arma::mat H_;
     arma::mat A_hat_;
