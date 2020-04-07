@@ -21,8 +21,9 @@ MainWindow::MainWindow(QWidget *parent)
     , simo_(&bm, &jm, &ki, &la, &kb, &ra)
     , dsys_simo_(&dsimo_)
     , dobserver_simo_(&dsimo_, arma::zeros<arma::mat>(3,3))
-    , dsys_simo_plt_(&dsys_simo_, {1,2,3,4})
-    , dobserver_simo_plt_(&dobserver_simo_, {1,2,3})
+    , dsys_simo_plt_(&dsys_simo_, {1,2,3,4}, SAMPLING_PERIOD)
+    , dobserver_simo_plt_(&dobserver_simo_, {1,2,3}, SAMPLING_PERIOD)
+    , ifd_(&dsys_simo_)
     //--
     , G_(&bm, &jm, &ki, &la, &kb, &ra)
     , ref_(3, 1, arma::fill::zeros)
@@ -922,6 +923,7 @@ void MainWindow::closedLoopProcess(){
 //    arma::mat last_err(err);
 //    arma::mat diff(err);
 //    auto Kp(10.), Kd(1.);
+    ifd_.init();
     while(cl_status_){
         //-- PD Control
        /*err(1) = ref_(1) - out(1);

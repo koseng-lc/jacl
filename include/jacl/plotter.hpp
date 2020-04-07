@@ -93,7 +93,7 @@ Plotter<_System>::Plotter(_System* _sys, std::initializer_list<std::size_t> _sel
     : running_(true)
     , n_signals_(_selected_sig.size())
     , d_time_(_time_step)
-    , view_interval_(0.01)
+    , view_interval_(_time_step * 100.)
     , max_data_(static_cast<std::size_t>(view_interval_/d_time_))
     , signal_data_(n_signals_ * max_data_)
     , time_data_(max_data_)

@@ -42,6 +42,10 @@ template<class _StateSpace>
 template <class _StateSpace>
 class BaseSystem:public pattern::Observer{
 public:
+    static constexpr double n_states{_StateSpace::n_states};
+    static constexpr double n_inputs{_StateSpace::n_inputs};
+    static constexpr double n_outputs{_StateSpace::n_outputs};
+
     BaseSystem(_StateSpace* _ss, double _time_step = 1e-4)
         : pattern::Observer(_ss)
         , state_(_StateSpace::n_states,1, arma::fill::zeros)
@@ -66,7 +70,11 @@ public:
         this->out_ = output();
         return this->out_;
     }
-
+    auto A() -> arma::mat { return ss_->A(); }
+    auto B() -> arma::mat { return ss_->B(); }
+    auto C() -> arma::mat { return ss_->C(); }
+    auto D() -> arma::mat { return ss_->D(); }
+    
 protected:
     virtual auto setIn(const arma::vec& _in) -> void = 0;
     virtual auto dstate() -> arma::vec = 0;
@@ -85,6 +93,7 @@ protected:
     arma::vec out_;
     double dt_;
     _StateSpace* ss_;
+
 };
 
 } } // namespace jacl::system

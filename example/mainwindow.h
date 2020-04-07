@@ -163,6 +163,7 @@ private:
     jacl::Plotter<jacl::system::DiscreteSystem<jacl::LinearStateSpace<3,1,3> > > dsys_simo_plt_;
     jacl::Plotter<jacl::system::DiscreteObserver<jacl::LinearStateSpace<3,1,3> > > dobserver_simo_plt_;
     arma::mat din_;
+    jacl::IFD<jacl::system::DiscreteSystem<jacl::LinearStateSpace<3,1,3> > > ifd_;
     void setupSIMODCMotor();
     //-- Another stuff
     using GRealization =
