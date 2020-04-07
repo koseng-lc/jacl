@@ -1,6 +1,6 @@
 /**
 *   @author : koseng (Lintang)
-*   @brief : jacl Simulator / Plotter
+*   @brief : jacl Plotter
 */
 
 #pragma once
@@ -33,7 +33,7 @@ namespace{
 template <class _System>
 class Plotter{
 public:    
-    Plotter(_System* _sys, std::initializer_list<std::size_t> _selected_sig);
+    Plotter(_System* _sys, std::initializer_list<std::size_t> _selected_sig, double _time_step = 1e-4);
     ~Plotter();
 
     auto init() -> int;
@@ -60,7 +60,6 @@ protected:
 
     private:
         PyGILState_STATE state;
-
     };
 
 protected:
@@ -90,18 +89,17 @@ protected:
 };
 
 template <class _System>
-Plotter<_System>::Plotter(_System* _sys, std::initializer_list<std::size_t> _selected_sig)
+Plotter<_System>::Plotter(_System* _sys, std::initializer_list<std::size_t> _selected_sig, double _time_step)
     : running_(true)
     , n_signals_(_selected_sig.size())
-    , d_time_(1e-4)
+    , d_time_(_time_step)
     , view_interval_(0.01)
     , max_data_(static_cast<std::size_t>(view_interval_/d_time_))
     , signal_data_(n_signals_ * max_data_)
     , time_data_(max_data_)
-    , delay_(.02)
+    , delay_(.02 < d_time_ ? d_time_ : .02)
     , title_("Simulation")
-    , sys_(_sys){
-
+    , sys_(_sys){    
     for(std::size_t i(0); i < max_data_; i++){
         time_data_.push_back(-1.0);
         for(std::size_t j(0); j < n_signals_; j++){
@@ -114,53 +112,39 @@ Plotter<_System>::Plotter(_System* _sys, std::initializer_list<std::size_t> _sel
 
 template <class _System>
 Plotter<_System>::~Plotter(){
-
     running_ = false;    
     process_thread_.join();
-
     if(PyGILState_GetThisThreadState() == py_state_)
         PyThreadState_Swap(py_state_);
-
 }
 
 template <class _System>
 auto Plotter<_System>::init() -> int{
-
     if(!Py_IsInitialized())
         Py_Initialize();
-
     // idk why its automatically locked, contrary with common article
-
     if(PyGILState_Check()){
         PyEval_InitThreads();
         py_state_ = PyEval_SaveThread();
     }
-
     AcquireGIL lk;
-
     int ret;
     import_array1(ret);
-
     try{
-
         py::object sys = py::import("sys");
         sys.attr("path").attr("append")("../python");
 
         py::object sim_module = py::import("plotter");
-
         sim_ = sim_module.attr("Plotter")(n_signals_, d_time_, view_interval_);
-
     }catch(py::error_already_set){
         PyErr_Print();
         return 1;
     }
-
     return 0;
 }
 
 template <class _System>
 auto Plotter<_System>::process() -> void{
-
     arma::mat pres_signal;
     auto t(.0);    
 
@@ -168,18 +152,13 @@ auto Plotter<_System>::process() -> void{
     std::vector<double> temp_time_data;
 
     AcquireGIL lk;
-
     while(running_){
         pres_signal = sys_->recapitulate();
-
         for(const auto& i:selected_sig_){
             signal_data_.push_back(pres_signal(i-1));
         }
-
         time_data_.push_back(t);
-
         try{
-
             temp_signal_data.clear();
             temp_time_data.clear();
 
@@ -200,17 +179,12 @@ auto Plotter<_System>::process() -> void{
             py::object time_obj(time_handle);
 
             sim_.attr("setData")(signals_obj, time_obj);
-
         }catch(py::error_already_set){
             PyErr_Print();
         }
-
-        boost::this_thread::sleep_for(boost::chrono::milliseconds((int)(delay_ * 1000.))); // 60 - Hz
-
         t += d_time_;
-
+        boost::this_thread::sleep_for(boost::chrono::milliseconds((int)(delay_ * 1000.)));
     }
-
 }
 
 template <class _System>
@@ -218,41 +192,30 @@ auto Plotter<_System>::start() -> void{
 
     AcquireGIL lk;
     try{
-
         process_thread_ = boost::thread(boost::bind(&Plotter<_System>::process, this));
 
         sim_.attr("setTitle")(title_.c_str());
         sim_.attr("setDelay")(delay_);
         sim_.attr("beginSimulation")();
-
     }catch(py::error_already_set){
-
         PyErr_Print();
-
     }
-
 }
 
 template <class _System>
 auto Plotter<_System>::setPlotName(std::initializer_list<std::string> _plot_name) -> void{
-
     plot_name_.clear();
     plot_name_.insert(plot_name_.end(), _plot_name.begin(), _plot_name.end());
-
     AcquireGIL lk;
     try{
-
         py::dict plot_name_dict;
         for(std::size_t i(0); i < plot_name_.size(); i++){
             std::stringstream ss;
             ss << "signal" << i;
             plot_name_dict[ss.str().c_str()] = plot_name_[i];
-
             sim_.attr("setPlotName")(plot_name_dict);
-
         }
     }catch(py::error_already_set){
-
         PyErr_Print();
     }
 }

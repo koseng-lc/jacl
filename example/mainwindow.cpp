@@ -485,7 +485,6 @@ void MainWindow::setupWidgets(){
     input_gb_->setTitle(tr("Input Disturbance"));
 
     //-- Fault
-
     fault_gb_ = new QGroupBox;
 
     fault_gl_ = new QGridLayout;
@@ -540,7 +539,6 @@ void MainWindow::setupWidgets(){
     fault_gb_->setTitle(tr("Fault"));
 
     //-- Watermark
-
     watermark_widget_ = new QWidget;
 
     watermark_gl_ = new QGridLayout;
@@ -670,7 +668,7 @@ void MainWindow::setInputAct(){
     arma::mat in(2, 1);
     in(0) = voltage_in_dsb_->value();
     in(1) = torque_in_dsb_->value();
-//    sim_.setInput(in);
+    din_ = in.submat(0,0,0,0);
 }
 
 void MainWindow::biasDialConv(double _val){
@@ -750,12 +748,12 @@ void MainWindow::setupSIMODCMotor(){
     dsimo_.A().print("Ad : "); dsimo_.B().print("Bd : ");
     dsimo_.C().print("Cd : "); dsimo_.D().print("Dd : ");
     arma::mat dobsv_gain;
-    arma::mat dpoles{-0.8,-0.85,0.8};
+    arma::mat dpoles{-0.8,-0.85,0.83};
     jacl::pole_placement::KautskyNichols(&dsimo_, dpoles, &dobsv_gain, jacl::pole_placement::PolePlacementType::Observer);
     dobserver_simo_.setGain(dobsv_gain.t());
     dobsv_gain.print("\nDiscrete Observer Gain : ");
     jacl::parser::saveGain(dobsv_gain, "discrete_observer_gain.jacl");
-//    jacl::parser::readGain(&obsv_gain, "observer_gain.jacl");
+//    jacl::parser::readGain(&obsv_gain, "discrete_observer_gain.jacl");
     dsys_simo_plt_.init();
     dsys_simo_plt_.setTitle("SIMO DC motor");
     dsys_simo_plt_.setDelay() = SAMPLING_PERIOD;
@@ -913,8 +911,13 @@ double MainWindow::angularSpeed2Voltage(double _speed, double _torque){
 }
 
 void MainWindow::closedLoopProcess(){
-    arma::mat out(3,1,arma::fill::zeros),in(2,1,arma::fill::zeros);
-    arma::mat err(out),est(out);
+    //-- Continuous
+    // arma::mat out(3,1,arma::fill::zeros),in(2,1,arma::fill::zeros);
+    // arma::mat err(out),est(out);
+    //-- Discrete
+    arma::mat dout(3,1,arma::fill::zeros),din(1,1,arma::fill::zeros);
+    arma::mat derr(dout),dest(dout);
+    din_ = din;
     control_mode_ = jacl::traits::toUType(jacl::ControllerDialog::ControlMode::Velocity);
 //    arma::mat last_err(err);
 //    arma::mat diff(err);
@@ -933,21 +936,26 @@ void MainWindow::closedLoopProcess(){
            in(0) = -12.0;
        }*/
 
-        err = ref_ + out;
+        //-- Error between reference and output
+        // err = ref_ + out;
 
         //-- H-infinity Controller
-        if(control_mode_ == jacl::traits::toUType(jacl::ControllerDialog::ControlMode::Position)){
-            err(1) = 0;
-            in.submat(0,0,0,0) = posctrl_sys_.convolve(err.submat(0,0,0,0));
-        }else if(control_mode_ == jacl::traits::toUType(jacl::ControllerDialog::ControlMode::Velocity)){
-            err(0) = 0;
-            in.submat(0,0,0,0) = spdctrl_sys_.convolve(err.submat(1,0,1,0));
-        }else{
-            //-- do nothing
-        }
+        // if(control_mode_ == jacl::traits::toUType(jacl::ControllerDialog::ControlMode::Position)){
+        //     err(1) = 0;
+        //     in.submat(0,0,0,0) = posctrl_sys_.convolve(err.submat(0,0,0,0));
+        // }else if(control_mode_ == jacl::traits::toUType(jacl::ControllerDialog::ControlMode::Velocity)){
+        //     err(0) = 0;
+        //     in.submat(0,0,0,0) = spdctrl_sys_.convolve(err.submat(1,0,1,0));
+        // }else{
+        //     //-- do nothing
+        // }
 
-        out = csys_.convolve(in);
-        est = cobserver_.convolve(in, out);
+        //-- Continuous
+        // out = csys_.convolve(in);
+        // est = cobserver_.convolve(in, out);
+        dout = dsys_simo_.convolve(din_);
+        dest = dobserver_simo_.convolve(din_, dout);
+
 //        err.submat(0,0,0,0).print("Err : ");
 //        in.submat(0,0,0,0).print("In : ");
 //        out.print("Out : ");

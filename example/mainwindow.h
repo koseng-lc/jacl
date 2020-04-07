@@ -148,7 +148,7 @@ private:
     jacl::system::ContinuousObserver<LinearStateSpace> cobserver_;
     jacl::Plotter<jacl::system::ContinuousObserver<LinearStateSpace> > cobserver_plt_;
 
-    //-- SIMO DC motor
+    //-- Discrete SIMO DC motor
     using SIMO = jacl::LinearStateSpace<3, 1, 3,
                                     jacl::PhysicalParameter,
                                     jacl::PhysicalParameter,
@@ -162,8 +162,9 @@ private:
     jacl::system::DiscreteObserver<jacl::LinearStateSpace<3,1,3> > dobserver_simo_;
     jacl::Plotter<jacl::system::DiscreteSystem<jacl::LinearStateSpace<3,1,3> > > dsys_simo_plt_;
     jacl::Plotter<jacl::system::DiscreteObserver<jacl::LinearStateSpace<3,1,3> > > dobserver_simo_plt_;
+    arma::mat din_;
     void setupSIMODCMotor();
-    //--
+    //-- Another stuff
     using GRealization =
         jacl::LinearStateSpace<3, 8, 9,
                          jacl::PhysicalParameter,
@@ -180,7 +181,7 @@ private:
     using HInf = jacl::synthesis::Hinf<InterConnMat, 5, 8>;
     HInf* hinf_;
 
-    //-- H-infinity position control of dc motor
+    //-- Continuous H-infinity position control of dc motor
     using SISOPos = jacl::LinearStateSpace<3,1,1>;
     SISOPos siso_pos_;
     using InterConnMatPos = jacl::LinearStateSpace<6, 4, 3>;
