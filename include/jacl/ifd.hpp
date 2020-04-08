@@ -48,6 +48,8 @@ public:
                 }
             }
             M_.push_back(arma::trans(M_t[i]));
+            arma::mat test = desired_form.t() * M_[i];
+            // test.print("TEST : ");
             temp = sys_->A() * arma::inv(M_[i]);
             An_.emplace_back(M_[i] * temp);
             Bn_.emplace_back(M_[i] * sys_->B());
@@ -57,7 +59,7 @@ public:
             jacl::LinearStateSpace<_System::n_states - 1, 1, 1> ss(A22(An_[i]), arma::zeros(_System::n_states - 1, 1),
                                                                    A12(An_[i]), arma::zeros(1, 1));
             arma::mat gain;
-            std::cout << "TEST" << std::endl;
+            // std::cout << "TEST" << std::endl;
             ss.A().print("A : ");
             ss.C().print("C : ");
             jacl::pole_placement::KautskyNichols(&ss, poles[i], &gain, jacl::pole_placement::PolePlacementType::Observer);

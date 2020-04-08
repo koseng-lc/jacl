@@ -923,7 +923,7 @@ void MainWindow::closedLoopProcess(){
 //    arma::mat last_err(err);
 //    arma::mat diff(err);
 //    auto Kp(10.), Kd(1.);
-    ifd_.init({{-.51,-.63,-.72}, {-.65,-.76,-.84}, {-.72,-.86,-.82}, {-.87,-.79,-.81}});
+    ifd_.init({{-.63,-.51}, {-.76,-.65}, {-.86,-.72}});
     while(cl_status_){
         //-- PD Control
        /*err(1) = ref_(1) - out(1);
