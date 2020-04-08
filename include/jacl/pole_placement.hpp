@@ -13,9 +13,7 @@
 
 #include "linear_state_space.hpp"
 
-namespace jacl{
-
-namespace pole_placement{
+namespace jacl{ namespace pole_placement{
 
 enum class PolePlacementType{
     Controller,
@@ -24,7 +22,6 @@ enum class PolePlacementType{
 
 template <class _StateSpace>
 auto KautskyNichols(_StateSpace *_ss, const arma::mat& _poles, arma::mat* _K, PolePlacementType _type = PolePlacementType::Controller) -> void{
-
     assert(_poles.is_vec());
 
     arma::mat Q, R;
@@ -34,11 +31,9 @@ auto KautskyNichols(_StateSpace *_ss, const arma::mat& _poles, arma::mat* _K, Po
     if(_type == PolePlacementType::Controller)
         T = _ss->B();
     else if(_type == PolePlacementType::Observer)
-        T = _ss->C();
+        T = arma::trans(_ss->C());
     else
         assert("Please choose appropriate type !");
-
-    arma::qr(Q, R, T);
 
     int T_rows(T.n_rows);
     int T_cols(T.n_cols);
@@ -53,13 +48,18 @@ auto KautskyNichols(_StateSpace *_ss, const arma::mat& _poles, arma::mat* _K, Po
         return;
     }
 
+    arma::qr(Q, R, T);         
+    std::cout << "LOLOS >> 1" << std::endl;
+    Q.print("Q : ");
+    R.print("R : ");
+    T.print("T : ");
+    std::cout <<"Trows : " << T_rows << " ; Tcols : " << T_cols << std::endl;
     U0 = Q.submat(0, 0, T_rows-1, T_cols-1);
     U1 = Q.submat(0, T_cols, T_rows-1, T_rows-1);
     Z = R.submat(0, 0, T_cols-1, T_cols-1);
-
+    std::cout << "LOLOS >> 2" << std::endl;
 
     //-- A Step
-
     std::vector<arma::mat> S_hat;
     std::vector<arma::mat> S;
     std::vector<arma::mat> another_R;
@@ -69,7 +69,6 @@ auto KautskyNichols(_StateSpace *_ss, const arma::mat& _poles, arma::mat* _K, Po
 
 
     for(auto p:_poles){
-
         temp1 = U1.t(); // place it in outer scope
         temp2 = arma::mat(arma::size(_ss->A()), arma::fill::eye) * p;
         temp3 = _ss->A() - temp2;
@@ -82,7 +81,6 @@ auto KautskyNichols(_StateSpace *_ss, const arma::mat& _poles, arma::mat* _K, Po
         arma::qr(temp5, temp6, temp4);
 
         S_hat.push_back(temp5.submat(0, 0, rows-1, cols-1));
-
         S.push_back(temp5.submat(0, cols, rows-1, rows-1));
 
         another_R.push_back(temp6.submat(0, 0, cols-1, cols-1));
@@ -110,9 +108,7 @@ auto KautskyNichols(_StateSpace *_ss, const arma::mat& _poles, arma::mat* _K, Po
     int restX_span_rows = X.n_rows;
 
     do{
-
         for(int i(0); i < _poles.n_elem; i++){
-
             // m x (n-1) size
             X_rest = X;
             X_rest.shed_col(i);
@@ -147,9 +143,6 @@ auto KautskyNichols(_StateSpace *_ss, const arma::mat& _poles, arma::mat* _K, Po
     temp4 = M - _ss->A();
     temp5 = temp3 * temp4;
     *_K = arma::inv(Z) * temp5;
-
 }
 
-}
-
-}
+} } // namespace jacl::pole_placement

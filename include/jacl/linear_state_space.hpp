@@ -39,7 +39,7 @@ public:
 
         push(_param, _rest...);
     }
-
+    LinearStateSpace(const arma::mat& _A, const arma::mat& _B, const arma::mat& _C, const arma::mat& _D);
     LinearStateSpace();
     ~LinearStateSpace();
 
@@ -59,8 +59,7 @@ public:
     auto setA(const Formulas& f) -> void{
         fA_.clear();
         fA_.insert(fA_.end(), f.begin(), f.end());
-        formulaToMat(FormulaToMatMode::A);
-        this->notify();
+        formulaToMat(FormulaToMatMode::A);        
     }
 
     auto setA(const arma::mat& _A) -> void{
@@ -72,7 +71,6 @@ public:
         fB_.clear();
         fB_.insert(fB_.end(), f.begin(), f.end());
         formulaToMat(FormulaToMatMode::B);
-        this->notify();
     }
 
     auto setB(const arma::mat& _B) -> void{
@@ -84,7 +82,6 @@ public:
         fC_.clear();
         fC_.insert(fC_.end(), f.begin(), f.end());
         formulaToMat(FormulaToMatMode::C);
-        this->notify();
     }
 
     auto setC(const arma::mat& _C) -> void{
@@ -96,7 +93,6 @@ public:
         fD_.clear();
         fD_.insert(fD_.end(), f.begin(), f.end());
         formulaToMat(FormulaToMatMode::D);
-        this->notify();
     }
 
     auto setD(const arma::mat& _D) -> void{
@@ -182,6 +178,17 @@ LinearStateSpace<num_states, num_inputs, num_outputs, PhysicalParam, Rest...>::L
     , D_(num_outputs, num_inputs){
 }
 
+template <std::size_t num_states, std::size_t num_inputs, std::size_t num_outputs, class PhysicalParam, class ...Rest>
+LinearStateSpace<num_states, num_inputs, num_outputs, PhysicalParam, Rest...>::LinearStateSpace(const arma::mat& _A,
+                                                                                                const arma::mat& _B,
+                                                                                                const arma::mat& _C,
+                                                                                                const arma::mat& _D)
+    : A_(_A)
+    , B_(_B)
+    , C_(_C)
+    , D_(_D){
+}
+
 template<std::size_t num_states, std::size_t num_inputs, std::size_t num_outputs, class PhysicalParam, class ...Rest>
 LinearStateSpace<num_states, num_inputs, num_outputs, PhysicalParam, Rest...>::~LinearStateSpace(){
 
@@ -217,6 +224,7 @@ auto LinearStateSpace<num_states, num_inputs, num_outputs, PhysicalParam, Rest..
                 D_(i, j) = fD_[i * num_inputs + j](*this);
         }
     }
+    this->notify();
 }
 
 }
