@@ -21,7 +21,7 @@ enum class PolePlacementType{
 };
 
 template <class _StateSpace>
-auto KautskyNichols(_StateSpace *_ss, const arma::mat& _poles, arma::mat* _K, PolePlacementType _type = PolePlacementType::Controller) -> void{
+static auto KautskyNichols(_StateSpace *_ss, const arma::mat& _poles, arma::mat* _K, PolePlacementType _type = PolePlacementType::Controller) -> void{
     assert(_poles.is_vec());
 
     arma::mat Q, R;

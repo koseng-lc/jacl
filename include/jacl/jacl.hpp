@@ -17,7 +17,7 @@
 #include <jacl/system/observer.hpp>
 #include <jacl/system/continuous_observer.hpp>
 #include <jacl/system/discrete_observer.hpp>
-#include <jacl/ifd.hpp>
+#include <jacl/diagnosis/ifd.hpp>
 #include <jacl/pole_placement.hpp>
 #include <jacl/synthesis/h_inf.hpp>
 #include <jacl/plotter.hpp>

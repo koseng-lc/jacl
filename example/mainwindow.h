@@ -115,7 +115,7 @@ private:
     boost::thread cl_thread_;
     boost::mutex cl_mtx_;
     std::atomic<bool> cl_status_;
-    const double SAMPLING_PERIOD{.02};
+    const double SAMPLING_PERIOD{.01};
 
     enum ParamIndex{
         iBm, // Viscous Friction (N m s / rad)
@@ -163,7 +163,7 @@ private:
     jacl::Plotter<jacl::system::DiscreteSystem<jacl::LinearStateSpace<3,1,3> > > dsys_simo_plt_;
     jacl::Plotter<jacl::system::DiscreteObserver<jacl::LinearStateSpace<3,1,3> > > dobserver_simo_plt_;
     arma::mat din_;
-    jacl::IFD<jacl::system::DiscreteSystem<jacl::LinearStateSpace<3,1,3> > > ifd_;
+    jacl::diagnosis::IFD<jacl::system::DiscreteSystem<jacl::LinearStateSpace<3,1,3> > > ifd_;
     void setupSIMODCMotor();
     //-- Another stuff
     using GRealization =

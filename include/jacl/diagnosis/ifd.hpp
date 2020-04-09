@@ -2,21 +2,9 @@
 
 #include <jacl/system/observer.hpp>
 #include <jacl/pole_placement.hpp>
+#include <jacl/lti_common.hpp>
 
-namespace jacl{
-
-// template <typename _System>
-// class IFD;
-
-// namespace detail{
-//     template <typename _System>
-//     class BaseSystemClient{
-//         inline static auto ss(_System* _sys) -> decltype(_sys->ss_){
-//             return _sys->ss_;
-//         }
-//         friend class ::jacl::IFD<_System>;
-//     }
-// }
+namespace jacl{ namespace diagnosis {
 
 template <typename _System>
 class IFD{
@@ -32,6 +20,8 @@ public:
         std::vector<arma::mat> M_t;
         for(int i(0); i < _System::n_outputs; i++){
             arma::mat I(_System::n_states, _System::n_states, arma::fill::eye);
+            // if(C_t(0,i) == 0)
+            //     I = arma::shift(I, -1, 1);
             for(int j(0); j < _System::n_states; j++){
                 if(C_t(j,i) != 0){
                     I = arma::shift(I, -j, 1);
@@ -48,8 +38,6 @@ public:
                 }
             }
             M_.push_back(arma::trans(M_t[i]));
-            arma::mat test = desired_form.t() * M_[i];
-            // test.print("TEST : ");
             temp = sys_->A() * arma::inv(M_[i]);
             An_.emplace_back(M_[i] * temp);
             Bn_.emplace_back(M_[i] * sys_->B());
@@ -60,10 +48,17 @@ public:
                                                                    A12(An_[i]), arma::zeros(1, 1));
             arma::mat gain;
             // std::cout << "TEST" << std::endl;
-            ss.A().print("A : ");
-            ss.C().print("C : ");
+            // ss.A().print("A : ");
+            // ss.C().print("C : ");
+            // poles[i].print("Poles : ");
             jacl::pole_placement::KautskyNichols(&ss, poles[i], &gain, jacl::pole_placement::PolePlacementType::Observer);
-            gain.print("Gain : ");
+            // gain.print("Gain : ");
+            // if(jacl::common::observable(ss.A(), ss.C()))
+            //     std::cout << "SS Observable !" << std::endl;
+            // arma::cx_mat eigvec;
+            // arma::cx_vec eigval;
+            // arma::eig_gen(eigval, eigvec, ss.A() - gain*ss.C());
+            // eigval.print("EigVal : ");
             L_.emplace_back(gain);
         }        
         //-- Debugging part
@@ -109,4 +104,4 @@ private:
     _System* sys_;        
 };
 
-}
+} } // namespace jacl::diagnosis

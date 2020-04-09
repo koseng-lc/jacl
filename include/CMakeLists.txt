@@ -136,10 +136,14 @@ add_library(h_inf ${JACL_HEADER_PREFIX}/synthesis/h_inf.hpp)
 target_link_libraries(h_inf PRIVATE upper_lft are lti_common numerical_methods)
 set_target_properties(h_inf PROPERTIES LINKER_LANGUAGE CXX)
 
-#-- Instrument Fault Detection
-add_library(ifd ${JACL_HEADER_PREFIX}/ifd.hpp)
+#-- Diagnosis
+add_library(ifd ${JACL_HEADER_PREFIX}/diagnosis/ifd.hpp)
 target_link_libraries(ifd PRIVATE continuous_system discrete_system)
 set_target_properties(ifd PROPERTIES LINKER_LANGUAGE CXX)
+
+add_library(sifd ${JACL_HEADER_PREFIX}/diagnosis/sifd.hpp)
+target_link_libraries(sifd PRIVATE ifd)
+set_target_properties(sifd PROPERTIES LINKER_LANGUAGE CXX)
 
 #-- Parser
 add_library(parser ${JACL_HEADER_PREFIX}/parser.hpp)
@@ -172,6 +176,7 @@ set(JACL_LIB_LIST
     continuous_observer
     discrete_observer
     ifd
+    sifd
 )
 
 #-- JACL Libraries
