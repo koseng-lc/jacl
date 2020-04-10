@@ -1,47 +1,24 @@
 #pragma once
 
+#include <jacl/traits.hpp>
 #include <jacl/system/observer.hpp>
 #include <jacl/pole_placement.hpp>
 #include <jacl/lti_common.hpp>
 
 namespace jacl{ namespace diagnosis {
 
-template <typename _System>
+template <typename _System, std::size_t num_do = _System::n_outputs>
 class IFD{
-public:
+public:    
     IFD(_System* _sys)
-        : sys_(_sys){              
+        : sys_(_sys){     
+        z_.fill(arma::zeros<arma::vec>(_System::n_outputs, 1));
+        prev_z_.fill(arma::zeros<arma::vec>(_System::n_outputs, 1));       
     }
     ~IFD(){}
 
     auto init(std::initializer_list<arma::vec > _poles) -> void{
-        arma::mat desired_form(_System::n_outputs, 1, arma::fill::eye);
-        arma::mat C_t = arma::trans( sys_->C() );
-        std::vector<arma::mat> M_t;
-        for(int i(0); i < _System::n_outputs; i++){
-            arma::mat I(_System::n_states, _System::n_states, arma::fill::eye);
-            // if(C_t(0,i) == 0)
-            //     I = arma::shift(I, -1, 1);
-            for(int j(0); j < _System::n_states; j++){
-                if(C_t(j,i) != 0){
-                    I = arma::shift(I, -j, 1);
-                    break;
-                }
-            }
-            M_t.push_back(I);         
-        }
-        arma::mat temp;
-        for(int i(0); i < _System::n_outputs; i++){
-            for(int j(0); j < _System::n_states; j++){
-                if(C_t(j,i) != 0){
-                    M_t[i](j,0) = C_t(j,i);
-                }
-            }
-            M_.push_back(arma::trans(M_t[i]));
-            temp = sys_->A() * arma::inv(M_[i]);
-            An_.emplace_back(M_[i] * temp);
-            Bn_.emplace_back(M_[i] * sys_->B());
-        }
+        transform();        
         std::vector<arma::vec> poles(_poles);
         for(int i(0); i < _System::n_states; i++){
             jacl::LinearStateSpace<_System::n_states - 1, 1, 1> ss(A22(An_[i]), arma::zeros(_System::n_states - 1, 1),
@@ -59,25 +36,79 @@ public:
             // arma::cx_vec eigval;
             // arma::eig_gen(eigval, eigvec, ss.A() - gain*ss.C());
             // eigval.print("EigVal : ");
-            L_.emplace_back(gain);
-        }        
-        //-- Debugging part
-        // for(const auto& p:_poles)
-        //     p.print("Poles : ");
-        // for(const auto& m:M_){
-        //     m.print("M : ");
-        // }
-        // for(const auto& a:An_){
-        //     A11(a).print("A11 : ");
-        //     A12(a).print("A12 : ");
-        //     A21(a).print("A21 : ");
-        //     A22(a).print("A22 : ");
-        // }
+            L_[i] = gain;
+        }
     }
+    auto detect(const arma::vec& _in, const arma::vec& _out)
+        -> std::array<std::pair<arma::vec, bool>, _System::n_outputs>{
+        std::array<std::pair<arma::vec, bool>, _System::n_outputs> res;
+        arma::vec x_hat;
+        arma::vec y_hat;
+        arma::vec delta_y;        
+        convolve(_in, _out);
+        for(int i(0); i < res.size(); i++){
+            x_hat = arma::inv(M_[i]) * q_hat_[i];
+            y_hat = sys_->C() * x_hat + sys_->D() * _in;
+            delta_y = _out - y_hat;
+            auto err(1.);
+            for(int j(0); j < _System::n_outputs; j++){
+                if(j != i)
+                    err *= delta_y(j);
+            }
+            std::get<0>(res[i]) = x_hat;
+            std::get<1>(res[i]) = err > threshold_;
+        }
+        return res;
+    }
+protected:
+    template <typename __System = _System>
+    auto convolve()
+        -> typename std::enable_if<
+            ::jacl::traits::is_continuous_system<__System>::value, void>::type{
 
-private:
+    }
+    template <typename __System = _System>
+    auto convolve(const arma::vec& _in, const arma::vec& _out)
+        -> typename std::enable_if<
+            ::jacl::traits::is_discrete_system<__System>::value, void>::type{
+        arma::mat term1, term2, term3;
+        arma::vec yn;
+        for(int i(0); i < _System::outputs; i++){
+            term1 = A22(An_[i]) - L_[i]*A12(An_[i]);
+            term2 = A21(An_[i]) - L_[i]*A11(An_[i]);
+            term3 = B2(Bn_[i]) - L_[i]*B2(Bn_[i]);
+            yn = _out(i) - sys_->D().row(i) * _in;
+            z_[i] = term1*prev_z_[i] + term1*L_[i]*yn
+                    + term2*yn + term3*_in;
+            q_hat_[i] = arma::join_vert(yn, z_[i] + L_[i]*yn);
+        }        
+    }    
     auto transform() -> void{
-
+        arma::mat desired_form(_System::n_outputs, 1, arma::fill::eye);
+        arma::mat C_t = arma::trans( sys_->C() );
+        std::array<arma::mat, _System::n_outputs> M_t;
+        for(int i(0); i < _System::n_outputs; i++){
+            arma::mat I(_System::n_states, _System::n_states, arma::fill::eye);
+            for(int j(0); j < _System::n_states; j++){
+                if(C_t(j,i) != 0){
+                    I = arma::shift(I, -j, 1);
+                    break;
+                }
+            }
+            M_t[i] = I;  
+        }
+        arma::mat temp;
+        for(int i(0); i < _System::n_outputs; i++){
+            for(int j(0); j < _System::n_states; j++){
+                if(C_t(j,i) != 0){
+                    M_t[i](j,0) = C_t(j,i);
+                }
+            }
+            M_[i] = arma::trans(M_t[i]);
+            temp = sys_->A() * arma::inv(M_[i]);
+            An_[i] = M_[i] * temp;
+            Bn_[i] = M_[i] * sys_->B();
+        }
     }
     inline auto A11(const arma::mat& _A) -> arma::mat{
         return _A.submat(0,0,0,0);
@@ -91,16 +122,27 @@ private:
     inline auto A22(const arma::mat& _A) -> arma::mat{
         return _A.submat(1, 1, _System::n_states - 1, _System::n_states - 1);
     }
+    inline auto B1(const arma::mat& _B) -> arma::mat{
+        return _B.head_rows(1);
+    }
+    inline auto B2(const arma::mat& _B) -> arma::mat{
+        return _B.tail_rows(_System::n_states - 1);
+    }
 
-private:
+protected:
     //-- transformed A
-    std::vector<arma::mat> An_;
+    std::array<arma::mat, _System::n_outputs> An_;
     //-- transformed B
-    std::vector<arma::mat> Bn_;
+    std::array<arma::mat, _System::n_outputs> Bn_;
     //-- for transform coordinate
-    std::vector<arma::mat> M_;
+    std::array<arma::mat, _System::n_outputs> M_;
     //-- Dedicated Observer gain 
-    std::vector<arma::mat> L_;
+    std::array<arma::mat, _System::n_outputs> L_;
+    
+    std::array<arma::vec, _System::n_outputs> q_hat_;
+    std::array<arma::vec, _System::n_outputs> z_;
+    std::array<arma::vec, _System::n_outputs> prev_z_;
+    std::array<double, _System::n_outputs> threshold_;
     _System* sys_;        
 };
 
