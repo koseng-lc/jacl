@@ -24,6 +24,7 @@ MainWindow::MainWindow(QWidget *parent)
     , dsys_simo_plt_(&dsys_simo_, {1,2,3,4}, SAMPLING_PERIOD)
     , dobserver_simo_plt_(&dobserver_simo_, {1,2,3}, SAMPLING_PERIOD)
     , ifd_(&dsys_simo_)
+    , sifd_(&dsys_simo_)
     //--
     , G_(&bm, &jm, &ki, &la, &kb, &ra)
     , ref_(3, 1, arma::fill::zeros)
@@ -444,16 +445,13 @@ void MainWindow::setupWidgets(){
     command_gl_->addWidget(reset_pb_    , 0,1,1,1);
     command_gl_->addWidget(simulate_pb_ , 1,0,1,1);
     command_gl_->addWidget(set_input_pb_, 1,1,1,1);
-
     command_gl_->addItem(new QSpacerItem(0,0,QSizePolicy::Ignored,QSizePolicy::Expanding),2,2);
 
     command_gb_->setLayout(command_gl_);
     command_gb_->setTitle(tr("Command"));
 
     //-- Input
-
     input_gb_ = new QGroupBox;
-
     input_gl_ = new QGridLayout;
 
     voltage_in_label_ = new QLabel;
@@ -487,7 +485,6 @@ void MainWindow::setupWidgets(){
 
     //-- Fault
     fault_gb_ = new QGroupBox;
-
     fault_gl_ = new QGridLayout;
 
     target_label_ = new QLabel;
@@ -498,8 +495,8 @@ void MainWindow::setupWidgets(){
     target_cb_->addItem(tr("Velocity"));
     target_cb_->addItem(tr("Current"));
 
-    details_pb_ = new QPushButton;
-    details_pb_->setText(tr("Details"));
+    fault_pb_ = new QPushButton;
+    fault_pb_->setText(tr("Fault !"));
 
     bias_label_ = new QLabel;
     bias_label_->setText(tr("Bias : "));
@@ -511,9 +508,17 @@ void MainWindow::setupWidgets(){
     scale_label_ = new QLabel;
     scale_label_->setText(tr("Scale : "));
     scale_dsb_ =  new QDoubleSpinBox;
-    // Settings DSB params
-    scale_dsb_->setValue(.0);
-    scale_dial_ = new QDial;
+    // Settings DSB params    
+    scale_dsb_->setMaximum(2.);
+    scale_dsb_->setMinimum(.0);
+    scale_dsb_->setValue(1.);
+    scale_dsb_->setDecimals(3);
+    scale_dsb_->setSingleStep(1e-3);
+    scale_dial_ = new QDial;    
+    scale_dial_->setMaximum(2000);
+    scale_dial_->setMinimum(0);
+    scale_dial_->setValue(1000);
+    scale_dial_->setSingleStep(1);
 
     dead_zone_label_ = new QLabel;
     dead_zone_label_->setText(tr("Dead Zone : "));
@@ -524,7 +529,7 @@ void MainWindow::setupWidgets(){
 
     fault_gl_->addWidget(target_label_,    0,0,1,1);
     fault_gl_->addWidget(target_cb_,       0,1,1,1);
-    fault_gl_->addWidget(details_pb_,      0,2,1,1);
+    fault_gl_->addWidget(fault_pb_,      0,2,1,1);
     fault_gl_->addWidget(bias_label_,      1,0,1,1);
     fault_gl_->addWidget(bias_dsb_,        1,1,1,1);
     fault_gl_->addWidget(bias_dial_,       1,2,1,1);
@@ -541,13 +546,11 @@ void MainWindow::setupWidgets(){
 
     //-- Watermark
     watermark_widget_ = new QWidget;
-
     watermark_gl_ = new QGridLayout;
 
     QImageReader image_reader("../example/gui/Logo_Universitas_Gadjah_Mada.png");
     logo_image_ = new QImage;
     *logo_image_ = image_reader.read().scaled(QSize(200,200), Qt::KeepAspectRatio);
-
     logo_image_label_ = new QLabel;
     logo_image_label_->setPixmap(QPixmap::fromImage(*logo_image_));
 
@@ -562,15 +565,11 @@ void MainWindow::setupWidgets(){
     watermark_gl_->setAlignment(logo_image_label_, Qt::AlignCenter);
     watermark_gl_->addWidget(title_label_,      2,0,1,1);
     watermark_gl_->addItem(new QSpacerItem(0,0,QSizePolicy::Expanding,QSizePolicy::Expanding), 3,1);
-
     watermark_widget_->setLayout(watermark_gl_);
 
     //-- Main
-
     main_widget_ = new QWidget;
-
     main_layout_ = new QGridLayout;
-
     main_layout_->addWidget(params_gb_,        0,0,2,1);
     main_layout_->addWidget(input_gb_,         0,1,1,1);
     main_layout_->addWidget(command_gb_,       1,1,1,1);
@@ -579,7 +578,6 @@ void MainWindow::setupWidgets(){
 
 //    main_layout_->addItem(new QSpacerItem(0,0,QSizePolicy::Expanding,QSizePolicy::Expanding),1,2);
     main_layout_->addItem(new QSpacerItem(0,0,QSizePolicy::Expanding,QSizePolicy::Expanding),3,2);
-
     main_widget_->setLayout(main_layout_);
 
     this->setCentralWidget(main_widget_);
@@ -591,7 +589,6 @@ void MainWindow::setupWidgets(){
 
 void MainWindow::setupControllerDialog(){
     controller_dialog_ = new jacl::ControllerDialog(this);
-
 }
 
 void MainWindow::setupMenus(){
@@ -603,7 +600,6 @@ void MainWindow::setupMenus(){
 }
 
 void MainWindow::setupActions(){
-
     connect(perturb_pb_, SIGNAL(clicked()), this, SLOT(perturbAct()));
     connect(reset_pb_, SIGNAL(clicked()), this, SLOT(resetAct()));
     connect(simulate_pb_, SIGNAL(clicked()), this, SLOT(simulateAct()));
@@ -677,7 +673,7 @@ void MainWindow::biasDialConv(double _val){
 }
 
 void MainWindow::scaleDialConv(double _val){
-    scale_dial_->setValue((int)_val);
+    scale_dial_->setValue(_val * 1000);
 }
 
 void MainWindow::deadZoneDialConv(double _val){
@@ -689,7 +685,7 @@ void MainWindow::biasDSBConv(int _val){
 }
 
 void MainWindow::scaleDSBConv(int _val){
-    scale_dsb_->setValue((double)_val);
+    scale_dsb_->setValue((double)_val * .001);
 }
 
 void MainWindow::deadZoneDSBConv(int _val){
@@ -708,6 +704,14 @@ void MainWindow::refAct(){
 
 void MainWindow::modeAct(int _val){
     control_mode_ = _val;
+}
+
+void MainWindow::makeFault(arma::vec* _out){
+    int target_idx = target_cb_->currentIndex();
+    (*_out)(target_idx) += bias_dsb_->value();
+    if(std::fabs((*_out)(target_idx)) < dead_zone_dsb_->value())
+        (*_out)(target_idx) = 0;
+    (*_out)(target_idx) *= scale_dsb_->value();
 }
 
 void MainWindow::setupSIMODCMotor(){
@@ -916,14 +920,15 @@ void MainWindow::closedLoopProcess(){
     // arma::mat out(3,1,arma::fill::zeros),in(2,1,arma::fill::zeros);
     // arma::mat err(out),est(out);
     //-- Discrete
-    arma::mat dout(3,1,arma::fill::zeros),din(1,1,arma::fill::zeros);
-    arma::mat derr(dout),dest(dout);
+    arma::vec dout(3,1,arma::fill::zeros),din(1,1,arma::fill::zeros);
+    arma::vec derr(dout),dest(dout);
     din_ = din;
     control_mode_ = jacl::traits::toUType(jacl::ControllerDialog::ControlMode::Velocity);
 //    arma::mat last_err(err);
 //    arma::mat diff(err);
 //    auto Kp(10.), Kd(1.);
     ifd_.init({{-.76,-.65}, {-.63,-.51}, {-.86,-.72}});
+    sifd_.init({{-.65,-.76}});
     while(cl_status_){
         //-- PD Control
        /*err(1) = ref_(1) - out(1);
@@ -955,8 +960,21 @@ void MainWindow::closedLoopProcess(){
         //-- Continuous
         // out = csys_.convolve(in);
         // est = cobserver_.convolve(in, out);
+
+        //-- Discrete
         dout = dsys_simo_.convolve(din_);
-        dest = dobserver_simo_.convolve(din_, dout);
+        // dest = dobserver_simo_.convolve(din_, dout);
+        arma::vec manip_out(dout);
+        makeFault(&manip_out);
+        std::array<std::pair<arma::vec, bool>, 3> diag_pack = sifd_.detect(din_, manip_out);
+        // manip_out.print("Manip. Out : ");
+        // dout.print("Output : ");
+        // std::get<0>(diag_pack[0]).print("Est. Pos : ");
+        // std::get<0>(diag_pack[1]).print("Est. Vel : ");
+        // std::get<0>(diag_pack[2]).print("Est. Curr : ");
+        // std::cout << "Sensor 1 status : " << std::boolalpha << std::get<1>(diag_pack[0]) << std::endl;
+        // std::cout << "Sensor 2 status : " << std::boolalpha << std::get<1>(diag_pack[1]) << std::endl;
+        // std::cout << "Sensor 3 status : " << std::boolalpha << std::get<1>(diag_pack[2]) << std::endl;
 
 //        err.submat(0,0,0,0).print("Err : ");
 //        in.submat(0,0,0,0).print("In : ");

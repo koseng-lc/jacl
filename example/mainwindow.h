@@ -79,7 +79,7 @@ private:
     QGridLayout* fault_gl_;
     QLabel* target_label_;
     QComboBox* target_cb_;
-    QPushButton* details_pb_;
+    QPushButton* fault_pb_;
     QDial* bias_dial_;
     QDoubleSpinBox* bias_dsb_;
     QLabel* bias_label_;
@@ -162,8 +162,10 @@ private:
     jacl::system::DiscreteObserver<jacl::LinearStateSpace<3,1,3> > dobserver_simo_;
     jacl::Plotter<jacl::system::DiscreteSystem<jacl::LinearStateSpace<3,1,3> > > dsys_simo_plt_;
     jacl::Plotter<jacl::system::DiscreteObserver<jacl::LinearStateSpace<3,1,3> > > dobserver_simo_plt_;
-    arma::mat din_;
+    arma::mat din_;    
     jacl::diagnosis::IFD<jacl::system::DiscreteSystem<jacl::LinearStateSpace<3,1,3> > > ifd_;
+    jacl::diagnosis::SIFD<jacl::system::DiscreteSystem<jacl::LinearStateSpace<3,1,3> >, 0> sifd_;
+    void makeFault(arma::vec* _out);
     void setupSIMODCMotor();
     //-- Another stuff
     using GRealization =

@@ -64,13 +64,5 @@
         "typeindex": "cpp",
         "typeinfo": "cpp",
         "*.ipp": "cpp"
-    },
-    "editor.quickSuggestions": {
-        "other": true,
-        "comments": false,
-        "strings": false
-      },
-    "editor.quickSuggestionsDelay": 10,
-    "C_Cpp.errorSquiggles": "Disabled",
-    "C_Cpp.intelliSenseCacheSize": 0 
+    }
 }

@@ -43,7 +43,6 @@ class Plotter:
         self.running = False
     
     def setData(self, _signal_data, _time_data):
-        
         assert _signal_data.shape == (self.max_data, self.n_signals)
         assert _time_data.shape == (self.max_data, )
 
@@ -102,25 +101,20 @@ class Plotter:
         n_data = 0
 
         while self.running:
-
             n_data += 1
 
             total_signal = np.array([np.sum(np.abs(self.signal_data[:,i])) for i in range(0, self.n_signals)])
             signal_avg = total_signal / min(n_data, self.max_data)
 
             for i in range(0, self.n_signals):
-
                 # Replace data
                 plot[i].set_ydata(self.signal_data[:,i])
                 plot[i].set_xdata(self.time_data)
-
                 # Draw into the figure
                 sp[i].draw_artist(sp[i].patch)
                 sp[i].draw_artist(plot[i])
-
                 # To maintain sight of signal in plotter
                 sp[i].set_xlim(left = max(0, self.time_data[-1] - 0.75 * self.view_interval), right = max(self.view_interval, self.time_data[-1] + 0.25 * self.view_interval))
-
                 # To adjust the signal interval
                 sp[i].set_ylim(bottom = min(-0.001, -signal_avg[i] * 1.75), top = max(0.001, signal_avg[i] * 1.75))
 
