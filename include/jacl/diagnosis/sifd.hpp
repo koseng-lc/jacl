@@ -1,14 +1,15 @@
 #pragma once
 
 #include <jacl/diagnosis/ifd.hpp>
+#include <armadillo>
 
 namespace jacl{ namespace diagnosis {
 
 template <typename _System, std::size_t chosen_state>
 class SIFD:public IFD<_System, 1>{
 public:
-    SIFD(_System* _sys)
-        : IFD<_System, 1>(_sys){
+    SIFD(_System* _sys, std::initializer_list<double> _threshold)
+        : IFD<_System, 1>(_sys, _threshold){
 
     }
     ~SIFD(){}
@@ -22,15 +23,19 @@ public:
         jacl::pole_placement::KautskyNichols(&ss, poles.front(), &gain, jacl::pole_placement::PolePlacementType::Observer);
         ss.A().print("A : ");
         ss.C().print("C : ");
-        gain.print("Gain : ");
+        gain.print("Kautsky-Nichols gain : ");
         jacl::pole_placement::BassGura(&ss, poles.front(), &gain);
-        gain.print("Bass-Gura gain : ");
-        // if(jacl::common::observable(ss.A(), ss.C()))
-        //     std::cout << "SS Observable !" << std::endl;
+        gain.print("Bass-Gura gain : ");   
+        // arma::mat gain_from_others;
+        // gain_from_others << -9395.4 << arma::endr << 4567.8 << arma::endr;
+        // gain = gain_from_others;
+        // gain.print("Why gain : ");   
         // arma::cx_mat eigvec;
         // arma::cx_vec eigval;
-        // arma::eig_gen(eigval, eigvec, ss.A() - gain*ss.C());
+        // arma::eig_gen(eigval, eigvec, ss.A());
         // eigval.print("EigVal : ");
+        // if(jacl::common::observable(ss.A(), ss.C()))
+        //     std::cout << "SS Observable !" << std::endl;        
         this->L_.front() = gain;
     }
     auto detect(const arma::vec& _in, const arma::vec& _out)

@@ -23,8 +23,8 @@ MainWindow::MainWindow(QWidget *parent)
     , dobserver_simo_(&dsimo_, arma::zeros<arma::mat>(3,3))
     , dsys_simo_plt_(&dsys_simo_, {1,2,3,4}, SAMPLING_PERIOD)
     , dobserver_simo_plt_(&dobserver_simo_, {1,2,3}, SAMPLING_PERIOD)
-    , ifd_(&dsys_simo_)
-    , sifd_(&dsys_simo_)
+    , ifd_(&dsys_simo_, {10.,9.,8.})
+    , sifd_(&dsys_simo_, {10.,9.,8.})
     //--
     , G_(&bm, &jm, &ki, &la, &kb, &ra)
     , ref_(3, 1, arma::fill::zeros)
@@ -928,7 +928,7 @@ void MainWindow::closedLoopProcess(){
 //    arma::mat diff(err);
 //    auto Kp(10.), Kd(1.);
     ifd_.init({{-.76,-.65}, {-.63,-.51}, {-.86,-.72}});
-    sifd_.init({{-.65,-.76}});
+    sifd_.init({{-.025,-.055}});
     // arma::mat gain;
     // arma::mat A{{.1,.7},{.39,.5}};
     // arma::mat C{1.,.0};
@@ -970,14 +970,14 @@ void MainWindow::closedLoopProcess(){
         arma::vec manip_out(dout);
         makeFault(&manip_out);
         std::array<std::pair<arma::vec, bool>, 3> diag_pack = sifd_.detect(din_, manip_out);
-        // manip_out.print("Manip. Out : ");
-        // dout.print("Output : ");
-        // std::get<0>(diag_pack[0]).print("Est. Pos : ");
-        // std::get<0>(diag_pack[1]).print("Est. Vel : ");
-        // std::get<0>(diag_pack[2]).print("Est. Curr : ");
-        // std::cout << "Sensor 1 status : " << std::boolalpha << std::get<1>(diag_pack[0]) << std::endl;
-        // std::cout << "Sensor 2 status : " << std::boolalpha << std::get<1>(diag_pack[1]) << std::endl;
-        // std::cout << "Sensor 3 status : " << std::boolalpha << std::get<1>(diag_pack[2]) << std::endl;
+        manip_out.print("Manip. Out : ");
+        dout.print("Output : ");
+        std::get<0>(diag_pack[0]).print("Est. Pos : ");
+        std::get<0>(diag_pack[1]).print("Est. Vel : ");
+        std::get<0>(diag_pack[2]).print("Est. Curr : ");
+        std::cout << "Sensor 1 status : " << std::boolalpha << std::get<1>(diag_pack[0]) << std::endl;
+        std::cout << "Sensor 2 status : " << std::boolalpha << std::get<1>(diag_pack[1]) << std::endl;
+        std::cout << "Sensor 3 status : " << std::boolalpha << std::get<1>(diag_pack[2]) << std::endl;
 
 //        err.submat(0,0,0,0).print("Err : ");
 //        in.submat(0,0,0,0).print("In : ");

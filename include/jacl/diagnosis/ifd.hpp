@@ -10,11 +10,14 @@ namespace jacl{ namespace diagnosis {
 template <typename _System, std::size_t num_do = _System::n_outputs>
 class IFD{
 public:    
-    IFD(_System* _sys)
+    IFD(_System* _sys, std::initializer_list<double> _threshold)
         : sys_(_sys){     
         z_.fill(arma::zeros<arma::vec>(_System::n_outputs - 1, 1));
-        prev_z_.fill(arma::zeros<arma::vec>(_System::n_outputs - 1, 1));  
-        threshold_.fill(std::numeric_limits<double>::max());     
+        prev_z_.fill(arma::zeros<arma::vec>(_System::n_outputs - 1, 1));
+        auto _th_it = _threshold.begin();
+        for(int i(0); i < threshold_.size() && _th_it != _threshold.end(); i++){
+            threshold_[i] = *_th_it++;
+        }           
     }
     ~IFD(){}
 
@@ -108,7 +111,7 @@ protected:
         }            
     } 
     auto transform(continuous_tag) -> void{
-        arma::mat desired_form(_System::n_outputs, 1, arma::fill::eye);
+        // arma::mat desired_form(_System::n_outputs, 1, arma::fill::eye);
         arma::mat C_t = arma::trans( sys_->C() );
         std::array<arma::mat, _System::n_outputs> M_t;
         for(int i(0); i < _System::n_outputs; i++){
@@ -135,24 +138,22 @@ protected:
         }
     }
     auto transform(std::size_t _idx, discrete_tag) -> void{
-        arma::mat desired_form(_System::n_outputs, 1, arma::fill::eye);
+        // arma::mat desired_form(_System::n_outputs, 1, arma::fill::eye);
         arma::mat C_t = arma::trans( sys_->C() );
-        std::array<arma::mat, num_do> M_t;
-        arma::mat I(_System::n_states, _System::n_states, arma::fill::eye);
+        arma::mat M_t(_System::n_states, _System::n_states, arma::fill::eye);
         for(int j(0); j < _System::n_states; j++){
-            if(C_t(j,_idx) != 0){
-                I = arma::shift(I, -j, 1);
+            if(C_t(j, _idx) != 0){
+                M_t = arma::shift(M_t, -j, 1);
                 break;
             }
         }
-        M_t.front() = I;  
         arma::mat temp;
         for(int j(0); j < _System::n_states; j++){
             if(C_t(j,_idx) != 0){
-                M_t.front()(j,0) = C_t(j,_idx);
+                M_t(j,0) = C_t(j,_idx);
             }
         }
-        M_.front() = arma::trans(M_t.front());
+        M_.front() = arma::trans(M_t);
         temp = sys_->A() * arma::inv(M_.front());
         An_.front() = M_.front() * temp;
         Bn_.front() = M_.front() * sys_->B();
