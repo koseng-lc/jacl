@@ -95,7 +95,7 @@ static auto hasUncontrollableModeInImAxis(const arma::mat& _A, const arma::mat& 
     return ok;
 }
 
-static auto observable(const arma::mat& _A, const arma::mat& _C) -> bool{
+static auto observable(const arma::mat& _A, const arma::mat& _C, arma::mat* _O = nullptr) -> bool{
     //-- must be square matrix
     assert(_A.n_rows == _A.n_cols);
     //-- must be compatible with A
@@ -110,7 +110,8 @@ static auto observable(const arma::mat& _A, const arma::mat& _C) -> bool{
         int last = i * output_size - 1;
         obsv = join_cols(obsv, obsv.rows(first, last) * _A);
     }
-
+    if(_O != nullptr)
+        *_O = obsv;
     return arma::rank(obsv) == system_order;
 }
 

@@ -929,6 +929,9 @@ void MainWindow::closedLoopProcess(){
 //    auto Kp(10.), Kd(1.);
     ifd_.init({{-.76,-.65}, {-.63,-.51}, {-.86,-.72}});
     sifd_.init({{-.65,-.76}});
+    // arma::mat gain;
+    // arma::mat A{{.1,.7},{.39,.5}};
+    // arma::mat C{1.,.0};
     while(cl_status_){
         //-- PD Control
        /*err(1) = ref_(1) - out(1);

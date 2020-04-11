@@ -23,6 +23,8 @@ public:
         ss.A().print("A : ");
         ss.C().print("C : ");
         gain.print("Gain : ");
+        jacl::pole_placement::BassGura(&ss, poles.front(), &gain);
+        gain.print("Bass-Gura gain : ");
         // if(jacl::common::observable(ss.A(), ss.C()))
         //     std::cout << "SS Observable !" << std::endl;
         // arma::cx_mat eigvec;

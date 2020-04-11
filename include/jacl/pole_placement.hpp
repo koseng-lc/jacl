@@ -12,8 +12,30 @@
 #include <boost/thread.hpp>
 
 #include <jacl/linear_state_space.hpp>
+#include <jacl/lti_common.hpp>
 
 namespace jacl{ namespace pole_placement{
+
+namespace detail{
+    template <typename T>
+    static auto VietaFormula(const arma::Col<T> _roots, arma::Col<T>* _coeff) -> void{
+        *_coeff = arma::Col<T>(_roots.n_rows + 1, _roots.n_cols, arma::fill::zeros);
+        (*_coeff)(0) = 1. + .0i;
+        (*_coeff)(1) = _roots(0);
+        std::complex<double> old_neighbor_val((*_coeff)(0));
+        std::complex<double> temp(.0+.0i);
+        for(int j(1); j < (_coeff->n_rows - 1); j++){
+            for(int k(1); k <= j; k++){
+                temp = (*_coeff)(k);
+                (*_coeff)(k) = std::pow(-1, k)*(temp + old_neighbor_val*_roots(j));
+                old_neighbor_val = temp;
+            }
+        }
+        (*_coeff)(_coeff->n_rows - 1) = 1.;
+        for(const auto& r:_roots)
+            (*_coeff)(_coeff->n_rows - 1) *= r;
+    }
+}
 
 enum class PolePlacementType{
     Controller,
@@ -148,6 +170,32 @@ static auto KautskyNichols(_StateSpace *_ss, const arma::mat& _poles, arma::mat*
     *_K = -1 * arma::inv(Z) * temp5;
     if(_type == PolePlacementType::Observer)
         *_K = arma::trans(*_K);
+}
+
+template <typename _StateSpace>
+static auto BassGura(_StateSpace* _ss, const arma::vec& _poles, arma::mat* _gain) -> void{
+    const arma::mat& A = _ss->A();
+    const arma::mat& C = _ss->C();
+    arma::cx_vec eigval;
+    arma::cx_mat eigvec;
+    arma::eig_gen(eigval, eigvec, A);
+    arma::cx_vec a, a_hat;    
+    detail::VietaFormula(eigval, &a);
+    detail::VietaFormula(arma::conv_to<arma::cx_vec>::from(_poles), &a_hat);
+    arma::vec a_real = arma::real(a); a_real.shed_row(0);
+    arma::vec a_hat_real = arma::real(a_hat); a_hat_real.shed_row(0);
+    arma::mat T(a_real.n_rows, a_real.n_rows, arma::fill::eye);
+    for(int i(0),j(1); j < T.n_rows; j++,i++){
+        T.submat(j,i,T.n_rows-1,i) = a_real.head_rows(T.n_rows - j);
+    }
+    arma::mat O;
+    bool ok = common::observable(A,C,&O);
+    if(!ok)
+        std::cerr << "The system was not observable" << std::endl;
+    arma::mat term1, term2;
+    term1 = arma::inv(T*O);
+    term2 = a_hat_real - a_real;
+    *_gain = term1 * term2;  
 }
 
 } } // namespace jacl::pole_placement
