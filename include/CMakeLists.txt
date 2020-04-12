@@ -2,7 +2,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(jacl_lib)
 
-add_compile_options(-std=c++14)
+add_compile_options(-std=c++17)
 
 find_package(PythonLibs REQUIRED)
 find_package(Boost REQUIRED COMPONENTS

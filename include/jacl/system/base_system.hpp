@@ -4,14 +4,20 @@
 #include <jacl/linear_state_space.hpp>
 #include <jacl/nonlinear_state_space.hpp>
 
-namespace jacl{ namespace system{
+namespace jacl{
+
+namespace diagnosis{ namespace detail{
+    template <typename _System>
+    class BaseSystemClient;
+} } 
+
+namespace system{
 
 template <class _StateSpace>
 class BaseSystem;
 
 namespace detail {
-
-template<class _StateSpace>
+    template<class _StateSpace>
     class NonLinearStateSpaceClient{
     public:
         inline static auto setSig(_StateSpace* _ss, const arma::vec& _sig) -> void{
@@ -36,8 +42,10 @@ template<class _StateSpace>
             return out;
         }
         friend class BaseSystem<_StateSpace>;
-    };
+    };    
 } // namespace detail
+
+
 
 template <class _StateSpace>
 class BaseSystem:public pattern::Observer{
@@ -45,6 +53,7 @@ public:
     static constexpr std::size_t n_states{_StateSpace::n_states};
     static constexpr std::size_t n_inputs{_StateSpace::n_inputs};
     static constexpr std::size_t n_outputs{_StateSpace::n_outputs};
+    using StateSpace = _StateSpace;
 
     BaseSystem(_StateSpace* _ss, double _time_step = 1e-4)
         : pattern::Observer(_ss)
@@ -74,7 +83,7 @@ public:
     auto B() -> arma::mat { return ss_->B(); }
     auto C() -> arma::mat { return ss_->C(); }
     auto D() -> arma::mat { return ss_->D(); }
-    
+    _StateSpace* ss_; //-- temporary public
 protected:
     virtual auto setIn(const arma::vec& _in) -> void = 0;
     virtual auto dstate() -> arma::vec = 0;
@@ -92,7 +101,9 @@ protected:
     arma::vec prev_in_;
     arma::vec out_;
     double dt_;
-    _StateSpace* ss_;
+    
+private:
+    friend class ::jacl::diagnosis::detail::BaseSystemClient<BaseSystem>;
 };
 
 } } // namespace jacl::system

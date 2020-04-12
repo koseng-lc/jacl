@@ -63,6 +63,10 @@
         "cinttypes": "cpp",
         "typeindex": "cpp",
         "typeinfo": "cpp",
-        "*.ipp": "cpp"
+        "*.ipp": "cpp",
+        "core": "cpp",
+        "geometry": "cpp",
+        "lu": "cpp",
+        "*.txx": "cpp"
     }
 }

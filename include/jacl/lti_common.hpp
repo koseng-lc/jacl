@@ -172,6 +172,14 @@ static auto hasUnobservableModeInImAxis(const arma::mat& _A, const arma::mat& _C
 }
 
 template <typename _StateSpace>
+static auto poles(const _StateSpace& _ss) -> arma::cx_vec{
+    arma::cx_vec p;
+    arma::cx_mat eigvec;
+    arma::eig_gen(p, eigvec, _ss.A());
+    return p;
+}
+
+template <typename _StateSpace>
 static auto discretize(const _StateSpace& _ss, double _sampling_time) -> StateSpacePack{
     arma::mat aug = arma::join_cols(arma::join_rows(_ss.A(), _ss.B()),
                                     arma::zeros(_StateSpace::n_inputs, _StateSpace::n_states + _StateSpace::n_inputs));

@@ -928,10 +928,11 @@ void MainWindow::closedLoopProcess(){
 //    arma::mat diff(err);
 //    auto Kp(10.), Kd(1.);
     ifd_.init({{-.76,-.65}, {-.63,-.51}, {-.86,-.72}});
-    sifd_.init({{-.025,-.055}});
-    // arma::mat gain;
-    // arma::mat A{{.1,.7},{.39,.5}};
-    // arma::mat C{1.,.0};
+    sifd_.init({{-.25,-.055}});
+    arma::cx_vec p = jacl::common::poles(dsimo_);    
+    p.print("Discrete DC motor poles : ");
+    p = jacl::common::poles(simo_);
+    p.print("Continuous DC motor poles : ");
     while(cl_status_){
         //-- PD Control
        /*err(1) = ref_(1) - out(1);
@@ -970,14 +971,14 @@ void MainWindow::closedLoopProcess(){
         arma::vec manip_out(dout);
         makeFault(&manip_out);
         std::array<std::pair<arma::vec, bool>, 3> diag_pack = sifd_.detect(din_, manip_out);
-        manip_out.print("Manip. Out : ");
-        dout.print("Output : ");
-        std::get<0>(diag_pack[0]).print("Est. Pos : ");
-        std::get<0>(diag_pack[1]).print("Est. Vel : ");
-        std::get<0>(diag_pack[2]).print("Est. Curr : ");
-        std::cout << "Sensor 1 status : " << std::boolalpha << std::get<1>(diag_pack[0]) << std::endl;
-        std::cout << "Sensor 2 status : " << std::boolalpha << std::get<1>(diag_pack[1]) << std::endl;
-        std::cout << "Sensor 3 status : " << std::boolalpha << std::get<1>(diag_pack[2]) << std::endl;
+        // manip_out.print("Manip. Out : ");
+        // dout.print("Output : ");
+        // std::get<0>(diag_pack[0]).print("Est. Pos : ");
+        // std::get<0>(diag_pack[1]).print("Est. Vel : ");
+        // std::get<0>(diag_pack[2]).print("Est. Curr : ");
+        // std::cout << "Sensor 1 status : " << std::boolalpha << std::get<1>(diag_pack[0]) << std::endl;
+        // std::cout << "Sensor 2 status : " << std::boolalpha << std::get<1>(diag_pack[1]) << std::endl;
+        // std::cout << "Sensor 3 status : " << std::boolalpha << std::get<1>(diag_pack[2]) << std::endl;
 
 //        err.submat(0,0,0,0).print("Err : ");
 //        in.submat(0,0,0,0).print("In : ");
