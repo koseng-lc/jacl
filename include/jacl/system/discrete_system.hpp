@@ -27,7 +27,7 @@ protected:
         return term1 + (this->ss_->D() * this->in_);
     }
     auto updateVar() -> void override{
-
+        
     }
 };
 

@@ -87,8 +87,7 @@ private:
     auto param(int _index) -> decltype(std::declval<PhysicalParameter>().perturbed)&{
         return params_[_index]->perturbed;
     } 
-
-    friend class ::jacl::system::detail::NonLinearStateSpaceClient<NonLinearStateSpace>;
+    
 public:
     inline auto operator () (int _index) const -> double const&{        
         return _index < (n_states + n_inputs) ?
@@ -114,6 +113,9 @@ private:
     Formulas output_fn_;
     std::vector<double> sig_;
     std::vector<PhysicalParameter* > params_;
+    
+private:
+    friend class ::jacl::system::detail::NonLinearStateSpaceClient<NonLinearStateSpace>;
 
 };
 

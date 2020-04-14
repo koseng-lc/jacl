@@ -740,7 +740,6 @@ void MainWindow::setupSIMODCMotor(){
             JC(simo_, .0),
             JC(simo_, .0)
         };
-
         simo_.setA(fA);
         simo_.setB(fB);
         simo_.setC(fC);
@@ -748,17 +747,21 @@ void MainWindow::setupSIMODCMotor(){
     }
     jacl::parser::saveStateSpace(simo_, "motor_dc_simo.jacl");
     jacl::common::StateSpacePack dsimo = jacl::common::discretize(simo_, SAMPLING_PERIOD);
-    dsimo_.setA(std::get<0>(dsimo)); dsimo_.setB(std::get<1>(dsimo));
+    std::cout << "TEST1" << std::endl;
+    dsimo_.setA(std::get<0>(dsimo)); std::cout << "TEST2" << std::endl; dsimo_.setB(std::get<1>(dsimo));
     dsimo_.setC(std::get<2>(dsimo)); dsimo_.setD(std::get<3>(dsimo));
     dsimo_.A().print("Ad : "); dsimo_.B().print("Bd : ");
     dsimo_.C().print("Cd : "); dsimo_.D().print("Dd : ");
+
     arma::mat dobsv_gain;
     arma::mat dpoles{-0.8,-0.85,0.83};
     jacl::pole_placement::KautskyNichols(&dsimo_, dpoles, &dobsv_gain, jacl::pole_placement::PolePlacementType::Observer);
+
     dobserver_simo_.setGain(dobsv_gain.t());
     dobsv_gain.print("\nDiscrete Observer Gain : ");
     jacl::parser::saveGain(dobsv_gain, "discrete_observer_gain.jacl");
 //    jacl::parser::readGain(&obsv_gain, "discrete_observer_gain.jacl");
+
     dsys_simo_plt_.init();
     dsys_simo_plt_.setTitle("SIMO DC motor");
     dsys_simo_plt_.setDelay() = SAMPLING_PERIOD;
@@ -927,8 +930,8 @@ void MainWindow::closedLoopProcess(){
 //    arma::mat last_err(err);
 //    arma::mat diff(err);
 //    auto Kp(10.), Kd(1.);
-    ifd_.init({{-.76,-.65}, {-.63,-.51}, {-.86,-.72}});
-    sifd_.init({{-.25,-.055}});
+    // ifd_.init({{-.76,-.65}, {-.63,-.51}, {-.86,-.72}});
+    sifd_.init({{-.25,-.055}, {-.63,-.51}, {-.86,-.72}});
     arma::cx_vec p = jacl::common::poles(dsimo_);    
     p.print("Discrete DC motor poles : ");
     p = jacl::common::poles(simo_);

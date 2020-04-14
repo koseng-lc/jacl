@@ -21,7 +21,9 @@ public:
         -> std::array<std::pair<arma::vec, bool>, _System::n_outputs> override{        
         std::array<std::pair<arma::vec, bool>, _System::n_outputs> res;
         std::vector<arma::vec> y_hat;
-        IFD<_System>::template getEst<_System::n_outputs-1, typename IFD<_System>::DOS>::get(&this->dos_, _in, _out, &y_hat);        
+        std::cout << "MASUK" << std::endl;
+        IFD<_System>::template getEst<_System::n_outputs-1, typename IFD<_System>::DOS>::get(&this->dos_, _in, _out, &y_hat);  
+        std::cout << "KELUAR" << std::endl;      
         arma::vec delta_y( _out - y_hat[CHOSEN_STATE] );
         bool chosen_state_status(true);
         for(int i(0); i < res.size(); i++){

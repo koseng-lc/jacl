@@ -10,7 +10,7 @@ class Subject{
 public:
     Subject(){}
     ~Subject(){}
-    auto attach(Observer* _c) -> void{
+    auto attach(Observer* _c) -> void{        
         observer_.push_back(_c);
     }
     inline auto notify() -> void;
@@ -23,19 +23,20 @@ class Observer{
 public:
     Observer(Subject* _s)
         : s_(_s){
-        s_->attach(this);
+        if(s_)
+            s_->attach(this);
     }
     ~Observer(){}
-    virtual auto update() -> void = 0;
-
+    virtual auto update() -> void = 0;    
 protected:
     Subject* s_;
 };
 
 auto Subject::notify() -> void{
     if(observer_.size()){
+        std::cout << "Observer size : " << observer_.size() << std::endl;
         for(const auto& o:observer_)
-        o->update();
+            o->update();
     }        
 }
 
