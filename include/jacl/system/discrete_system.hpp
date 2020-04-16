@@ -10,7 +10,9 @@ public:
     DiscreteSystem(_StateSpace* _ss, double _time_step = 1e-4)
         : BaseSystem<_StateSpace>(_ss, _time_step){}
     ~DiscreteSystem(){}
-
+    auto samplingPeriod() -> double{
+        return this->dt_;
+    }
 protected:    
     auto setIn(const arma::vec& _in) -> void override{
         this->in_ = _in;

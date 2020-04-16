@@ -17,6 +17,7 @@
 #include <jacl/system/observer.hpp>
 #include <jacl/system/continuous_observer.hpp>
 #include <jacl/system/discrete_observer.hpp>
+#include <jacl/py_stuff.hpp>
 #include <jacl/diagnosis/ifd.hpp>
 #include <jacl/diagnosis/sifd.hpp>
 #include <jacl/pole_placement.hpp>

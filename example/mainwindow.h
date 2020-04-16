@@ -32,7 +32,7 @@ class MainWindow;
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
-
+    jacl::py_stuff::PyEmbedHandler py_handler_;
 public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
@@ -46,7 +46,6 @@ private:
     double angularSpeed2Voltage(double _speed, double _torque);
 private:
     //-- GUI stuff
-
     Ui::MainWindow *ui;
 
     QWidget* main_widget_;
@@ -108,7 +107,7 @@ private:
     QGridLayout* ctrl_gl_;
     QGroupBox* ctrl_in_gb_;    
 
-private:
+private:    
     //-- Control stuff
 
     //-- Closed-loop process

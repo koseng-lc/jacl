@@ -34,7 +34,6 @@ public:
 
     ~Hinf();
 
-    auto init() -> void;
     auto solve() -> ::jacl::common::StateSpacePack;
 
     template <typename SS1, typename SS2>
@@ -58,11 +57,12 @@ private:
     auto checkCondition4() -> bool;
     auto checkAllCondition() -> bool;
 
-    inline auto toCx(const arma::mat& _in) const -> arma::cx_mat{
+    inline auto toCx(const arma::mat& _in) const
+        -> decltype(arma::cx_mat(_in, arma::zeros<arma::mat>( arma::size(_in) ))){
         return arma::cx_mat(_in, arma::zeros<arma::mat>( arma::size(_in) ));
     }
 
-    inline auto toReal(const arma::cx_mat& _in) const -> arma::mat{
+    inline auto toReal(const arma::cx_mat& _in) const -> decltype(arma::real(_in)){
         return arma::real(_in);
     }
 
@@ -119,7 +119,7 @@ private:
     static constexpr auto INPUT_SIZE{_StateSpace::n_inputs - perturbation_size};
     static constexpr auto OUTPUT_SIZE{_StateSpace::n_outputs - performance_size};
 
-    LowerLFT<_StateSpace,
+    lft::LowerLFT<_StateSpace,
              performance_size,
              perturbation_size,
              OUTPUT_SIZE,
@@ -142,15 +142,6 @@ Hinf<_StateSpace,
     performance_size,
     perturbation_size>::~Hinf(){
     ss_ = nullptr;
-}
-
-template <class _StateSpace,
-          std::size_t performance_size,
-          std::size_t perturbation_size>
-auto Hinf<_StateSpace,
-    performance_size,
-    perturbation_size>::init() -> void{
-
 }
 
 template <class _StateSpace,

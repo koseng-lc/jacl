@@ -34,7 +34,6 @@ protected:
 
 auto Subject::notify() -> void{
     if(observer_.size()){
-        std::cout << "Observer size : " << observer_.size() << std::endl;
         for(const auto& o:observer_)
             o->update();
     }        

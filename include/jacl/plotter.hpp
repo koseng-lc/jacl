@@ -19,9 +19,7 @@
 #include <boost/python/numpy.hpp>
 #include <boost/circular_buffer.hpp>
 
-#include <numpy/ndarrayobject.h>
-
-#include "linear_state_space.hpp"
+#include <jacl/linear_state_space.hpp>
 
 namespace jacl{
 
@@ -52,19 +50,8 @@ public:
 protected:    
     auto process() -> void;
 
-    // more safe with RAII style
-    class AcquireGIL{
-    public:
-        AcquireGIL():state(PyGILState_Ensure()){}
-        ~AcquireGIL(){PyGILState_Release(state);}
-
-    private:
-        PyGILState_STATE state;
-    };
-
 protected:
     boost::thread process_thread_;
-    mutable boost::mutex sig_mtx_;
     std::atomic<bool> running_;
 
     py::object sim_;
@@ -82,12 +69,9 @@ protected:
     double delay_;
     std::string title_;
     std::vector<std::string> plot_name_;
-    // to save the released thread state
-    PyThreadState* py_state_;
 
     _System* sys_;
 };
-
 template <class _System>
 Plotter<_System>::Plotter(_System* _sys, std::initializer_list<std::size_t> _selected_sig, double _time_step)
     : running_(true)
@@ -105,31 +89,20 @@ Plotter<_System>::Plotter(_System* _sys, std::initializer_list<std::size_t> _sel
         for(std::size_t j(0); j < n_signals_; j++){
             signal_data_.push_back(.0);
         }
-    }
-    // _selected_sig.size();
+    }    
     selected_sig_.insert(selected_sig_.end(), _selected_sig.begin(), _selected_sig.end());
 }
 
 template <class _System>
 Plotter<_System>::~Plotter(){
-    running_ = false;    
+    running_ = false;
     process_thread_.join();
-    if(PyGILState_GetThisThreadState() == py_state_)
-        PyThreadState_Swap(py_state_);
+    sys_ = nullptr;
 }
 
 template <class _System>
 auto Plotter<_System>::init() -> int{
-    if(!Py_IsInitialized())
-        Py_Initialize();
-    // idk why its automatically locked, contrary with common article
-    if(PyGILState_Check()){
-        PyEval_InitThreads();
-        py_state_ = PyEval_SaveThread();
-    }
-    AcquireGIL lk;
-    int ret;
-    import_array1(ret);
+    ::jacl::py_stuff::AcquireGIL lk;    
     try{
         py::object sys = py::import("sys");
         sys.attr("path").attr("append")("../python");
@@ -150,9 +123,8 @@ auto Plotter<_System>::process() -> void{
 
     std::vector<double> temp_signal_data;
     std::vector<double> temp_time_data;
-
-    AcquireGIL lk;
-    while(running_){
+    ::jacl::py_stuff::AcquireGIL lk;
+    while(running_){        
         pres_signal = sys_->recapitulate();
         for(const auto& i:selected_sig_){
             signal_data_.push_back(pres_signal(i-1));
@@ -189,8 +161,7 @@ auto Plotter<_System>::process() -> void{
 
 template <class _System>
 auto Plotter<_System>::start() -> void{
-
-    AcquireGIL lk;
+    ::jacl::py_stuff::AcquireGIL lk;
     try{
         process_thread_ = boost::thread(boost::bind(&Plotter<_System>::process, this));
 
@@ -206,7 +177,7 @@ template <class _System>
 auto Plotter<_System>::setPlotName(std::initializer_list<std::string> _plot_name) -> void{
     plot_name_.clear();
     plot_name_.insert(plot_name_.end(), _plot_name.begin(), _plot_name.end());
-    AcquireGIL lk;
+    ::jacl::py_stuff::AcquireGIL lk;
     try{
         py::dict plot_name_dict;
         for(std::size_t i(0); i < plot_name_.size(); i++){

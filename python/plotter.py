@@ -8,19 +8,14 @@ import math
 import numpy as np
 import signal
 import multiprocessing
-from multiprocessing import Process, Array
+from multiprocessing import Process, Array, Value
 import matplotlib
+matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
-from scipy.linalg import expm
 
 class Plotter:
     def __init__(self, n_signals, d_time, view_interval):
-        matplotlib.use('TkAgg')
-        # print(matplotlib.get_backend())
-        # matplotlib.use('QT5Agg')
-        # print(matplotlib.get_backend())
         self.n_signals = n_signals        
-        self.running = True
         self.max_data = int(view_interval / d_time)
         self.d_time = d_time
         self.view_interval = view_interval
@@ -32,15 +27,18 @@ class Plotter:
 
         self.signal_data = np.frombuffer(self.shared_signal_data.get_obj()).reshape(self.max_data, n_signals)
         self.time_data = np.frombuffer(self.shared_time_data.get_obj())
-
+        self.running = Value('b', True)
         # Default window name
         self.title = "Plotter"
 
+        self.delay = .02
+
     def __del__(self):
-        self.sim_thread.join()
+        if(self.sim_thread.is_alive()):
+            self.sim_thread.join() 
 
     def signalHandler(self, sig, frame):
-        self.running = False
+        self.running.value = False
     
     def setData(self, _signal_data, _time_data):
         assert _signal_data.shape == (self.max_data, self.n_signals)
@@ -64,8 +62,8 @@ class Plotter:
         self.sim_thread.start()
 
     def pltCloseHandle(self, event):        
-        self.running = False
-        print('Plotter {} closed.'.format(self.title))
+        self.running.value = False
+        print('Plotter {} closed.'.format(self.title))        
 
     def simulate(self):
         # Plotter setup
@@ -100,11 +98,10 @@ class Plotter:
         fig.show()        
         n_data = 0
 
-        while self.running:
-            n_data += 1
-
+        while self.running.value:
+            n_data = n_data + 1 if n_data < self.max_data else self.max_data
             total_signal = np.array([np.sum(np.abs(self.signal_data[:,i])) for i in range(0, self.n_signals)])
-            signal_avg = total_signal / min(n_data, self.max_data)
+            signal_avg = total_signal / n_data #min(n_data, self.max_data)
 
             for i in range(0, self.n_signals):
                 # Replace data
@@ -120,7 +117,7 @@ class Plotter:
 
             fig.canvas.draw_idle()
             fig.canvas.flush_events()
-
-            #time.sleep(self.delay)
+            
+            time.sleep(self.delay)
 
          

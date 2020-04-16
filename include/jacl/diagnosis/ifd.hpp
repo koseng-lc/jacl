@@ -7,6 +7,7 @@
 #include <jacl/system/discrete_system.hpp>
 #include <jacl/pole_placement.hpp>
 #include <jacl/lti_common.hpp>
+#include <jacl/plotter.hpp>
 
 namespace jacl{ namespace diagnosis{
 
@@ -33,8 +34,9 @@ template <typename _System>
 class IFD:public detail::BaseSystemClient<typename _System::base>{
 public:    
     IFD(_System* _sys, std::initializer_list<double> _threshold)
-        : sys_(_sys){
-        // , dos_(_System::n_outputs, DedicatedObserver<_System, 0>(sys_)){     
+        : sys_(_sys)
+        , aux_sys_(nullptr)
+        , plt_(&aux_sys_, {5,6,7}, 0.01){   
         
         auto _th_it = _threshold.begin();
         for(int i(0); i < threshold_.size() && _th_it != _threshold.end(); i++){
@@ -42,22 +44,17 @@ public:
         }
      
         initDOs<_System::n_outputs-1, decltype(dos_)>::init(&dos_, sys_);
-        std::cout << "DOS Size : " << dos_.size() << std::endl;
         setSubjectDOs<_System::n_outputs-1, decltype(dos_)>::set(&dos_, sys_);
-        printTest<_System::n_outputs-1, decltype(dos_)>::pr(&dos_);
     }
     ~IFD(){}
-    virtual auto init(std::initializer_list<arma::vec > _poles) -> void{
+    virtual auto init(std::initializer_list<arma::vec > _poles,
+                      std::string _plot_title,
+                      std::initializer_list<std::string> _plot_name) -> void{
         std::vector<arma::vec> poles(_poles);
         setPoleDOs<_System::n_outputs-1, decltype(dos_)>::set(&dos_, poles);
-        // int i(0);
-        // for(auto o:dos_){
-        //     boost::apply_visitor([poles,i,o](decltype(o) a){a.setPole(poles[i]);},o);
-        //     ++i;
-        // }
-        // for(int i(0); i < _System::n_states; i++){            
-        //     dos_[i]->setPole(poles[i]);            
-        // }
+        plt_.init();
+        plt_.setTitle(std::move(_plot_title));
+        plt_.setPlotName(_plot_name);
     }
     virtual auto detect(const arma::vec& _in, const arma::vec& _out)
         -> std::array<std::pair<arma::vec, bool>, _System::n_outputs>{
@@ -75,9 +72,12 @@ public:
             std::get<0>(res[i]) = y_hat[i];
             std::get<1>(res[i]) = err > threshold_[i];
         }
+        aux_sys_.collectSig(y_hat[0], _in, y_hat[0]);
         return res;
     }
-
+    auto viewSignals() -> void{
+        plt_.start();
+    }
 protected:
     template <typename __System = _System, std::size_t chosen_state=0>
     class DedicatedObserver:public ::jacl::system::BaseSystem<typename __System::StateSpace>{
@@ -88,12 +88,7 @@ protected:
                     detail::BaseSystemClient<typename __System::base>::ss(_sys))
             , z_( arma::zeros<arma::vec>(__System::n_outputs-1, 1) )
             , prev_z_(z_){
-            std::cout << "DOS-" << CHOSEN_STATE << " created !!" << std::endl;
         }
-        // DedicatedObserer()
-        //     : z_( arma::zeros<arma::vec>(__System::n_outputs-1, 1) )
-        //     , prev_z_(z_){
-        // }
         ~DedicatedObserver(){}
          //-- overload
         auto convolve(const arma::vec& _in, const arma::vec& _meas) -> arma::vec{
@@ -105,11 +100,6 @@ protected:
         void setPole(const arma::vec& _poles){
             poles_ = _poles;
             updateVar();
-        }
-        void printTest(){
-            std::cout << "DOS-" << CHOSEN_STATE << " masuk !!" << std::endl;
-            std::cout << this->ss_ << std::endl;
-            // std::cout << &(*this->ss_) << std::endl;
         }
     protected:
         auto convolve(const arma::vec& _in) -> arma::vec override{
@@ -156,10 +146,8 @@ protected:
             return this->ss_->C() * this->prev_state_ + this->ss_->D() * this->in_;
         }
         auto updateVar() -> void override{
-            if(!An_.is_empty() && !Bn_.is_empty()){
-                transform();
-                An_.print("An : ");
-                Bn_.print("Bn : ");
+            transform();
+            if(!An_.is_empty() && !Bn_.is_empty() && !poles_.is_empty()){
                 A11_ = A11(An_);
                 A12_ = A12(An_);
                 A21_ = A21(An_);
@@ -170,7 +158,7 @@ protected:
                                                                     A12_, arma::zeros(1,1));
                 jacl::pole_placement::KautskyNichols(&ss, poles_, &L_, jacl::pole_placement::PolePlacementType::Observer);
 
-                L_.print("Gain : ");
+                // L_.print("Gain : ");
                 // if(jacl::common::observable(ss.A(), ss.C()))
                 //     std::cout << "SS Observable !" << std::endl;
                 // arma::cx_mat eigvec;
@@ -180,24 +168,26 @@ protected:
             }
         }
         auto transform() -> void{
-            std::cout << "ASD1" << std::endl;
-            arma::mat C_t = arma::trans( this->ss_->C() );
-            arma::mat M_t(__System::n_states, __System::n_states, arma::fill::eye);
-            for(int j(0); j < __System::n_states; j++){
-                if(C_t(j, CHOSEN_STATE) != 0){
-                    M_t = arma::shift(M_t, -j, 1);
-                    break;
+            if(!this->ss_->A().is_empty()
+                && !this->ss_->B().is_empty()
+                && !this->ss_->C().is_empty()){
+                arma::mat C_t = arma::trans( this->ss_->C() );
+                arma::mat M_t(__System::n_states, __System::n_states, arma::fill::eye);
+                for(int j(0); j < __System::n_states; j++){
+                    if(C_t(j, CHOSEN_STATE) != 0){
+                        M_t = arma::shift(M_t, -j, 1);
+                        break;
+                    }
                 }
-            }
-            for(int j(0); j < __System::n_states; j++){
-                if(C_t(j,CHOSEN_STATE) != 0){
-                    M_t(j,0) = C_t(j,CHOSEN_STATE);
+                for(int j(0); j < __System::n_states; j++){
+                    if(C_t(j,CHOSEN_STATE) != 0){
+                        M_t(j,0) = C_t(j,CHOSEN_STATE);
+                    }
                 }
-            }
-            M_ = arma::trans(M_t);
-            An_ = M_ * this->ss_->A() * arma::inv(M_);
-            Bn_ = M_ * this->ss_->B();
-            std::cout << "ASD2" << std::endl;     
+                M_ = arma::trans(M_t);
+                An_ = M_ * this->ss_->A() * arma::inv(M_);
+                Bn_ = M_ * this->ss_->B(); 
+            }                         
         }
         inline auto A11(const arma::mat& _A) -> arma::mat{
             return _A.submat(0,0,0,0);
@@ -250,20 +240,35 @@ protected:
     struct DOVariant<1, boost::variant<Args...> >{
         using type = typename boost::variant<Args..., DedicatedObserver<_System,0> >;
     };
-    // using DOS = std::vector<DOVariant<_System::n_outputs-1, boost::variant<DedicatedObserver<_System, _System::n_outputs-1> > >::t >;
+    // using DOS = std::vector<DOVariant<_System::n_outputs-1, boost::variant<DedicatedObserver<_System, _System::n_outputs-1> > >::type >;
     using DOS = std::vector<boost::variant<DedicatedObserver<_System,0>, DedicatedObserver<_System,1>, DedicatedObserver<_System,2> > >;
-    // DOS dos_{DedicatedObserver<_System,0>(sys_),DedicatedObserver<_System,1>(sys_),DedicatedObserver<_System,2>(sys_)};
     DOS dos_;
-    
+
+    template <typename _StateSpace>
+    class AuxSys:public ::jacl::system::BaseSystem<_StateSpace>{
+    public:
+        AuxSys(_StateSpace* _ss)
+            : ::jacl::system::BaseSystem<_StateSpace>(_ss){}
+        void collectSig(const arma::mat& _state, const arma::mat& _in, const arma::mat& _out){
+            this->prev_state_ = _state;
+            this->in_ = _in;
+            this->out_ = _out;            
+        }        
+    protected:
+        auto setIn(const arma::vec& _in) -> void{}
+        auto dstate() -> arma::vec{}
+        auto output() -> arma::vec{}
+        auto updateVar() -> void{}
+    };
+    //-- so we gonna have same dimension in all signals
+    AuxSys<typename _System::StateSpace> aux_sys_;
+    jacl::Plotter<AuxSys<typename _System::StateSpace>> plt_;
+
     template <int n, typename DOs>
     struct initDOs{
         static constexpr std::size_t CHOSEN_STATE{(_System::n_outputs-1) - n};
         static auto init(DOs* _dos, _System* _sys) -> void{
-            _dos->emplace_back(DedicatedObserver<_System, CHOSEN_STATE>());
-            //-- idk why with boost::variant the virtual method won't override
-            // detail::BaseSystemClient<typename _System::base>::setSubject(
-            //     &boost::get<DedicatedObserver<_System, CHOSEN_STATE>>(_dos->back()), detail::BaseSystemClient<typename _System::base>::ss(_sys));
-            // boost::get<DedicatedObserver<_System, n>>(_dos->back()).setSubject(detail::BaseSystemClient<typename _System::base>::ss(_sys));
+            _dos->emplace_back(DedicatedObserver<_System, CHOSEN_STATE>());        
             initDOs<n-1, DOs>::init(_dos, _sys);
         }
     };
@@ -272,14 +277,12 @@ protected:
         static constexpr std::size_t CHOSEN_STATE{_System::n_outputs-1};
         static auto init(DOs* _dos, _System* _sys) -> void{
             _dos->emplace_back(DedicatedObserver<_System, CHOSEN_STATE>());
-            // detail::BaseSystemClient<typename _System::base>::setSubject(
-            //     &boost::get<DedicatedObserver<_System, CHOSEN_STATE>>(_dos->back()), detail::BaseSystemClient<typename _System::base>::ss(_sys));
-            // boost::get<DedicatedObserver<_System, 0>>(_dos->back()).setSubject(detail::BaseSystemClient<typename _System::base>::ss(_sys));
         }
     };
     template <int n, typename DOs>
     struct setSubjectDOs{
         static auto set(DOs* _dos, _System* _sys) -> void{
+            //-- idk why with boost::variant the virtual method won't override
             detail::BaseSystemClient<typename _System::base>::setSubject(
                 &boost::get<DedicatedObserver<_System, n>>((*_dos)[n]), detail::BaseSystemClient<typename _System::base>::ss(_sys));
             setSubjectDOs<n-1, DOs>::set(_dos, _sys);
@@ -308,27 +311,16 @@ protected:
     template <int n, typename DOs>
     struct getEst{
         static auto get(DOs* _dos, const arma::vec& _in, const arma::vec& _meas, std::vector<arma::vec>* _y_hat) -> void{
-            _y_hat->emplace_back(boost::get<DedicatedObserver<_System, n>>( (*_dos)[n] ).convolve(_in, _meas));
+            static constexpr std::size_t IDX{_System::n_outputs-1 - n};
+            _y_hat->emplace_back(boost::get<DedicatedObserver<_System, IDX>>( (*_dos)[IDX] ).convolve(_in, _meas));
             getEst<n-1, DOs>::get(_dos, _in, _meas, _y_hat);
         }
     };
     template <typename DOs>
     struct getEst<0,DOs>{
         static auto get(DOs* _dos, const arma::vec& _in, const arma::vec& _meas, std::vector<arma::vec>* _y_hat) -> void{
-            _y_hat->emplace_back(boost::get<DedicatedObserver<_System, 0>>( (*_dos)[0] ).convolve(_in, _meas));
-        }
-    };
-    template <int n,typename DOs>
-    struct printTest{
-        static auto pr(DOs* _dos) -> void{
-            boost::get<DedicatedObserver<_System, n>>( (*_dos)[n] ).printTest();
-            printTest<n-1,DOs>::pr(_dos);
-        }
-    };
-    template <typename DOs>
-    struct printTest<0, DOs>{
-        static auto pr(DOs* _dos) -> void{
-            boost::get<DedicatedObserver<_System, 0>>( (*_dos)[0] ).printTest();
+            static constexpr std::size_t IDX{_System::n_outputs-1 - 0};
+            _y_hat->emplace_back(boost::get<DedicatedObserver<_System, IDX>>( (*_dos)[IDX] ).convolve(_in, _meas));
         }
     };       
 };

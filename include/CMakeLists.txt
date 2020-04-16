@@ -1,10 +1,11 @@
 #-- JACL Lib Project
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.10.1)
 project(jacl_lib)
 
-add_compile_options(-std=c++17)
+add_compile_options(-std=c++14)
 
-find_package(PythonLibs REQUIRED)
+find_package(PythonLibs 3 REQUIRED)
+find_package(PythonInterp 3 REQUIRED)
 find_package(Boost REQUIRED COMPONENTS
     system
     python
@@ -20,6 +21,10 @@ include_directories(${PROJECT_SOURCE_DIR})
 #-- Pattern
 add_library(observer_pattern ${JACL_HEADER_PREFIX}/pattern/observer.hpp)
 set_target_properties(observer_pattern PROPERTIES LINKER_LANGUAGE CXX)
+
+add_library(singleton_pattern ${JACL_HEADER_PREFIX}/pattern/observer.hpp)
+set_target_properties(singleton_pattern PROPERTIES LINKER_LANGUAGE CXX)
+target_link_libraries(singleton_pattern PRIVATE Boost::thread)
 
 #-- Physical Parameter
 add_library(physical_parameter ${JACL_HEADER_PREFIX}/physical_parameter.hpp)
@@ -87,20 +92,16 @@ add_library(lti_common ${JACL_HEADER_PREFIX}/lti_common.hpp)
 target_link_libraries(lti_common PRIVATE armadillo)
 set_target_properties(lti_common PROPERTIES LINKER_LANGUAGE CXX)
 
-#-- Simulator(more precisely is plotter)
-add_library(sim ${JACL_HEADER_PREFIX}/sim.hpp)
-target_link_libraries(sim PRIVATE
-    Boost::system Boost::python Boost::thread Boost::chrono
-    ${PYTHON_LIBRARIES}
-    linear_state_space
-)
-set_target_properties(sim PROPERTIES LINKER_LANGUAGE CXX)
+#-- Py Stuf
+add_library(py_stuff ${JACL_HEADER_PREFIX}/py_stuff.hpp)
+set_target_properties(py_stuff PROPERTIES LINKER_LANGUAGE CXX)
+target_link_libraries(py_stuff PRIVATE ${PYTHON_LIBRARIES})
 
 #-- Simulator(more precisely is plotter)
 add_library(plotter ${JACL_HEADER_PREFIX}/plotter.hpp)
 target_link_libraries(plotter PRIVATE
     Boost::system Boost::python Boost::thread Boost::chrono
-    ${PYTHON_LIBRARIES}
+    py_stuff
     continuous_system
     discrete_system
 )
@@ -128,13 +129,15 @@ set_target_properties(pole_placement PROPERTIES LINKER_LANGUAGE CXX)
 
 #-- ARE
 add_library(are ${JACL_HEADER_PREFIX}/are.hpp)
-target_link_libraries(are PRIVATE Boost::system Boost::python ${Python_LIBRARIES} linear_state_space)
+target_link_libraries(are PRIVATE Boost::system py_stuff linear_state_space)
 set_target_properties(are PROPERTIES LINKER_LANGUAGE CXX)
 
 #-- H-infinity Synthesis
 add_library(h_inf ${JACL_HEADER_PREFIX}/synthesis/h_inf.hpp)
 target_link_libraries(h_inf PRIVATE upper_lft are lti_common numerical_methods)
-set_target_properties(h_inf PROPERTIES LINKER_LANGUAGE CXX)
+set_target_properties(h_inf PROPERTIES
+    CMAKE_CXX_STANDARD 14
+    LINKER_LANGUAGE CXX)
 
 #-- Diagnosis
 add_library(ifd ${JACL_HEADER_PREFIX}/diagnosis/ifd.hpp)
@@ -159,7 +162,8 @@ set(JACL_LIB_LIST
     linear_algebra
     numerical_methods
     lti_common
-    sim
+    #sim
+    py_stuff
     plotter
     lft
     upper_lft
@@ -168,6 +172,7 @@ set(JACL_LIB_LIST
     are
     h_inf
     observer_pattern
+    singleton_pattern
     parser
     base_system
     continuous_system
@@ -176,7 +181,7 @@ set(JACL_LIB_LIST
     continuous_observer
     discrete_observer
     ifd
-    sifd
+    sifd    
 )
 
 #-- JACL Libraries

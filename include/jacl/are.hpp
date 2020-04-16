@@ -90,17 +90,7 @@ private:
 
     //-- change to pointer arg for TZ
     auto auxSchur(const arma::mat& _H, std::tuple<arma::cx_mat, arma::cx_mat>& TZ) -> int{
-        PyThreadState* py_state;
-        if(!Py_IsInitialized())
-            Py_Initialize();
-        if(PyGILState_Check()){
-            PyEval_InitThreads();
-            py_state = PyEval_SaveThread();
-        }
-
-        AcquireGIL lk;
-        int ret;
-        import_array1(ret);
+        ::jacl::py_stuff::AcquireGIL lk;
         try{
             py::object sys = py::import("sys");
             sys.attr("path").attr("append")("../python");
@@ -136,21 +126,8 @@ private:
             return 1;
         }
 
-        if(PyGILState_GetThisThreadState() == py_state)
-            PyThreadState_Swap(py_state);
-
         return 0;
     }
-
-    class AcquireGIL{
-    public:
-        AcquireGIL():state(PyGILState_Ensure()){}
-        ~AcquireGIL(){PyGILState_Release(state);}
-
-    private:
-        PyGILState_STATE state;
-
-    };
 
 private:
     _StateSpace* ss_;
@@ -163,8 +140,6 @@ private:
     arma::mat J_;
     //-- Solution
     arma::mat X_;
-
-
 };
 
 template <class _StateSpace>

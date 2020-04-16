@@ -87,7 +87,7 @@ protected:
     virtual auto setIn(const arma::vec& _in) -> void = 0;
     virtual auto dstate() -> arma::vec = 0;
     virtual auto output() -> arma::vec = 0;
-    virtual auto updateVar() -> void{std::cout << "MASIH BASE" << std::endl;}
+    virtual auto updateVar() -> void{}
     auto update() -> void override{
         updateVar();
     }
@@ -96,7 +96,6 @@ protected:
             ss_ = _ss;
             this->s_ = ss_;
             this->s_->attach(this);
-            std::cout << "Set Subject" << std::endl;
         }
     }
 

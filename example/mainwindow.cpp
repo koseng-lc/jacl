@@ -332,6 +332,7 @@ MainWindow::MainWindow(QWidget *parent)
 MainWindow::~MainWindow(){
     cl_status_ = false;
     cl_thread_.join();
+    
     delete ui;
 }
 
@@ -658,7 +659,8 @@ void MainWindow::simulateAct(){
 
     //-- Discrete
     dsys_simo_plt_.start();
-    dobserver_simo_plt_.start();
+    // dobserver_simo_plt_.start();
+    sifd_.viewSignals();
 }
 
 void MainWindow::setInputAct(){
@@ -747,8 +749,7 @@ void MainWindow::setupSIMODCMotor(){
     }
     jacl::parser::saveStateSpace(simo_, "motor_dc_simo.jacl");
     jacl::common::StateSpacePack dsimo = jacl::common::discretize(simo_, SAMPLING_PERIOD);
-    std::cout << "TEST1" << std::endl;
-    dsimo_.setA(std::get<0>(dsimo)); std::cout << "TEST2" << std::endl; dsimo_.setB(std::get<1>(dsimo));
+    dsimo_.setA(std::get<0>(dsimo)); dsimo_.setB(std::get<1>(dsimo));
     dsimo_.setC(std::get<2>(dsimo)); dsimo_.setD(std::get<3>(dsimo));
     dsimo_.A().print("Ad : "); dsimo_.B().print("Bd : ");
     dsimo_.C().print("Cd : "); dsimo_.D().print("Dd : ");
@@ -764,12 +765,12 @@ void MainWindow::setupSIMODCMotor(){
 
     dsys_simo_plt_.init();
     dsys_simo_plt_.setTitle("SIMO DC motor");
-    dsys_simo_plt_.setDelay() = SAMPLING_PERIOD;
+    // dsys_simo_plt_.setDelay() = SAMPLING_PERIOD;
     dsys_simo_plt_.setPlotName({"Position", "Velocity", "Current", "Voltage"});
 
     dobserver_simo_plt_.init();
     dobserver_simo_plt_.setTitle("Observer SIMO DC motor");
-    dobserver_simo_plt_.setDelay() = SAMPLING_PERIOD;
+    // dobserver_simo_plt_.setDelay() = SAMPLING_PERIOD;
     dobserver_simo_plt_.setPlotName({"Est. Position", "Est. Velocity", "Est. Current"});
 }
 
@@ -931,7 +932,7 @@ void MainWindow::closedLoopProcess(){
 //    arma::mat diff(err);
 //    auto Kp(10.), Kd(1.);
     // ifd_.init({{-.76,-.65}, {-.63,-.51}, {-.86,-.72}});
-    sifd_.init({{-.25,-.055}, {-.63,-.51}, {-.86,-.72}});
+    sifd_.init({{-.25,-.055}, {-.63,-.51}, {-.86,-.72}}, "SIFD", {"Est. Pos.","Est. Spd.","Est. Curr."});
     arma::cx_vec p = jacl::common::poles(dsimo_);    
     p.print("Discrete DC motor poles : ");
     p = jacl::common::poles(simo_);
