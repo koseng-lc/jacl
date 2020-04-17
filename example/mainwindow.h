@@ -180,8 +180,8 @@ private:
     PRealization P_;
     using InterConnMat = jacl::LinearStateSpace<9, 10, 8>;
     InterConnMat ICM_;
-    using HInf = jacl::synthesis::Hinf<InterConnMat, 5, 8>;
-    HInf* hinf_;
+    // using HInf = jacl::synthesis::Hinf<InterConnMat, 5, 8>;
+    // HInf* hinf_;
 
     //-- Continuous H-infinity position control of dc motor
     using SISOPos = jacl::LinearStateSpace<3,1,1>;
@@ -190,7 +190,7 @@ private:
     InterConnMatPos icm_pos_;
     using PosCtrl = jacl::LinearStateSpace<6, 1, 1>;
     PosCtrl k_pos_;
-    using HInfPC = jacl::synthesis::Hinf<InterConnMatPos, 2, 3>;
+    using HInfPC = jacl::synthesis::Hinf<jacl::system::ContinuousSystem<InterConnMatPos>, 2, 3>;
     HInfPC* hinf_pc_;
     jacl::system::ContinuousSystem<PosCtrl> posctrl_sys_;
     jacl::Plotter<jacl::system::ContinuousSystem<PosCtrl> > posctrl_plt_;
@@ -201,7 +201,7 @@ private:
     InterConnMatSpd icm_spd_;
     using SpdCtrl = jacl::LinearStateSpace<5, 1, 1>;
     SpdCtrl k_spd_;
-    using HInfSC = jacl::synthesis::Hinf<InterConnMatSpd, 2, 3>;
+    using HInfSC = jacl::synthesis::Hinf<jacl::system::ContinuousSystem<InterConnMatSpd>, 2, 3>;
     HInfSC* hinf_sc_;
     jacl::system::ContinuousSystem<SpdCtrl> spdctrl_sys_;
     jacl::Plotter<jacl::system::ContinuousSystem<SpdCtrl> > spdctrl_plt_;

@@ -13,9 +13,9 @@ public:
 
     }
     ~SIFD(){}
-    auto init(std::initializer_list<arma::vec > _poles,
+    void init(std::initializer_list<arma::vec > _poles,
               std::string&& _plot_title = "",
-              std::initializer_list<std::string> _plot_name = {}) -> void override{
+              std::initializer_list<std::string> _plot_name = {}) override{
         std::vector<arma::vec> poles(_poles);
         IFD<_System>::template setPoleDOs<_System::n_outputs-1, typename IFD<_System>::DOS>::set(&this->dos_, poles);
         if(_plot_name.size()){

@@ -16,13 +16,9 @@
 
 #include <jacl/pattern/observer.hpp>
 #include <jacl/physical_parameter.hpp>
+#include <jacl/medium.hpp>
 
 namespace jacl{
-
-namespace system{ namespace detail{
-    template <class _StateSpace>
-    class NonLinearStateSpaceClient;
-} }
 
 //-- force to have fixed size
 template<std::size_t num_states, std::size_t num_inputs, std::size_t num_outputs, class PhysicalParam = int, class ...Rest>
@@ -33,9 +29,9 @@ public:
 
 public:
     template <typename _PhysicalParam = PhysicalParam,
-              typename std::enable_if<
-                  std::is_same<typename std::decay<_PhysicalParam>::type,
-                               PhysicalParameter>::value, int>::type* = nullptr>
+              typename std::enable_if_t<
+                  std::is_same<typename std::decay_t<_PhysicalParam>,
+                               PhysicalParameter>::value, int>* = nullptr>
     NonLinearStateSpace(_PhysicalParam* _param, Rest*... _rest)
         : state_fn_(n_states + n_inputs)
         , output_fn_(n_outputs){
@@ -46,36 +42,36 @@ public:
     NonLinearStateSpace();
     ~NonLinearStateSpace();           
 
-    inline auto stateFn() -> Formulas& {
+    inline auto& stateFn(){
         return state_fn_;
     }
 
-    inline auto stateFn() const -> Formulas const& {
+    inline const auto& stateFn() const{
         return state_fn_;
     }
 
-    inline auto outputFn() -> Formulas& {
+    inline auto& outputFn(){
         return output_fn_;
     }
 
-    inline auto outputFn() const -> Formulas const& {
+    inline const auto& outputFn() const{
         return output_fn_;
     }
 
 private:
     template <typename _PhysicalParam = PhysicalParam>
     auto push(_PhysicalParam* _param)
-    -> typename std::enable_if<
-    std::is_same<typename std::decay<_PhysicalParam>::type,
-                 PhysicalParameter>::value, void>::type{
+    -> typename std::enable_if_t<
+    std::is_same<typename std::decay_t<_PhysicalParam>,
+                 PhysicalParameter>::value, void>{
         params_.push_back(_param);
     }
 
     template <typename _PhysicalParam = PhysicalParam, class ...PhysicalParamRest>
     auto push(_PhysicalParam* _param, PhysicalParamRest*... _rest)
-    -> typename std::enable_if<
-    std::is_same<typename std::decay<_PhysicalParam>::type,
-                 PhysicalParameter>::value, void>::type{
+    -> typename std::enable_if_t<
+    std::is_same<typename std::decay_t<_PhysicalParam>,
+                 PhysicalParameter>::value, void>{
         push(_param);
         push(_rest...);
     }
@@ -89,16 +85,16 @@ private:
     } 
     
 public:
-    inline auto operator () (int _index) const -> double const&{        
+    inline const auto& operator () (int _index) const{        
         return _index < (n_states + n_inputs) ?
             sig_[_index] : param(_index - (n_states + n_inputs));
     }
 
-    inline auto operator () (double _constant) -> double const&{
+    inline const auto& operator () (double _constant){
         return _constant;
     }
 
-    inline auto operator () (int _index) -> double&{
+    inline double& operator () (int _index){
         return _index < (n_states + n_inputs) ?
             sig_[_index] : param(_index - (n_states + n_inputs));
     }
@@ -115,7 +111,7 @@ private:
     std::vector<PhysicalParameter* > params_;
     
 private:
-    friend class ::jacl::system::detail::NonLinearStateSpaceClient<NonLinearStateSpace>;
+    friend class ::jacl::state_space::detail::NonLinearStateSpaceClient<NonLinearStateSpace>;
 
 };
 

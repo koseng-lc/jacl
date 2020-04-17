@@ -39,7 +39,7 @@ public:
     ARE(const ARE&) = delete;
     ARE& operator=(const ARE&) = delete;
 
-    auto setR(const arma::mat& _R, bool update_hamiltonian = false) -> void{
+    auto setR(const arma::mat& _R, bool update_hamiltonian = false){
         assert(arma::size(_R) == arma::size(ss_->A()));
         R_ = _R;
         if(update_hamiltonian)

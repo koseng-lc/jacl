@@ -1,6 +1,6 @@
 /**
 *   @author : koseng (Lintang)
-*   @brief : Simple implementation of H-infinity synthesis.
+*   @brief : Simple implementation of discrete H-infinity synthesis.
 *            A lot of code here, is constructed by copy constructor because it's easier to read.
 */
 
@@ -15,23 +15,23 @@
 #include <jacl/numerical_methods.hpp>
 #include <jacl/medium.hpp>
 
-#define HINF_VERBOSE
+#define DHINF_VERBOSE
 
 namespace jacl{ namespace synthesis{
 
 template <typename _System,
           std::size_t performance_size,
           std::size_t perturbation_size>
-class Hinf:public ::jacl::system::detail::BaseSystemClient<typename _System::base>{
+class DHinf:public ::jacl::system::detail::BaseSystemClient<typename _System::base>{
 public:
     template<typename __System = _System,
-             typename std::enable_if_t<traits::is_continuous_system<__System>::value, int>* = nullptr>
-    Hinf(__System* _sys, double _gam)
+             typename std::enable_if_t<traits::is_discrete_system<__System>::value, int>* = nullptr>
+    DHinf(__System* _sys, double _gam)
         : ss_(::jacl::system::detail::BaseSystemClient<typename _System::base>::ss(_sys))
         , llft_(ss_)
         , gam_(_gam){}
 
-    ~Hinf();
+    ~DHinf();
 
     auto solve() -> ::jacl::common::StateSpacePack;
 
@@ -130,22 +130,22 @@ private:
 template <typename _System,
           std::size_t performance_size,
           std::size_t perturbation_size>
-Hinf<_System,
+DHinf<_System,
     performance_size,
-    perturbation_size>::~Hinf(){
+    perturbation_size>::~DHinf(){
     ss_ = nullptr;
 }
 
 template <typename _System,
           std::size_t performance_size,
           std::size_t perturbation_size>
-auto Hinf<_System,
+auto DHinf<_System,
     performance_size,
     perturbation_size>::checkAssumption1(){
 
     auto ctrb = common::stabilizable(llft_.A(), llft_.B2());
     auto obsv = common::detectability(llft_.A(), llft_.C2());
-#ifdef HINF_VERBOSE
+#ifdef DHINF_VERBOSE
     std::cout << "Assumption 1 : " << std::boolalpha << ctrb << " ; " << obsv << std::endl;
 #endif
     return ctrb & obsv;
@@ -154,7 +154,7 @@ auto Hinf<_System,
 template <typename _System,
           std::size_t performance_size,
           std::size_t perturbation_size>
-auto Hinf<_System,
+auto DHinf<_System,
     performance_size,
     perturbation_size>::checkAssumption2(){
 
@@ -194,7 +194,7 @@ auto Hinf<_System,
         }
     }else if(performance_size == INPUT_SIZE){
         if(arma::approx_equal(llft_.D12(), I_in, "absdiff", .0)){
-            std::cout << "[Hinf] Special cases trigerred !!!" << std::endl;
+            std::cout << "[DHinf] Special cases trigerred !!!" << std::endl;
         }else{
             //-- do normalization here
         }
@@ -237,7 +237,7 @@ auto Hinf<_System,
         }
     }else if(perturbation_size == OUTPUT_SIZE){
         if(arma::approx_equal(llft_.D12(), I_out, "absdiff", .0)){
-            std::cout << "[Hinf] Special cases trigerred !!!" << std::endl;
+            std::cout << "[DHinf] Special cases trigerred !!!" << std::endl;
             //-- do special cases here
         }else{
             //-- do normalization here
@@ -245,7 +245,7 @@ auto Hinf<_System,
     }else{ //-- if not full row rank
         ~ok2;
     }
-#ifdef HINF_VERBOSE
+#ifdef DHINF_VERBOSE
     std::cout << "Assumption 2 : " << std::boolalpha << ok << " ; " << ok2 << std::endl;
 #endif
     return ok & ok2;
@@ -259,7 +259,7 @@ auto Hinf<_System,
 template <typename _System,
           std::size_t performance_size,
           std::size_t perturbation_size>
-auto Hinf<_System,
+auto DHinf<_System,
     performance_size,
     perturbation_size>::checkAssumption3(){
 
@@ -278,7 +278,7 @@ auto Hinf<_System,
     arma::mat A = llft_.A() - temp2;    
 
     bool ok = !common::hasUnobservableModeInImAxis(A, C);
-#ifdef HINF_VERBOSE
+#ifdef DHINF_VERBOSE
     std::cout << "Assumption 3 : " << std::boolalpha << ok << std::endl;
 #endif
     return ok;
@@ -287,7 +287,7 @@ auto Hinf<_System,
 template <typename _System,
           std::size_t performance_size,
           std::size_t perturbation_size>
-auto Hinf<_System,
+auto DHinf<_System,
     performance_size,
     perturbation_size>::checkAssumption4(){
 
@@ -306,7 +306,7 @@ auto Hinf<_System,
     arma::mat B = llft_.B1()*temp2;
 
     bool ok = !common::hasUncontrollableModeInImAxis(A, B);
-#ifdef HINF_VERBOSE
+#ifdef DHINF_VERBOSE
     std::cout << "Assumption 4 : " << std::boolalpha << ok << std::endl;
 #endif
     return ok;
@@ -315,7 +315,7 @@ auto Hinf<_System,
 template <typename _System,
           std::size_t performance_size,
           std::size_t perturbation_size>
-auto Hinf<_System,
+auto DHinf<_System,
     performance_size,
     perturbation_size>::checkAllAssumption(){
     return checkAssumption1()
@@ -327,7 +327,7 @@ auto Hinf<_System,
 template <typename _System,
           std::size_t performance_size,
           std::size_t perturbation_size>
-auto Hinf<_System,
+auto DHinf<_System,
     performance_size,
     perturbation_size>::checkCondition1(){
 
@@ -347,7 +347,7 @@ auto Hinf<_System,
 template <typename _System,
           std::size_t performance_size,
           std::size_t perturbation_size>
-auto Hinf<_System,
+auto DHinf<_System,
     performance_size,
     perturbation_size>::checkCondition2(){
 
@@ -357,7 +357,7 @@ auto Hinf<_System,
 template <typename _System,
           std::size_t performance_size,
           std::size_t perturbation_size>
-auto Hinf<_System,
+auto DHinf<_System,
     performance_size,
     perturbation_size>::checkCondition3(){
 
@@ -367,7 +367,7 @@ auto Hinf<_System,
 template <typename _System,
           std::size_t performance_size,
           std::size_t perturbation_size>
-auto Hinf<_System,
+auto DHinf<_System,
     performance_size,
     perturbation_size>::checkCondition4(){
     arma::cx_mat temp( X_inf_*Y_inf_ );
@@ -377,14 +377,14 @@ auto Hinf<_System,
 template <typename _System,
           std::size_t performance_size,
           std::size_t perturbation_size>
-auto Hinf<_System,
+auto DHinf<_System,
     performance_size,
     perturbation_size>::checkAllCondition(){
     auto cond1 = checkCondition1();
     auto cond2 = checkCondition2();
     auto cond3 = checkCondition3();
     auto cond4 = checkCondition4();
-#ifdef HINF_VERBOSE
+#ifdef DHINF_VERBOSE
     std::cout << "Condition 1 : " << std::boolalpha << cond1 << std::endl;
     std::cout << "Condition 2 : " << std::boolalpha << cond2 << std::endl;
     std::cout << "Condition 3 : " << std::boolalpha << cond3 << std::endl;
@@ -396,10 +396,10 @@ auto Hinf<_System,
 template <typename _System,
           std::size_t performance_size,
           std::size_t perturbation_size>
-auto Hinf<_System,
+auto DHinf<_System,
     performance_size,
     perturbation_size>::solve() -> ::jacl::common::StateSpacePack{
-#ifdef HINF_VERBOSE
+#ifdef DHINF_VERBOSE
     std::cout << ">>>>> Interconnection matrix assumptions : " << std::endl;
 #endif
     bool check_assumption = checkAllAssumption();
@@ -474,7 +474,7 @@ auto Hinf<_System,
     arma::cx_mat X_inf = solver1.solve();
     arma::cx_mat Y_inf = solver2.solve();
 
-#ifdef HINF_VERBOSE
+#ifdef DHINF_VERBOSE
     std::cout << ">>>>> Solution of ARE : " << std::endl;
     X_inf.print("X_inf : ");
     Y_inf.print("Y_inf : ");
@@ -512,7 +512,7 @@ auto Hinf<_System,
     Y_inf_ = Y_inf;
 
     bool check_cond = checkAllCondition();
-#ifdef HINF_VERBOSE
+#ifdef DHINF_VERBOSE
     std::cout << " >>>>> Condition : " << std::boolalpha << check_cond << std::endl;
 #endif
     assert(check_cond && "Condition for finding Controller that make the lower LFT is less than gamma was failed !");
@@ -560,7 +560,7 @@ auto Hinf<_System,
     ctemp1 = B2_hat*arma::inv(D12_hat)*C1_hat;
     arma::cx_mat A_hat = ss_->A() + L*ss_->C() + ctemp1;
 
-#ifdef HINF_VERBOSE
+#ifdef DHINF_VERBOSE
     std::cout << ">>>>> Controller Result : " << std::endl;
     A_hat.print("A_hat : ");
     B1_hat.print("B1_hat : ");

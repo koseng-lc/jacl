@@ -3,50 +3,12 @@
 #include <jacl/pattern/observer.hpp>
 #include <jacl/linear_state_space.hpp>
 #include <jacl/nonlinear_state_space.hpp>
+#include <jacl/medium.hpp>
 
-namespace jacl{
-
-namespace diagnosis{ namespace detail{
-    template <class _System>
-    class BaseSystemClient;
-} }
-
-namespace system{
+namespace jacl{ namespace system{
 
 template <class _StateSpace>
-class BaseSystem;
-
-namespace detail {
-    template<class _StateSpace>
-    class NonLinearStateSpaceClient{
-    protected:
-        inline static auto setSig(_StateSpace* _ss, const arma::vec& _sig) -> void{
-            _ss->sig_ = arma::conv_to<decltype(_ss->sig_)>::from(_sig);
-        }
-        inline static auto dstate(_StateSpace* _ss) -> arma::vec {
-            arma::vec xdot(_StateSpace::n_states, 1, arma::fill::zeros);
-            int i(0);
-            for(const auto& fn:_ss->state_fn_){
-                xdot(i) = fn(*_ss);
-                ++i;
-            }
-            return xdot;
-        }
-        inline static auto output(_StateSpace* _ss) -> arma::vec {
-            arma::vec out(_StateSpace::n_outputs, 1, arma::fill::zeros);
-            int i(0);
-            for(const auto& fn:_ss->output_fn_){
-                out(i) = fn(*_ss);
-                ++i;
-            }
-            return out;
-        }
-        // friend class ::jacl::system::BaseSystem<_StateSpace>;
-    };    
-} // namespace detail
-
-template <class _StateSpace>
-class BaseSystem:public pattern::Observer, public detail::NonLinearStateSpaceClient<_StateSpace>{
+class BaseSystem:public pattern::Observer, public ::jacl::state_space::detail::NonLinearStateSpaceClient<_StateSpace>{
 public:
     static constexpr std::size_t n_states{_StateSpace::n_states};
     static constexpr std::size_t n_inputs{_StateSpace::n_inputs};
@@ -84,14 +46,14 @@ public:
     auto D() -> arma::mat { return this->ss_->D(); }
     
 protected:
-    virtual auto setIn(const arma::vec& _in) -> void = 0;
+    virtual void setIn(const arma::vec& _in) = 0;
     virtual auto dstate() -> arma::vec = 0;
     virtual auto output() -> arma::vec = 0;
-    virtual auto updateVar() -> void{}
-    auto update() -> void override{
+    virtual void updateVar(){}
+    void update() override{
         updateVar();
     }
-    auto setSubject(_StateSpace* _ss) -> void{
+    auto setSubject(_StateSpace* _ss){
         if(_ss){
             ss_ = _ss;
             this->s_ = ss_;
@@ -110,7 +72,7 @@ protected:
     _StateSpace* ss_;
     
 private:
-    friend class ::jacl::diagnosis::detail::BaseSystemClient<BaseSystem>;
+    friend class ::jacl::system::detail::BaseSystemClient<BaseSystem>;
 };
 
 } } // namespace jacl::system

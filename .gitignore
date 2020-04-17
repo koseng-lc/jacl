@@ -2,4 +2,6 @@ build/
 lib/
 share/
 test/
+.vscode/
+.idea/
 CMakeLists.txt.user

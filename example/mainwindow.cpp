@@ -299,8 +299,8 @@ MainWindow::MainWindow(QWidget *parent)
 //    ICM_.C().print("ICM C : ");
 //    ICM_.D().print("ICM D : ");
 
-    hinf_ = new HInf(&ICM_, 1.6204);
-    jacl::common::StateSpacePack K( hinf_->solve() );
+    // hinf_ = new HInf(&ICM_, 1.6204);
+    // jacl::common::StateSpacePack K( hinf_->solve() );
 
     setupSIMODCMotor();
     setupPositionController();
@@ -820,8 +820,8 @@ void MainWindow::setupPositionController(){
     icm_pos_.setB(fB);
     icm_pos_.setC(fC);
     icm_pos_.setD(fD);
-
-    hinf_pc_ = new HInfPC(&icm_pos_, 2.7882);
+    jacl::system::ContinuousSystem<InterConnMatPos> icm_pos_sys(&icm_pos_);
+    hinf_pc_ = new HInfPC(&icm_pos_sys, 2.7882);
     jacl::common::StateSpacePack K( hinf_pc_->solve() );
     k_pos_.setA(std::get<0>(K));
     k_pos_.setB(std::get<1>(K));
@@ -882,8 +882,8 @@ void MainWindow::setupSpeedController(){
     icm_spd_.setB(fB);
     icm_spd_.setC(fC);
     icm_spd_.setD(fD);
-
-    hinf_sc_ = new HInfSC(&icm_spd_, 3.1);
+    jacl::system::ContinuousSystem<InterConnMatSpd> icm_spd_sys(&icm_spd_);
+    hinf_sc_ = new HInfSC(&icm_spd_sys, 3.1);
     jacl::common::StateSpacePack K( hinf_sc_->solve() );
     k_spd_.setA(std::get<0>(K));
     k_spd_.setB(std::get<1>(K));

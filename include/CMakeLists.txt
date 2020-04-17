@@ -1,8 +1,6 @@
 #-- JACL Lib Project
-cmake_minimum_required(VERSION 3.10.1)
+cmake_minimum_required(VERSION 2.8.3)
 project(jacl_lib)
-
-add_compile_options(-std=c++14)
 
 find_package(PythonLibs 3 REQUIRED)
 find_package(PythonInterp 3 REQUIRED)
@@ -26,6 +24,10 @@ add_library(singleton_pattern ${JACL_HEADER_PREFIX}/pattern/observer.hpp)
 set_target_properties(singleton_pattern PROPERTIES LINKER_LANGUAGE CXX)
 target_link_libraries(singleton_pattern PRIVATE Boost::thread)
 
+#-- Medium
+add_library(medium ${JACL_HEADER_PREFIX}/medium.hpp)
+set_target_properties(medium PROPERTIES LINKER_LANGUAGE CXX)
+
 #-- Physical Parameter
 add_library(physical_parameter ${JACL_HEADER_PREFIX}/physical_parameter.hpp)
 set_target_properties(physical_parameter PROPERTIES LINKER_LANGUAGE CXX)
@@ -37,13 +39,13 @@ target_link_libraries(linear_state_space PRIVATE armadillo physical_parameter ob
 
 add_library(nonlinear_state_space ${JACL_HEADER_PREFIX}/nonlinear_state_space.hpp)
 set_target_properties(nonlinear_state_space PROPERTIES LINKER_LANGUAGE CXX)
-target_link_libraries(nonlinear_state_space PRIVATE armadillo physical_parameter observer_pattern)
+target_link_libraries(nonlinear_state_space PRIVATE armadillo medium physical_parameter observer_pattern)
 
 #-- System
 add_library(base_system ${JACL_HEADER_PREFIX}/system/base_system.hpp)
 set_target_properties(base_system PROPERTIES LINKER_LANGUAGE CXX)
 #target_include_directories(base_system PUBLIC ${PROJECT_SOURCE_DIR})
-target_link_libraries(base_system PRIVATE armadillo physical_parameter)
+target_link_libraries(base_system PRIVATE armadillo medium physical_parameter)
 
 #-- Continuous System
 add_library(continuous_system ${JACL_HEADER_PREFIX}/system/continuous_system.hpp)
@@ -134,10 +136,12 @@ set_target_properties(are PROPERTIES LINKER_LANGUAGE CXX)
 
 #-- H-infinity Synthesis
 add_library(h_inf ${JACL_HEADER_PREFIX}/synthesis/h_inf.hpp)
-target_link_libraries(h_inf PRIVATE upper_lft are lti_common numerical_methods)
-set_target_properties(h_inf PROPERTIES
-    CMAKE_CXX_STANDARD 14
-    LINKER_LANGUAGE CXX)
+target_link_libraries(h_inf PRIVATE lower_lft are lti_common numerical_methods)
+set_target_properties(h_inf PROPERTIES LINKER_LANGUAGE CXX)
+
+add_library(dh_inf ${JACL_HEADER_PREFIX}/synthesis/dh_inf.hpp)
+target_link_libraries(dh_inf PRIVATE lower_lft are lti_common numerical_methods)
+set_target_properties(dh_inf PROPERTIES LINKER_LANGUAGE CXX)
 
 #-- Diagnosis
 add_library(ifd ${JACL_HEADER_PREFIX}/diagnosis/ifd.hpp)
@@ -154,6 +158,7 @@ set_target_properties(parser PROPERTIES LINKER_LANGUAGE CXX)
 target_link_libraries(parser PRIVATE linear_state_space traits)
 
 set(JACL_LIB_LIST
+    medium
     physical_parameter
     linear_state_space
     nonlinear_state_space
@@ -171,6 +176,7 @@ set(JACL_LIB_LIST
     pole_placement
     are
     h_inf
+    dh_inf
     observer_pattern
     singleton_pattern
     parser
@@ -181,7 +187,7 @@ set(JACL_LIB_LIST
     continuous_observer
     discrete_observer
     ifd
-    sifd    
+    sifd
 )
 
 #-- JACL Libraries

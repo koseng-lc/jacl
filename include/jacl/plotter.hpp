@@ -34,16 +34,16 @@ public:
     Plotter(_System* _sys, std::initializer_list<std::size_t> _selected_sig, double _time_step = 1e-4);
     ~Plotter();
 
-    auto init() -> int;
-    auto start() -> void;
-    auto setDelay() -> double&{ return delay_; }
-    auto setTitle(std::string&& _title) -> void{ title_ = _title; }
-    inline auto timeStep() const -> double{ return d_time_; }
-    auto setPlotName(std::initializer_list<std::string> _plot_name) -> void;
-    auto isInitialized() -> bool{ return initialized_; }
+    auto init();
+    auto start();
+    auto& setDelay(){ return delay_; }
+    auto setTitle(std::string&& _title){ title_ = _title; }
+    inline auto timeStep() const{ return d_time_; }
+    auto setPlotName(std::initializer_list<std::string> _plot_name);
+    bool isInitialized(){ return initialized_; }
 
 protected:    
-    auto process() -> void;
+    auto process();
 
 protected:
     boost::thread process_thread_;
@@ -98,7 +98,7 @@ Plotter<_System>::~Plotter(){
 }
 
 template <class _System>
-auto Plotter<_System>::init() -> int{
+auto Plotter<_System>::init(){
     ::jacl::py_stuff::AcquireGIL lk;    
     try{
         py::object sys = py::import("sys");
@@ -115,7 +115,7 @@ auto Plotter<_System>::init() -> int{
 }
 
 template <class _System>
-auto Plotter<_System>::process() -> void{
+auto Plotter<_System>::process(){
     arma::mat pres_signal;
     auto t(.0);    
 
@@ -158,7 +158,7 @@ auto Plotter<_System>::process() -> void{
 }
 
 template <class _System>
-auto Plotter<_System>::start() -> void{
+auto Plotter<_System>::start(){
     ::jacl::py_stuff::AcquireGIL lk;
     try{
         process_thread_ = boost::thread(boost::bind(&Plotter<_System>::process, this));
@@ -172,7 +172,7 @@ auto Plotter<_System>::start() -> void{
 }
 
 template <class _System>
-auto Plotter<_System>::setPlotName(std::initializer_list<std::string> _plot_name) -> void{
+auto Plotter<_System>::setPlotName(std::initializer_list<std::string> _plot_name){
     plot_name_.clear();
     plot_name_.insert(plot_name_.end(), _plot_name.begin(), _plot_name.end());
     ::jacl::py_stuff::AcquireGIL lk;

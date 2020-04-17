@@ -67,6 +67,7 @@
         "core": "cpp",
         "geometry": "cpp",
         "lu": "cpp",
-        "*.txx": "cpp"
+        "*.txx": "cpp",
+        "qgroupbox": "cpp"
     }
 }

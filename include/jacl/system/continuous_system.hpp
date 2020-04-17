@@ -12,7 +12,7 @@ public:
     ~ContinuousSystem(){}
 
 protected:
-    auto setIn(const arma::vec& _in)-> void override{
+    void setIn(const arma::vec& _in) override{
         this->in_ = _in;
     }
     auto dstate() -> arma::vec override{
@@ -29,7 +29,7 @@ protected:
         term1 = this->ss_->C() * this->prev_state_;
         return term1 + (this->ss_->D() * this->in_);
     }
-    auto updateVar() -> void override{
+    void updateVar() override{
         this->state_trans_ = arma::expmat(this->ss_->A() * this->dt_);
     }
 };
@@ -50,19 +50,16 @@ public:
     ~ContinuousSystem(){}    
 
 protected:
-    auto setIn(const arma::vec& _in)
-        -> void override{
-        detail::NonLinearStateSpaceClient<_StateSpace>::setSig(this->ss_, arma::join_cols(this->prev_state_, _in));
+    void setIn(const arma::vec& _in) override{
+        ::jacl::state_space::detail::NonLinearStateSpaceClient<_StateSpace>::setSig(this->ss_, arma::join_cols(this->prev_state_, _in));
     }
-    auto dstate()
-        -> arma::vec override{
-        return detail::NonLinearStateSpaceClient<_StateSpace>::dstate(this->ss_) * this->dt_;
+    auto dstate() -> arma::vec override{
+        return ::jacl::state_space::detail::NonLinearStateSpaceClient<_StateSpace>::dstate(this->ss_) * this->dt_;
     }
-    auto output()
-        -> arma::vec override{
-        return detail::NonLinearStateSpaceClient<_StateSpace>::output(this->ss_);
+    auto output() -> arma::vec override{
+        return ::jacl::state_space::detail::NonLinearStateSpaceClient<_StateSpace>::output(this->ss_);
     }
-    auto updateVar() -> void override{
+    void updateVar() override{
         
     }
 };

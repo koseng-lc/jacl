@@ -13,7 +13,7 @@ namespace jacl{
         struct is_state_space:std::false_type{};
 
         template <std::size_t ns, std::size_t ni, std::size_t no>
-        struct is_state_space<LinearStateSpace<ns,ni,no> >:std::true_type{};
+        struct is_state_space<LinearStateSpace<ns,ni,no> >:std::true_type{};        
 
         template <std::size_t ns, std::size_t ni, std::size_t no,
                   class PhysicalParam, class  ...Rest>

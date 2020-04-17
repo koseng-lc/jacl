@@ -19,29 +19,29 @@ public:
     ~LFT(){}
 
     //-- setters and getters
-    inline auto A() const -> arma::mat const&{ return A_; }
+    inline const auto& A() const{ return A_; }
 
-    inline auto B1() const -> arma::mat const & { return B1_; }
-    inline auto B1() -> arma::mat& { return B1_; }
-    inline auto B2() const -> arma::mat const & { return B2_; }
-    inline auto B2() -> arma::mat& { return B2_; }
+    inline const auto& B1() const{ return B1_; }
+    inline auto& B1(){ return B1_; }
+    inline const auto& B2() const{ return B2_; }
+    inline auto& B2(){ return B2_; }
 
-    inline auto C1() const -> arma::mat const & { return C1_; }
-    inline auto C1() -> arma::mat& { return C1_; }
-    inline auto C2() const -> arma::mat const & { return C2_; }
-    inline auto C2() -> arma::mat& { return C2_; }
+    inline const auto& C1() const{ return C1_; }
+    inline auto& C1(){ return C1_; }
+    inline const auto& C2() const{ return C2_; }
+    inline auto& C2(){ return C2_; }
 
-    inline auto D11() const -> arma::mat const & { return D11_; }
-    inline auto D11() -> arma::mat& { return D11_; }
-    inline auto D12() const -> arma::mat const & { return D12_; }
-    inline auto D12() -> arma::mat& { return D12_; }
-    inline auto D21() const -> arma::mat const & { return D21_; }
-    inline auto D21() -> arma::mat& { return D21_; }
-    inline auto D22() const -> arma::mat const & { return D22_; }
-    inline auto D22() -> arma::mat& { return D22_; }
+    inline const auto& D11() const{ return D11_; }
+    inline auto& D11(){ return D11_; }
+    inline const auto& D12() const{ return D12_; }
+    inline auto& D12(){ return D12_; }
+    inline const auto& D21() const{ return D21_; }
+    inline auto& D21(){ return D21_; }
+    inline const auto& D22() const{ return D22_; }
+    inline auto& D22(){ return D22_; }
 
-    inline auto delta() const -> arma::mat const & { return delta_; }
-    auto delta() -> arma::mat& { return delta_; }
+    inline const auto& delta() const{ return delta_; }
+    inline auto& delta(){ return delta_; }
 
 public:
     static constexpr auto n_states{ _StateSpace::n_states };
