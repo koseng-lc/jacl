@@ -36,16 +36,11 @@ public:
 
     auto init() -> int;
     auto start() -> void;
-    auto setDelay() -> double&{
-        return delay_;
-    }
-    auto setTitle(std::string&& _title) -> void{
-        title_ = _title;
-    }
-    inline auto timeStep() const -> double{
-        return d_time_;
-    }
+    auto setDelay() -> double&{ return delay_; }
+    auto setTitle(std::string&& _title) -> void{ title_ = _title; }
+    inline auto timeStep() const -> double{ return d_time_; }
     auto setPlotName(std::initializer_list<std::string> _plot_name) -> void;
+    auto isInitialized() -> bool{ return initialized_; }
 
 protected:    
     auto process() -> void;
@@ -69,6 +64,7 @@ protected:
     double delay_;
     std::string title_;
     std::vector<std::string> plot_name_;
+    std::atomic<bool> initialized_;
 
     _System* sys_;
 };
@@ -83,6 +79,7 @@ Plotter<_System>::Plotter(_System* _sys, std::initializer_list<std::size_t> _sel
     , time_data_(max_data_)
     , delay_(.02 < d_time_ ? d_time_ : .02)
     , title_("Simulation")
+    , initialized_(false)
     , sys_(_sys){    
     for(std::size_t i(0); i < max_data_; i++){
         time_data_.push_back(-1.0);
@@ -113,6 +110,7 @@ auto Plotter<_System>::init() -> int{
         PyErr_Print();
         return 1;
     }
+    initialized_ = true;
     return 0;
 }
 

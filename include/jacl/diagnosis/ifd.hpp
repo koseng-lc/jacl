@@ -48,13 +48,15 @@ public:
     }
     ~IFD(){}
     virtual auto init(std::initializer_list<arma::vec > _poles,
-                      std::string _plot_title,
-                      std::initializer_list<std::string> _plot_name) -> void{
+                      std::string&& _plot_title = "",
+                      std::initializer_list<std::string> _plot_name = {}) -> void{
         std::vector<arma::vec> poles(_poles);
         setPoleDOs<_System::n_outputs-1, decltype(dos_)>::set(&dos_, poles);
-        plt_.init();
-        plt_.setTitle(std::move(_plot_title));
-        plt_.setPlotName(_plot_name);
+        if(_plot_name.size()){
+            plt_.init();
+            plt_.setTitle(std::move(_plot_title));
+            plt_.setPlotName(_plot_name);
+        }        
     }
     virtual auto detect(const arma::vec& _in, const arma::vec& _out)
         -> std::array<std::pair<arma::vec, bool>, _System::n_outputs>{
@@ -76,7 +78,8 @@ public:
         return res;
     }
     auto viewSignals() -> void{
-        plt_.start();
+        if(plt_.isInitialized())
+            plt_.start();
     }
 protected:
     template <typename __System = _System, std::size_t chosen_state=0>

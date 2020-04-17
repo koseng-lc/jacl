@@ -14,13 +14,15 @@ public:
     }
     ~SIFD(){}
     auto init(std::initializer_list<arma::vec > _poles,
-              std::string _plot_title,
-              std::initializer_list<std::string> _plot_name) -> void override{
+              std::string&& _plot_title = "",
+              std::initializer_list<std::string> _plot_name = {}) -> void override{
         std::vector<arma::vec> poles(_poles);
         IFD<_System>::template setPoleDOs<_System::n_outputs-1, typename IFD<_System>::DOS>::set(&this->dos_, poles);
-        this->plt_.init();
-        this->plt_.setTitle(std::move(_plot_title));        
-        this->plt_.setPlotName(_plot_name);
+        if(_plot_name.size()){
+            this->plt_.init();
+            this->plt_.setTitle(std::move(_plot_title));
+            this->plt_.setPlotName(_plot_name);
+        }        
     }
     auto detect(const arma::vec& _in, const arma::vec& _out)
         -> std::array<std::pair<arma::vec, bool>, _System::n_outputs> override{        
