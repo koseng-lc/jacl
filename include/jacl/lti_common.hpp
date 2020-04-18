@@ -17,7 +17,7 @@ enum class PBHTestType{
     Row
 };
 
-static auto controllable(const arma::mat& _A, const arma::mat& _B) -> bool{
+static auto controllable(const arma::mat& _A, const arma::mat& _B){
     //-- must be square matrix
     assert(_A.n_rows == _A.n_cols);
     //-- must be compatible with A
@@ -37,7 +37,7 @@ static auto controllable(const arma::mat& _A, const arma::mat& _B) -> bool{
 
 }
 
-static auto stabilizable(const arma::mat& _A, const arma::mat& _B) -> bool{
+static auto stabilizable(const arma::mat& _A, const arma::mat& _B){
     //-- must be square matrix
     assert(_A.n_rows == _A.n_cols);
     //-- must be compatible with A
@@ -66,7 +66,7 @@ static auto stabilizable(const arma::mat& _A, const arma::mat& _B) -> bool{
     return ok;
 }
 
-static auto hasUncontrollableModeInImAxis(const arma::mat& _A, const arma::mat& _B) -> bool{
+static auto hasUncontrollableModeInImAxis(const arma::mat& _A, const arma::mat& _B){
     //-- must be square matrix
     assert(_A.n_rows == _A.n_cols);
     //-- must be compatible with A
@@ -95,7 +95,35 @@ static auto hasUncontrollableModeInImAxis(const arma::mat& _A, const arma::mat& 
     return ok;
 }
 
-static auto observable(const arma::mat& _A, const arma::mat& _C, arma::mat* _O = nullptr) -> bool{
+static auto hasUncontrollableModeInUnitCircle(const arma::mat& _A, const arma::mat& _B){
+    //-- must be square matrix
+    assert(_A.n_rows == _A.n_cols);
+    //-- must be compatible with A
+    assert(_B.n_rows == _A.n_rows);
+
+    arma::cx_vec eigval;
+    arma::cx_mat eigvec;
+    arma::eig_gen(eigval, eigvec, _A);
+
+    arma::cx_mat temp;
+    arma::cx_mat eye(arma::size(_A), arma::fill::eye);
+    arma::cx_mat cx_B( arma::size(_B) );
+    cx_B.set_real(_B);
+    bool ok(false);
+    for(int i(0); i < eigval.n_rows; i++){
+        if(std::abs(eigval(i)) == 1.){
+            temp = _A - eigval(i)*eye;
+            if(arma::rank( arma::join_horiz(temp, cx_B) ) < _A.n_rows){
+                ~ok;
+                break;
+            }
+        }
+    }
+
+    return ok; 
+}
+
+static auto observable(const arma::mat& _A, const arma::mat& _C, arma::mat* _O = nullptr){
     //-- must be square matrix
     assert(_A.n_rows == _A.n_cols);
     //-- must be compatible with A
@@ -115,7 +143,7 @@ static auto observable(const arma::mat& _A, const arma::mat& _C, arma::mat* _O =
     return arma::rank(obsv) == system_order;
 }
 
-static auto detectability(const arma::mat& _A, const arma::mat& _C) -> bool{
+static auto detectability(const arma::mat& _A, const arma::mat& _C){
     //-- must be square matrix
     assert(_A.n_rows == _A.n_cols);
     //-- must be compatible with A
@@ -143,7 +171,7 @@ static auto detectability(const arma::mat& _A, const arma::mat& _C) -> bool{
     return ok;
 }
 
-static auto hasUnobservableModeInImAxis(const arma::mat& _A, const arma::mat& _C) -> bool{
+static auto hasUnobservableModeInImAxis(const arma::mat& _A, const arma::mat& _C){
     //-- must be square matrix
     assert(_A.n_rows == _A.n_cols);
     //-- must be compatible with A
@@ -171,8 +199,35 @@ static auto hasUnobservableModeInImAxis(const arma::mat& _A, const arma::mat& _C
     return ok;
 }
 
+static auto hasUnobservableModeInUnitCircle(const arma::mat& _A, const arma::mat& _C){
+    //-- must be square matrix
+    assert(_A.n_rows == _A.n_cols);
+    //-- must be compatible with A
+    assert(_C.n_cols == _A.n_cols);
+
+    arma::cx_vec eigval;
+    arma::cx_mat eigvec;
+    arma::eig_gen(eigval, eigvec, _A);
+
+    arma::cx_mat temp;
+    arma::cx_mat eye(arma::size(_A), arma::fill::eye);
+    arma::cx_mat cx_C( arma::size(_C) );
+    cx_C.set_real(_C);
+    bool ok(false);
+    for(int i(0); i < eigval.n_rows; i++){
+        if(std::abs(eigval(i)) == .0){
+            temp = _A - eigval(i)*eye;
+            if(arma::rank( arma::join_vert(temp, cx_C) ) < _A.n_cols){
+                ~ok;
+                break;
+            }
+        }
+    }
+    return ok;
+}
+
 template <typename _StateSpace>
-static auto poles(const _StateSpace& _ss) -> arma::cx_vec{
+static auto poles(const _StateSpace& _ss){
     arma::cx_vec p;
     arma::cx_mat eigvec;
     arma::eig_gen(p, eigvec, _ss.A());

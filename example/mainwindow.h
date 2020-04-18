@@ -166,6 +166,9 @@ private:
     jacl::diagnosis::SIFD<jacl::system::DiscreteSystem<jacl::LinearStateSpace<3,1,3> >, 0> sifd_;
     void makeFault(arma::vec* _out);
     void setupSIMODCMotor();
+    //-- Discrete H-infinity controller
+    using DHinf = jacl::synthesis::DHinf<jacl::system::DiscreteSystem<jacl::LinearStateSpace<3,1,3>>,2,3>;
+    DHinf* dk_;
     //-- Another stuff
     using GRealization =
         jacl::LinearStateSpace<3, 8, 9,
@@ -205,7 +208,7 @@ private:
     HInfSC* hinf_sc_;
     jacl::system::ContinuousSystem<SpdCtrl> spdctrl_sys_;
     jacl::Plotter<jacl::system::ContinuousSystem<SpdCtrl> > spdctrl_plt_;
-    void setupSpeedController();
+    void setupSpeedController();    
 
     //-- Non-Linear Pendulum Model
     enum {

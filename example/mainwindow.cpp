@@ -772,6 +772,8 @@ void MainWindow::setupSIMODCMotor(){
     dobserver_simo_plt_.setTitle("Observer SIMO DC motor");
     // dobserver_simo_plt_.setDelay() = SAMPLING_PERIOD;
     dobserver_simo_plt_.setPlotName({"Est. Position", "Est. Velocity", "Est. Current"});
+
+    dk_ = new DHinf(&dsys_simo_, 2.0);
 }
 
 void MainWindow::setupPositionController(){

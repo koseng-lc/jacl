@@ -22,5 +22,6 @@
 #include <jacl/diagnosis/sifd.hpp>
 #include <jacl/pole_placement.hpp>
 #include <jacl/synthesis/h_inf.hpp>
+#include <jacl/synthesis/dh_inf.hpp>
 #include <jacl/plotter.hpp>
 #include <jacl/parser.hpp>
