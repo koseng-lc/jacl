@@ -773,7 +773,8 @@ void MainWindow::setupSIMODCMotor(){
     // dobserver_simo_plt_.setDelay() = SAMPLING_PERIOD;
     dobserver_simo_plt_.setPlotName({"Est. Position", "Est. Velocity", "Est. Current"});
 
-    dk_ = new DHinf(&dsys_simo_, 2.0);
+    // dk_ = new DHinf(&dsys_simo_, 2.0);
+    // auto K(dk_->solve());
 }
 
 void MainWindow::setupPositionController(){
@@ -823,8 +824,11 @@ void MainWindow::setupPositionController(){
     icm_pos_.setC(fC);
     icm_pos_.setD(fD);
     jacl::system::ContinuousSystem<InterConnMatPos> icm_pos_sys(&icm_pos_);
+    std::cout << "TEST1" << std::endl;    
     hinf_pc_ = new HInfPC(&icm_pos_sys, 2.7882);
+    std::cout << "TEST2" << std::endl;
     jacl::common::StateSpacePack K( hinf_pc_->solve() );
+    std::cout << "TEST3" << std::endl;
     k_pos_.setA(std::get<0>(K));
     k_pos_.setB(std::get<1>(K));
     k_pos_.setC(std::get<2>(K));

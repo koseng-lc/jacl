@@ -500,13 +500,13 @@ auto Hinf<_System,
     arma::cx_mat L12_inf = L1_inf.tail_cols(INPUT_SIZE);
 
     arma::cx_mat D1111 = toCx(llft_.D11()).submat(0, 0,
-                                                  (performance_size - INPUT_SIZE) - 1, (perturbation_size - OUTPUT_SIZE) - 1);
+                                          (performance_size - INPUT_SIZE) - 1, (perturbation_size - OUTPUT_SIZE) - 1);
     arma::cx_mat D1112 = toCx(llft_.D11()).submat(0, (perturbation_size - OUTPUT_SIZE),
-                                                  (performance_size - INPUT_SIZE) - 1, perturbation_size - 1);
+                                          (performance_size - INPUT_SIZE) - 1, perturbation_size - 1);
     arma::cx_mat D1121 = toCx(llft_.D11()).submat((performance_size - INPUT_SIZE), 0,
-                                                  performance_size - 1, (perturbation_size - OUTPUT_SIZE) - 1);
+                                            performance_size - 1, (perturbation_size - OUTPUT_SIZE) - 1);
     arma::cx_mat D1122 = toCx(llft_.D11()).submat((performance_size - INPUT_SIZE), (perturbation_size - OUTPUT_SIZE),
-                                                  performance_size - 1,  perturbation_size - 1);
+                                            performance_size - 1,  perturbation_size - 1);
 
     X_inf_ = X_inf;
     Y_inf_ = Y_inf;

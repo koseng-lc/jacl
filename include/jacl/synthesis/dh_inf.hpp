@@ -7,7 +7,7 @@
 #pragma once
 
 #include <jacl/lti_common.hpp>
-#include <jacl/are.hpp>
+#include <jacl/dare.hpp>
 #include <jacl/lower_lft.hpp>
 #include <jacl/linear_state_space.hpp>
 #include <jacl/linear_algebra.hpp>
@@ -72,30 +72,22 @@ private:
         arma::mat R = (_gam*_gam)*arma::eye(_StateSpace::n_inputs,
                                             _StateSpace::n_inputs)
                         - D_tD;
-        arma::mat R_inv = arma::inv(R);
+        arma::mat R_inv = arma::inv(R);        
 
-        //-- Hamiltonian matrix
-        arma::mat H(_StateSpace::n_states << 1,
-                    _StateSpace::n_states << 1);
-
-        arma::mat temp1, temp2;
+        arma::mat temp1, temp2, temp3, temp4;
 
         //-- block 1,1
         temp1 = R_inv*D_t*_ss.C();
         temp2 = _ss.A() + temp1;
-        H.submat(                         0,                          0,
-                 _StateSpace::n_states - 1, _StateSpace::n_states - 1) = temp2;
-        //-- block 2,2
-        H.submat(_StateSpace::n_states, _StateSpace::n_states, _StateSpace::n_states * 2 - 1, _StateSpace::n_states * 2 - 1) = -arma::trans(temp2);
-        //-- block 1,2
-        H.submat(                         0,         _StateSpace::n_states,
-                 _StateSpace::n_states - 1, _StateSpace::n_states * 2 - 1) = _ss.B()*R_inv*arma::trans(_ss.B());
-        //-- block 2,1
-        temp1 = _ss.D()*R_inv*D_t;
-        temp2 = arma::eye(_StateSpace::n_outputs,
+        temp3 = _ss.D()*R_inv*D_t;
+        temp4 = arma::eye(_StateSpace::n_outputs,
                           _StateSpace::n_outputs)
-                 - temp1;
-        H.submat(_StateSpace::n_states, 0, _StateSpace::n_states * 2 - 1, _StateSpace::n_states - 1) = -C_t*temp2*_ss.C();
+                 - temp3;
+        //-- Hamiltonian matrix
+        arma::mat H = arma::join_cols(
+            arma::join_rows(temp2, _ss.B()*R_inv*arma::trans(_ss.B())),
+            arma::join_rows(-C_t*temp4*_ss.C(), -arma::trans(temp2))
+        );
 
         arma::cx_mat eigvec;
         arma::cx_vec eigval;
@@ -301,9 +293,7 @@ template <typename _System,
           std::size_t perturbation_size>
 auto DHinf<_System,
     performance_size,
-    perturbation_size>::solve() -> ::jacl::common::StateSpacePack{
-    
-    
+    perturbation_size>::solve() -> ::jacl::common::StateSpacePack{        
 
 #ifdef DHINF_VERBOSE
     std::cout << ">>>>> Interconnection matrix assumptions : " << std::endl;
@@ -316,10 +306,12 @@ auto DHinf<_System,
     //-- New code here
     //-- Setup several frequently matrix operation
     const arma::mat& A = llft_.A();
+    const arma::mat& B = ss_->B();
     const arma::mat& B1 = llft_.B1();
     arma::mat B1_t = arma::trans(llft_.B1());
     const arma::mat& B2 = llft_.B2();
     arma::mat B2_t = arma::trans(llft_.B2());
+    const arma::mat& C = ss_->C();
     const arma::mat& C1 = llft_.C1();
     arma::mat C1_t = arma::trans(llft_.C1());
     const arma::mat& C2 = llft_.C2();
@@ -341,17 +333,39 @@ auto DHinf<_System,
     temp5 = temp3*V_inv*temp4;
     arma::mat R = arma::eye(perturbation_size, perturbation_size)
         - temp1 - temp2 + temp5;
-    //-- INPUT_SIZE + PERTURBATION_SIZE
-    temp1 = arma::mat(INPUT_SIZE+perturbation_size, INPUT_SIZE+perturbation_size);
+    arma::mat G_P = arma::join_cols(
+        arma::join_rows(D12_t*D12, D12_t*D11),
+        arma::join_rows(D11_t*D12, D11_t*D11 - arma::eye(perturbation_size,perturbation_size))
+    );
 
-    arma::mat G_P(INPUT_SIZE+perturbation_size, INPUT_SIZE+perturbation_size);
-    G_P(0,0,INPUT_SIZE-1,INPUT_SIZE-1) = D12_t*D12;
-    G_P(0,INPUT_SIZE,INPUT_SIZE-1,INPUT_SIZE+perturbation_size-1) = D12_t*D11;
-    G_P(INPUT_SIZE,0,INPUT_SIZE+perturbation_size-1,INPUT_SIZE-1) = D11_t*D12;
-    G_P(INPUT_SIZE,INPUT_SIZE,
-        INPUT_SIZE+perturbation_size-1,
-        INPUT_SIZE+perturbation_size-1) = D11_t*D11 - arma::eye(perturbation_size,perturbation_size);
+    {
+        arma::mat S = arma::join_cols(
+            arma::join_rows(D12_t*D12, D12_t*D11),
+            arma::join_rows(D11_t*D12, D11_t*D11 - arma::eye(perturbation_size,perturbation_size))
+        );
+        arma::mat S_inv = arma::inv(S);
+        arma::mat X = arma::join_rows(B2, B1);
+        arma::mat X_t = arma::trans(X);
+        temp1 = arma::join_cols(D12_t, D11_t);
+        temp2 = X*S_inv*temp1;
+        arma::mat A_tilde = A - temp2*C1;
+        arma::mat A_tilde_t = arma::trans(A_tilde);
+        arma::mat A_tilde_inv = arma::inv(A_tilde);
+        temp1 = C1_t*X*S_inv*X_t;
+        arma::mat Q = C1_t*C1 - temp1*C1;
+        temp1 = A_tilde_inv*X*S_inv*X_t;
+        arma::mat H = arma::join_cols(
+            arma::join_rows(A_tilde_inv, temp1),
+            arma::join_rows(Q*A_tilde_inv, A_tilde_t+Q*temp1)
+        );
+        DARE<typename _System::StateSpace> solver(ss_);
+        solver.setSympleticMatrix(H);
+        arma::cx_mat P = solver.solve();
+    }
 
+    {
+        
+    }
 
     return std::make_tuple(A, B1, C1, D11);
 }

@@ -94,7 +94,7 @@ add_library(lti_common ${JACL_HEADER_PREFIX}/lti_common.hpp)
 target_link_libraries(lti_common PRIVATE armadillo)
 set_target_properties(lti_common PROPERTIES LINKER_LANGUAGE CXX)
 
-#-- Py Stuf
+#-- Py Stuff
 add_library(py_stuff ${JACL_HEADER_PREFIX}/py_stuff.hpp)
 set_target_properties(py_stuff PROPERTIES LINKER_LANGUAGE CXX)
 target_link_libraries(py_stuff PRIVATE ${PYTHON_LIBRARIES})
@@ -133,6 +133,11 @@ set_target_properties(pole_placement PROPERTIES LINKER_LANGUAGE CXX)
 add_library(are ${JACL_HEADER_PREFIX}/are.hpp)
 target_link_libraries(are PRIVATE Boost::system py_stuff linear_state_space)
 set_target_properties(are PROPERTIES LINKER_LANGUAGE CXX)
+
+#-- DARE
+add_library(dare ${JACL_HEADER_PREFIX}/dare.hpp)
+target_link_libraries(dare PRIVATE Boost::system py_stuff linear_state_space)
+set_target_properties(dare PROPERTIES LINKER_LANGUAGE CXX)
 
 #-- H-infinity Synthesis
 add_library(h_inf ${JACL_HEADER_PREFIX}/synthesis/h_inf.hpp)
@@ -175,6 +180,7 @@ set(JACL_LIB_LIST
     lower_lft
     pole_placement
     are
+    dare
     h_inf
     dh_inf
     observer_pattern

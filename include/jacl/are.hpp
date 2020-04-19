@@ -101,7 +101,7 @@ private:
             py::handle<> H_handle(np_H);
             py::object H_object(H_handle);
 
-            py::object abc = aux_schur.attr("aux_schur")(H_object);
+            py::object abc = aux_schur.attr("aux_schur")(H_object, "lhp");
             py::stl_input_iterator<py::object> begin(abc),end;
             std::vector<py::object> l1(begin, end);
             arma::mat dum[4];
