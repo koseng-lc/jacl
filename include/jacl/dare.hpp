@@ -42,7 +42,7 @@ public:
     }
 
     auto setSympleticMatrix(const arma::mat& _H){
-        H_ = _H;
+        S_ = _H;
     }
 
     auto solve();
@@ -63,12 +63,12 @@ private:
             sys.attr("path").attr("append")("../python");
 
             py::object aux_schur = py::import("aux_schur");
-            Py_intptr_t H_shape[2] = {(int)H_.n_rows, (int)H_.n_cols};
-            PyObject* np_H = PyArray_SimpleNewFromData(2, H_shape, NPY_FLOAT64, reinterpret_cast<void*>(H_.memptr()));
-            py::handle<> H_handle(np_H);
-            py::object H_object(H_handle);
+            Py_intptr_t S_shape[2] = {(int)S_.n_rows, (int)S_.n_cols};
+            PyObject* np_H = PyArray_SimpleNewFromData(2, S_shape, NPY_FLOAT64, reinterpret_cast<void*>(S_.memptr()));
+            py::handle<> S_handle(np_H);
+            py::object S_object(S_handle);
 
-            py::object abc = aux_schur.attr("aux_schur")(H_object, "iuc");
+            py::object abc = aux_schur.attr("aux_schur")(S_object, "iuc");
             py::stl_input_iterator<py::object> begin(abc),end;
             std::vector<py::object> l1(begin, end);
             arma::mat dum[4];
@@ -99,7 +99,7 @@ private:
 private:
     _StateSpace* ss_;
     //-- Sympletic matrix
-    arma::mat H_;
+    arma::mat S_;
     //-- Symmetric matrix
     arma::mat R_;
     arma::mat Q_;
@@ -112,7 +112,7 @@ private:
 template <class _StateSpace>
 DARE<_StateSpace>::DARE(_StateSpace* _ss, const arma::mat& _R, const arma::mat& _Q)
     : ss_(_ss)
-    , H_(_StateSpace::n_states * 2, _StateSpace::n_states * 2)
+    , S_(_StateSpace::n_states * 2, _StateSpace::n_states * 2)
     , R_(_StateSpace::n_states, _StateSpace::n_states)
     , Q_(_StateSpace::n_states, _StateSpace::n_states){
 
@@ -123,7 +123,7 @@ DARE<_StateSpace>::DARE(_StateSpace* _ss, const arma::mat& _R, const arma::mat& 
 template <class _StateSpace>
 DARE<_StateSpace>::DARE(_StateSpace* _ss)
     : ss_(_ss)
-    , H_(_StateSpace::n_states * 2, _StateSpace::n_states * 2)
+    , S_(_StateSpace::n_states * 2, _StateSpace::n_states * 2)
     , R_(_StateSpace::n_states, _StateSpace::n_states)
     , Q_(_StateSpace::n_states, _StateSpace::n_states){
 
@@ -139,7 +139,7 @@ auto DARE<_StateSpace>::genSympleticMatrix(){
     /*
     Not code yet
     */
-   H_ = arma::join_rows(
+   S_ = arma::join_rows(
        arma::join_cols(ss_->A(), R_),
        arma::join_cols(-Q_, -arma::trans(ss_->A()))
    );
@@ -149,19 +149,19 @@ template <class _StateSpace>
 auto DARE<_StateSpace>::solve(){
 
     std::tuple<arma::cx_mat, arma::cx_mat> TZ;
-    int ret = auxSchur(H_, TZ);
+    int ret = auxSchur(S_, TZ);
     arma::cx_mat T = std::get<0>(TZ);
     arma::cx_mat Z = std::get<1>(TZ);
 
-    arma::cx_mat ISS, X1, X2;
+    arma::cx_mat ISS, T1, T2;
 //    T.print("T : ");
 //    Z.print("Z : ");
     ISS = Z.head_cols(Z.n_cols >> 1);
 //    ISS.print("ISS : ");
-    X1 = ISS.head_rows(ISS.n_rows >> 1);
-    X2 = ISS.tail_rows(ISS.n_rows >> 1);
+    T1 = ISS.head_rows(ISS.n_rows >> 1);
+    T2 = ISS.tail_rows(ISS.n_rows >> 1);
     
-    arma::cx_mat solution = X2 * arma::inv(X1);
+    arma::cx_mat solution = T2 * arma::inv(T1);
 
     return solution;
 

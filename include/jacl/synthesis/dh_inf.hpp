@@ -53,16 +53,7 @@ private:
     auto checkCondition2();
     auto checkCondition3();
     auto checkCondition4();
-    auto checkAllCondition();
-
-    inline auto toCx(const arma::mat& _in) const
-        -> decltype(arma::cx_mat(_in, arma::zeros<arma::mat>( arma::size(_in) ))){
-        return arma::cx_mat(_in, arma::zeros<arma::mat>( arma::size(_in) ));
-    }
-
-    inline auto toReal(const arma::cx_mat& _in) const -> decltype(arma::real(_in)){
-        return arma::real(_in);
-    }
+    auto checkAllCondition();    
 
     template <typename _StateSpace>
     auto isInfNormLessThan(double _gam, const _StateSpace& _ss){
@@ -101,10 +92,6 @@ private:
             }
         }
         return ok;
-    }
-    //-- Lemma 3.7 Essentials Robust Control
-    auto invariantZeros(){
-
     }
 
 private:
@@ -302,10 +289,10 @@ auto DHinf<_System,
     assert(check_assumption && "The assumption made for interconnection matrix is not fulfill !");
 
     arma::mat temp1, temp2, temp3, temp4, temp5;
-    arma::cx_mat ctemp1, ctemp2, ctemp3;
-    //-- New code here
+    arma::cx_mat ctemp1, ctemp2, ctemp3, ctemp4, ctemp5;
     //-- Setup several frequently matrix operation
     const arma::mat& A = llft_.A();
+    arma::mat A_t = arma::trans(A);
     const arma::mat& B = ss_->B();
     const arma::mat& B1 = llft_.B1();
     arma::mat B1_t = arma::trans(llft_.B1());
@@ -320,47 +307,79 @@ auto DHinf<_System,
     arma::mat D11_t = arma::trans(llft_.D11());
     const arma::mat& D12 = llft_.D12();
     arma::mat D12_t = arma::trans(llft_.D12());
-    //-- there exist symmetric matrix P that semi-positive definite
-    arma::mat P(arma::size(A), arma::fill::zeros);
-    temp1 = B2_t*P*B2;
-    temp2 = D12_t*D12;
-    arma::mat V = temp1 + temp2;
-    arma::mat V_inv = arma::inv(V);
-    temp1 = D11_t*D11;
-    temp2 = B1_t*P*B1;
-    temp3 = B1_t*P*B2 + D11_t*D12;
-    temp4 = B2_t*P*B1 + D12_t*D11;
-    temp5 = temp3*V_inv*temp4;
-    arma::mat R = arma::eye(perturbation_size, perturbation_size)
-        - temp1 - temp2 + temp5;
-    arma::mat G_P = arma::join_cols(
-        arma::join_rows(D12_t*D12, D12_t*D11),
-        arma::join_rows(D11_t*D12, D11_t*D11 - arma::eye(perturbation_size,perturbation_size))
-    );
 
     {
+        using namespace ::jacl::linear_algebra;
         arma::mat S = arma::join_cols(
             arma::join_rows(D12_t*D12, D12_t*D11),
-            arma::join_rows(D11_t*D12, D11_t*D11 - arma::eye(perturbation_size,perturbation_size))
+            arma::join_rows(D11_t*D12, D11_t*D11 - (gam_*gam_)*arma::eye(perturbation_size,perturbation_size))
         );
+        // S.print("S : ");
         arma::mat S_inv = arma::inv(S);
         arma::mat X = arma::join_rows(B2, B1);
         arma::mat X_t = arma::trans(X);
         temp1 = arma::join_cols(D12_t, D11_t);
+        std::cout << "1" << std::endl;
         temp2 = X*S_inv*temp1;
+        std::cout << "2" << std::endl;
         arma::mat A_tilde = A - temp2*C1;
+        std::cout << "3" << std::endl;
         arma::mat A_tilde_t = arma::trans(A_tilde);
         arma::mat A_tilde_inv = arma::inv(A_tilde);
+        std::cout << "4" << std::endl;
+        C1_t.print("C1_t : ");
+        X.print("X : ");
+        S_inv.print("S_inv : ");
         temp1 = C1_t*X*S_inv*X_t;
+        std::cout << "5" << std::endl;
         arma::mat Q = C1_t*C1 - temp1*C1;
+        std::cout << "6" << std::endl;
         temp1 = A_tilde_inv*X*S_inv*X_t;
+        std::cout << "7" << std::endl;
         arma::mat H = arma::join_cols(
             arma::join_rows(A_tilde_inv, temp1),
             arma::join_rows(Q*A_tilde_inv, A_tilde_t+Q*temp1)
         );
+        std::cout << "8" << std::endl;
         DARE<typename _System::StateSpace> solver(ss_);
         solver.setSympleticMatrix(H);
         arma::cx_mat P = solver.solve();
+
+        ctemp1 = toCx(B2_t)*P*toCx(B2);
+        ctemp2 = toCx(D12_t)*toCx(D12);
+        arma::cx_mat V = ctemp1 + ctemp2;
+        arma::cx_mat V_inv = arma::inv(V);
+
+        ctemp1 = toCx(D11_t)*toCx(D11);
+        ctemp2 = toCx(B1_t)*P*toCx(B1);
+        ctemp3 = toCx(B1_t)*P*toCx(B2) + toCx(D11_t)*toCx(D12);
+        ctemp4 = toCx(B2_t)*P*toCx(B1) + toCx(D12_t)*toCx(D11);
+        ctemp5 = ctemp3*V_inv*ctemp4;
+        arma::cx_mat R = (gam_*gam_)*arma::eye<arma::cx_mat>(perturbation_size, perturbation_size)
+            - ctemp1 - ctemp2 + ctemp5;
+
+        temp1 = arma::join_cols(
+            arma::join_rows(D12_t*D12, D12_t*D11),
+            arma::join_rows(D11_t*D12, D11_t*D11 - arma::eye(perturbation_size,perturbation_size))
+        );
+        ctemp1 = toCx(temp1);
+        temp2 = arma::join_rows(
+            B2, B1
+        );
+        ctemp2 = toCx(temp2);
+        arma::cx_mat G = ctemp1 + arma::trans(ctemp2)*P*ctemp2;
+        arma::cx_mat G_inv = arma::inv(G);
+
+        ctemp1 = toCx(A_t)*P*toCx(A);
+        ctemp2 = toCx(C2_t)*toCx(C2);
+        ctemp3 = arma::join_cols(
+            toCx(B2_t)*P*toCx(A) + toCx(D12_t)*toCx(C1),
+            toCx(B1_t)*P*toCx(A) + toCx(D11_t)*toCx(C1)
+        );
+        ctemp4 = ctemp1 + ctemp2;
+        ctemp5 = arma::trans(ctemp3)*G_inv*ctemp3;
+        arma::cx_mat dare_rhs = P - ctemp4 - ctemp5;
+        dare_rhs.print("Dare RHS : ");
     }
 
     {

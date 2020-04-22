@@ -131,6 +131,7 @@ private:
     jacl::PhysicalParameter la;
     jacl::PhysicalParameter kb;
     jacl::PhysicalParameter ra;
+    arma::vec::fixed<6> weight_;
 
     using LinearStateSpace =
         jacl::LinearStateSpace<3, 2, 3,
@@ -167,8 +168,24 @@ private:
     void makeFault(arma::vec* _out);
     void setupSIMODCMotor();
     //-- Discrete H-infinity controller
-    using DHinf = jacl::synthesis::DHinf<jacl::system::DiscreteSystem<jacl::LinearStateSpace<3,1,3>>,2,3>;
-    DHinf* dk_;
+    using MReal = jacl::LinearStateSpace<9,1,1,
+                                         jacl::PhysicalParameter,
+                                         jacl::PhysicalParameter,
+                                         jacl::PhysicalParameter,
+                                         jacl::PhysicalParameter,
+                                         jacl::PhysicalParameter,
+                                         jacl::PhysicalParameter>;
+    MReal m_real_;
+    using MICM = jacl::LinearStateSpace<MReal::n_states, MReal::n_inputs+3, MReal::n_outputs+2>;
+    MICM m_icm_;
+    using MSys = jacl::system::DiscreteSystem<MICM>;
+    MSys m_sys_; 
+    using DHinf = jacl::synthesis::DHinf<MSys,2,3>;
+    DHinf* dh_inf_;
+    using DPosCtrl = jacl::LinearStateSpace<MReal::n_states, MReal::n_inputs, MReal::n_outputs>;
+    DPosCtrl dposctrl_;
+    jacl::system::DiscreteSystem<DPosCtrl> dposctrl_sys_;
+    jacl::Plotter<jacl::system::DiscreteSystem<DPosCtrl>> dposctrl_plt_;
     //-- Another stuff
     using GRealization =
         jacl::LinearStateSpace<3, 8, 9,
