@@ -315,14 +315,15 @@ auto DHinf<_System,
             arma::join_rows(D11_t*D12, D11_t*D11 - (gam_*gam_)*arma::eye(perturbation_size,perturbation_size))
         );
         // S.print("S : ");
+        arma::mat D12_D11 = arma::join_rows(D12, D11);
+        arma::mat B2_B1 = arma::join_rows(B2, B1);
         arma::mat S_inv = arma::inv(S);
-        arma::mat X = arma::join_rows(B2, B1);
+        arma::mat X = B2_B1*S_inv*arma::trans(B2_B1);
         arma::mat X_t = arma::trans(X);
-        temp1 = arma::join_cols(D12_t, D11_t);
         std::cout << "1" << std::endl;
-        temp2 = X*S_inv*temp1;
         std::cout << "2" << std::endl;
-        arma::mat A_tilde = A - temp2*C1;
+        temp1 = B2_B1*S_inv*arma::trans(D12_D11);
+        arma::mat A_tilde = A - temp1*C1;
         std::cout << "3" << std::endl;
         arma::mat A_tilde_t = arma::trans(A_tilde);
         arma::mat A_tilde_inv = arma::inv(A_tilde);
@@ -330,11 +331,12 @@ auto DHinf<_System,
         C1_t.print("C1_t : ");
         X.print("X : ");
         S_inv.print("S_inv : ");
-        temp1 = C1_t*X*S_inv*X_t;
+        temp1 = D12_D11*S_inv*arma::trans(D12_D11);
+        temp2 = C1_t*temp1*C1;
         std::cout << "5" << std::endl;
-        arma::mat Q = C1_t*C1 - temp1*C1;
+        arma::mat Q = C1_t*C1 - temp2;
         std::cout << "6" << std::endl;
-        temp1 = A_tilde_inv*X*S_inv*X_t;
+        temp1 = A_tilde_inv*X;
         std::cout << "7" << std::endl;
         arma::mat H = arma::join_cols(
             arma::join_rows(A_tilde_inv, temp1),
@@ -344,23 +346,25 @@ auto DHinf<_System,
         DARE<typename _System::StateSpace> solver(ss_);
         solver.setSympleticMatrix(H);
         arma::cx_mat P = solver.solve();
-
+        std::cout << "9" << std::endl;
         ctemp1 = toCx(B2_t)*P*toCx(B2);
         ctemp2 = toCx(D12_t)*toCx(D12);
+        std::cout << "10" << std::endl;
         arma::cx_mat V = ctemp1 + ctemp2;
         arma::cx_mat V_inv = arma::inv(V);
-
+        std::cout << "11" << std::endl;
         ctemp1 = toCx(D11_t)*toCx(D11);
         ctemp2 = toCx(B1_t)*P*toCx(B1);
         ctemp3 = toCx(B1_t)*P*toCx(B2) + toCx(D11_t)*toCx(D12);
         ctemp4 = toCx(B2_t)*P*toCx(B1) + toCx(D12_t)*toCx(D11);
         ctemp5 = ctemp3*V_inv*ctemp4;
+        std::cout << "12" << std::endl;
         arma::cx_mat R = (gam_*gam_)*arma::eye<arma::cx_mat>(perturbation_size, perturbation_size)
             - ctemp1 - ctemp2 + ctemp5;
 
         temp1 = arma::join_cols(
             arma::join_rows(D12_t*D12, D12_t*D11),
-            arma::join_rows(D11_t*D12, D11_t*D11 - arma::eye(perturbation_size,perturbation_size))
+            arma::join_rows(D11_t*D12, D11_t*D11 - (gam_*gam_)*arma::eye(perturbation_size,perturbation_size))
         );
         ctemp1 = toCx(temp1);
         temp2 = arma::join_rows(
