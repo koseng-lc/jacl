@@ -83,11 +83,6 @@ private:
         return res;
     }
 
-    //-- create utils lib
-    inline auto toCx(const arma::mat& _in) const -> arma::cx_mat{
-        return arma::cx_mat(_in, arma::zeros<arma::mat>( arma::size(_in) ));
-    }
-
     //-- change to pointer arg for TZ
     auto auxSchur(const arma::mat& _H, std::tuple<arma::cx_mat, arma::cx_mat>& TZ) -> int{
         ::jacl::py_stuff::AcquireGIL lk;

@@ -289,7 +289,7 @@ auto DHinf<_System,
     assert(check_assumption && "The assumption made for interconnection matrix is not fulfill !");
 
     arma::mat temp1, temp2, temp3, temp4, temp5;
-    arma::cx_mat ctemp1, ctemp2, ctemp3, ctemp4, ctemp5;
+    arma::cx_mat ctemp1, ctemp2, ctemp3, ctemp4, ctemp5, ctemp6;
     //-- Setup several frequently matrix operation
     const arma::mat& A = llft_.A();
     arma::mat A_t = arma::trans(A);
@@ -316,36 +316,38 @@ auto DHinf<_System,
         );
         // S.print("S : ");
         arma::mat D12_D11 = arma::join_rows(D12, D11);
+        arma::mat D12_D11_t = arma::trans(D12_D11);
         arma::mat B2_B1 = arma::join_rows(B2, B1);
         arma::mat S_inv = arma::inv(S);
         arma::mat X = B2_B1*S_inv*arma::trans(B2_B1);
         arma::mat X_t = arma::trans(X);
         std::cout << "1" << std::endl;
         std::cout << "2" << std::endl;
-        temp1 = B2_B1*S_inv*arma::trans(D12_D11);
-        arma::mat A_tilde = A - temp1*C1;
+        temp1 = B2_B1*S_inv*D12_D11_t;
+        arma::mat A_tilde = A - (temp1*C1);
+        if(arma::cond(A_tilde) > 1e9){
+            //-- regularize the ill-conditioned matrix
+            A_tilde = A + .001*arma::eye(arma::size(A));
+            std::cout << "[DHinf] Regularization triggered" << std::endl;
+        }
         std::cout << "3" << std::endl;
-        arma::mat A_tilde_t = arma::trans(A_tilde);
-        arma::mat A_tilde_inv = arma::inv(A_tilde);
-        std::cout << "4" << std::endl;
-        C1_t.print("C1_t : ");
-        X.print("X : ");
-        S_inv.print("S_inv : ");
-        temp1 = D12_D11*S_inv*arma::trans(D12_D11);
+        //-- more stable with solve() than with inv()
+        arma::mat A_tilde_tinv = arma::solve(A_tilde.t(), arma::eye(arma::size(A)), arma::solve_opts::equilibrate);
+        std::cout << "4" << std::endl;     
+        temp1 = D12_D11*S_inv*D12_D11_t;
         temp2 = C1_t*temp1*C1;
         std::cout << "5" << std::endl;
         arma::mat Q = C1_t*C1 - temp2;
-        std::cout << "6" << std::endl;
-        temp1 = A_tilde_inv*X;
-        std::cout << "7" << std::endl;
+        temp1 = A_tilde_tinv*Q;
         arma::mat H = arma::join_cols(
-            arma::join_rows(A_tilde_inv, temp1),
-            arma::join_rows(Q*A_tilde_inv, A_tilde_t+Q*temp1)
+            arma::join_rows(A_tilde+X*temp1, -X*A_tilde_tinv),
+            arma::join_rows(-temp1, A_tilde_tinv)
         );
-        std::cout << "8" << std::endl;
         DARE<typename _System::StateSpace> solver(ss_);
         solver.setSympleticMatrix(H);
         arma::cx_mat P = solver.solve();
+        arma::cx_mat P_t = arma::trans(P);
+        
         std::cout << "9" << std::endl;
         ctemp1 = toCx(B2_t)*P*toCx(B2);
         ctemp2 = toCx(D12_t)*toCx(D12);
@@ -362,27 +364,40 @@ auto DHinf<_System,
         arma::cx_mat R = (gam_*gam_)*arma::eye<arma::cx_mat>(perturbation_size, perturbation_size)
             - ctemp1 - ctemp2 + ctemp5;
 
-        temp1 = arma::join_cols(
-            arma::join_rows(D12_t*D12, D12_t*D11),
-            arma::join_rows(D11_t*D12, D11_t*D11 - (gam_*gam_)*arma::eye(perturbation_size,perturbation_size))
-        );
-        ctemp1 = toCx(temp1);
+        ctemp1 = toCx(S);
         temp2 = arma::join_rows(
             B2, B1
         );
         ctemp2 = toCx(temp2);
         arma::cx_mat G = ctemp1 + arma::trans(ctemp2)*P*ctemp2;
+
         arma::cx_mat G_inv = arma::inv(G);
 
-        ctemp1 = toCx(A_t)*P*toCx(A);
-        ctemp2 = toCx(C2_t)*toCx(C2);
-        ctemp3 = arma::join_cols(
-            toCx(B2_t)*P*toCx(A) + toCx(D12_t)*toCx(C1),
-            toCx(B1_t)*P*toCx(A) + toCx(D11_t)*toCx(C1)
-        );
-        ctemp4 = ctemp1 + ctemp2;
-        ctemp5 = arma::trans(ctemp3)*G_inv*ctemp3;
-        arma::cx_mat dare_rhs = P - ctemp4 - ctemp5;
+        // ctemp1 = toCx(A_t)*P*toCx(A);
+        // ctemp2 = toCx(C1_t*C1);
+        // arma::cx_mat D12_t_C1 = toCx(D12_t*C1);
+        // arma::cx_mat D11_t_C1 = toCx(D11_t*C1);
+        // ctemp3 = arma::join_cols(
+        //     toCx(B2_t)*P_t*toCx(A) + D12_t_C1,
+        //     toCx(B1_t)*P_t*toCx(A) + D11_t_C1
+        // );
+        // ctemp4 = arma::join_cols(
+        //     toCx(B2_t)*P*toCx(A) + D12_t_C1,
+        //     toCx(B1_t)*P*toCx(A) + D11_t_C1
+        // );
+        // ctemp5 = ctemp1 + ctemp2;
+        // ctemp6 = arma::trans(ctemp3)*G_inv*ctemp4;
+        // arma::cx_mat dare_rhs = ctemp5 - ctemp6 - P;
+        arma::cx_mat cx_X = toCx(X);
+        arma::cx_mat cx_A = toCx(A);
+        arma::cx_mat cx_A_t = arma::trans(cx_A);
+        ctemp1 = cx_A_t*P*cx_A;
+        ctemp2 = ctemp1 + toCx(C1_t*C1);
+        ctemp3 = cx_A_t*P*cx_X;
+        ctemp4 = arma::inv(arma::eye(arma::size(P*cx_X)) + P*cx_X);
+        ctemp5 = P*cx_A;
+        ctemp6 = ctemp3*ctemp4*ctemp5;
+        arma::cx_mat dare_rhs = ctemp2 - ctemp6 - P;
         dare_rhs.print("Dare RHS : ");
     }
 

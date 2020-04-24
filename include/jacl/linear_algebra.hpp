@@ -6,10 +6,14 @@
 
 namespace jacl{ namespace linear_algebra{
 
-template <typename Type>
-static inline auto toCx(const arma::Mat<Type>& _in)
-    -> decltype(arma::Mat<std::complex<Type>>(_in, arma::zeros<arma::Mat<Type>>( arma::size(_in) ))){
-    return arma::Mat<std::complex<Type>>(_in, arma::zeros<arma::Mat<Type>>( arma::size(_in) ));
+// template <typename Type>
+// static inline auto toCx(const arma::Mat<Type>& _in)
+//     -> decltype(arma::Mat<std::complex<Type>>(_in, arma::zeros<arma::Mat<Type>>( arma::size(_in) ))){
+//     return arma::Mat<std::complex<Type>>(_in, arma::zeros<arma::Mat<Type>>( arma::size(_in) ));
+// }
+
+static inline auto toCx(const arma::mat _in){
+    return arma::cx_mat(_in, arma::zeros<arma::mat>( arma::size(_in) ));
 }
 
 template <typename Type>
