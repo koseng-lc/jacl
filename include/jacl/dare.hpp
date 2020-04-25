@@ -41,8 +41,8 @@ public:
             genSympleticMatrix();
     }
 
-    auto setSympleticMatrix(const arma::mat& _H){
-        S_ = _H;
+    auto setSympleticMatrix(const arma::mat& _S){
+        S_ = _S;
     }
 
     auto solve();
@@ -51,7 +51,7 @@ private:
     auto genSympleticMatrix();
 
     //-- change to pointer arg for TZ
-    auto auxSchur(const arma::mat& _H, std::tuple<arma::cx_mat, arma::cx_mat>& TZ) -> int{
+    auto auxSchur(const arma::mat& _S, std::tuple<arma::cx_mat, arma::cx_mat>& TZ) -> int{
         ::jacl::py_stuff::AcquireGIL lk;
         try{
             py::object sys = py::import("sys");
@@ -68,7 +68,7 @@ private:
             std::vector<py::object> l1(begin, end);
             arma::mat dum[4];
             for(int i(0); i < l1.size(); i++){
-                arma::mat temp(arma::size(_H));
+                arma::mat temp(arma::size(_S));
                 std::vector<py::object> layer2(py::stl_input_iterator<py::object>(l1[i]), py::stl_input_iterator<py::object>());
                 for(int j(0); j < layer2.size(); j++){
                     std::vector<double> layer3(py::stl_input_iterator<double>(layer2[j]), py::stl_input_iterator<double>());
@@ -77,7 +77,7 @@ private:
                 }
                 dum[i] = temp;
             }
-            arma::cx_mat T(arma::size(_H)),Z(arma::size(_H));
+            arma::cx_mat T(arma::size(_S)),Z(arma::size(_S));
             T.set_real(dum[0]);
             T.set_imag(dum[1]);
             Z.set_real(dum[2]);
@@ -155,8 +155,14 @@ auto DARE<_StateSpace>::solve(){
 //    ISS.print("ISS : ");
     T1 = ISS.head_rows(ISS.n_rows >> 1);
     T2 = ISS.tail_rows(ISS.n_rows >> 1);
-    
-    arma::cx_mat solution = T2 * arma::inv(T1);
+    std::cout << "T1 condition number : " << arma::cond(T1) << std::endl;
+    if(arma::cond(T1) > 1e6){
+        //-- regularize the ill-conditioned matrix
+        T1 = T1 + .001*arma::eye(arma::size(T1));
+        std::cout << "[DARE] Regularization triggered" << std::endl;
+    }
+    arma::cx_mat T1_inv = arma::solve(T1, arma::eye<arma::cx_mat>(arma::size(T1)), arma::solve_opts::equilibrate);
+    arma::cx_mat solution = T2 * T1_inv;
 
     return solution;
 

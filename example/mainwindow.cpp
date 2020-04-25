@@ -27,9 +27,10 @@ MainWindow::MainWindow(QWidget *parent)
     , ifd_(&dsys_simo_, {10.,9.,8.})
     , sifd_(&dsys_simo_, {10.,9.,8.})
     , m_real_(&bm,&jm,&ki,&la,&kb,&ra)
-    , m_sys_(&m_icm_)
-    , dposctrl_sys_(&dposctrl_)
-    , dposctrl_plt_(&dposctrl_sys_, {10,11}, SAMPLING_PERIOD)
+    , m_sys_(&m_icm_, SAMPLING_PERIOD)
+    , pos_sys_(&pos_icm_, SAMPLING_PERIOD)
+    , pos_dctrl_sys_(&pos_dctrl_, SAMPLING_PERIOD)
+    , pos_dctrl_plt_(&pos_dctrl_sys_, {10,11}, SAMPLING_PERIOD)
     //--
     , G_(&bm, &jm, &ki, &la, &kb, &ra)
     , ref_(3, 1, arma::fill::zeros)
@@ -876,12 +877,57 @@ void MainWindow::setupSIMODCMotor(){
         m_icm_.setC(C);
         m_icm_.setD(D);
     }
-    m_icm_.A().print("A : ");
-    m_icm_.B().print("B : ");
-    m_icm_.C().print("C : ");
-    m_icm_.D().print("D : ");
-    dh_inf_ = new DHinf(&m_sys_, 2.0);
-    auto K(dh_inf_->solve());
+    // m_icm_.A().print("Aicm : ");
+    // m_icm_.B().print("Bicm : ");
+    // m_icm_.C().print("Cicm : ");
+    // m_icm_.D().print("Dicm : ");
+
+    {
+        pos_real_.setA(dsimo_.A());
+        pos_real_.setB(dsimo_.B());
+        pos_real_.setC({1.,0.,0.});
+        pos_real_.setD(dsimo_.D());
+
+        arma::mat temp1, temp2, temp3;
+        arma::mat zeros3x1(3,1,arma::fill::zeros);
+        arma::mat zeros1x3(1,3,arma::fill::zeros);
+        arma::mat zeros1x1(1,1,arma::fill::zeros);
+        arma::mat eye1x1(1,1,arma::fill::eye);
+
+        temp1 = arma::join_horiz(zeros3x1, pos_real_.B());
+        temp2 = arma::join_horiz(zeros3x1, temp1);
+        arma::mat B = arma::join_horiz(pos_real_.B(), temp2);
+
+        temp1 = arma::join_vert(zeros1x3, -pos_real_.C());
+        arma::mat C = arma::join_vert(-pos_real_.C(), temp1);
+
+        temp1 = arma::join_horiz(zeros1x1, eye1x1);
+        temp2 = arma::join_horiz(zeros1x1, temp1);
+        temp3 = arma::join_horiz(zeros1x1, arma::join_horiz(zeros1x1, zeros1x1));
+        arma::mat D11 = arma::join_vert(temp2, temp3);
+
+        arma::mat D12 = arma::join_vert(zeros1x1, eye1x1);
+
+        temp1 = arma::join_horiz(-eye1x1,eye1x1);
+        arma::mat D21 = arma::join_horiz(zeros1x1,temp1);
+        
+        arma::mat D22 = zeros1x1;
+
+        temp1 = arma::join_horiz(D11, D12);
+        temp2 = arma::join_horiz(D21, D22);
+        arma::mat D = arma::join_vert(temp1, temp2);
+
+        pos_icm_.setA(pos_real_.A());
+        pos_icm_.setB(B);
+        pos_icm_.setC(C);
+        pos_icm_.setD(D);
+    }
+    pos_icm_.A().print("Aicm : ");
+    pos_icm_.B().print("Bicm : ");
+    pos_icm_.C().print("Cicm : ");
+    pos_icm_.D().print("Dicm : ");
+    pos_dhinf_ = new PosDHinf(&pos_sys_, 2.0);
+    auto K(pos_dhinf_->solve());
        
 }
 

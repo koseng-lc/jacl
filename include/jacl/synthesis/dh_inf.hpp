@@ -325,7 +325,7 @@ auto DHinf<_System,
         std::cout << "2" << std::endl;
         temp1 = B2_B1*S_inv*D12_D11_t;
         arma::mat A_tilde = A - (temp1*C1);
-        if(arma::cond(A_tilde) > 1e9){
+        if(arma::cond(A_tilde) > 1e6){
             //-- regularize the ill-conditioned matrix
             A_tilde = A + .001*arma::eye(arma::size(A));
             std::cout << "[DHinf] Regularization triggered" << std::endl;
@@ -343,6 +343,14 @@ auto DHinf<_System,
             arma::join_rows(A_tilde+X*temp1, -X*A_tilde_tinv),
             arma::join_rows(-temp1, A_tilde_tinv)
         );
+        //-- test
+        arma::mat J = arma::join_cols(
+            arma::join_rows(arma::zeros(arma::size(A)), -arma::eye(arma::size(A))),
+            arma::join_rows(arma::eye(arma::size(A)), arma::zeros(arma::size(A)))
+        );
+        //--
+        arma::mat check = H.t()*J*H;
+        check.print("Check : ");
         DARE<typename _System::StateSpace> solver(ss_);
         solver.setSympleticMatrix(H);
         arma::cx_mat P = solver.solve();
@@ -388,10 +396,11 @@ auto DHinf<_System,
         // ctemp5 = ctemp1 + ctemp2;
         // ctemp6 = arma::trans(ctemp3)*G_inv*ctemp4;
         // arma::cx_mat dare_rhs = ctemp5 - ctemp6 - P;
+
         arma::cx_mat cx_X = toCx(X);
-        arma::cx_mat cx_A = toCx(A);
+        arma::cx_mat cx_A = toCx(A_tilde);
         arma::cx_mat cx_A_t = arma::trans(cx_A);
-        ctemp1 = cx_A_t*P*cx_A;
+        ctemp1 = cx_A_t*P_t*cx_A;
         ctemp2 = ctemp1 + toCx(C1_t*C1);
         ctemp3 = cx_A_t*P*cx_X;
         ctemp4 = arma::inv(arma::eye(arma::size(P*cx_X)) + P*cx_X);

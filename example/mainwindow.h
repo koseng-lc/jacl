@@ -114,7 +114,7 @@ private:
     boost::thread cl_thread_;
     boost::mutex cl_mtx_;
     std::atomic<bool> cl_status_;
-    const double SAMPLING_PERIOD{.01};
+    const double SAMPLING_PERIOD{.001};
 
     enum ParamIndex{
         iBm, // Viscous Friction (N m s / rad)
@@ -174,18 +174,25 @@ private:
                                          jacl::PhysicalParameter,
                                          jacl::PhysicalParameter,
                                          jacl::PhysicalParameter,
-                                         jacl::PhysicalParameter>;
-    MReal m_real_;
-    using MICM = jacl::LinearStateSpace<MReal::n_states, MReal::n_inputs+3, MReal::n_outputs+2>;
-    MICM m_icm_;
+                                         jacl::PhysicalParameter>;    
+    using MICM = jacl::LinearStateSpace<MReal::n_states, MReal::n_inputs+3, MReal::n_outputs+2>;    
     using MSys = jacl::system::DiscreteSystem<MICM>;
+    MReal m_real_;
+    MICM m_icm_;
     MSys m_sys_; 
-    using DHinf = jacl::synthesis::DHinf<MSys,2,3>;
-    DHinf* dh_inf_;
-    using DPosCtrl = jacl::LinearStateSpace<MReal::n_states, MReal::n_inputs, MReal::n_outputs>;
-    DPosCtrl dposctrl_;
-    jacl::system::DiscreteSystem<DPosCtrl> dposctrl_sys_;
-    jacl::Plotter<jacl::system::DiscreteSystem<DPosCtrl>> dposctrl_plt_;
+    using PosReal = jacl::LinearStateSpace<3, 1, 1>;
+    using PosICM = jacl::LinearStateSpace<PosReal::n_states, PosReal::n_inputs+3, PosReal::n_outputs+2>;
+    using PosSys = jacl::system::DiscreteSystem<PosICM>;
+    using PosDHinf = jacl::synthesis::DHinf<PosSys,2,3>;
+    using PosDCtrl = jacl::LinearStateSpace<PosReal::n_states, PosReal::n_outputs, PosReal::n_inputs>;
+    PosReal pos_real_;
+    PosICM pos_icm_;
+    PosSys pos_sys_;    
+    PosDHinf* pos_dhinf_;    
+    PosDCtrl pos_dctrl_;
+    jacl::system::DiscreteSystem<PosDCtrl> pos_dctrl_sys_;
+    jacl::Plotter<jacl::system::DiscreteSystem<PosDCtrl>> pos_dctrl_plt_;
+
     //-- Another stuff
     using GRealization =
         jacl::LinearStateSpace<3, 8, 9,
