@@ -771,12 +771,10 @@ void MainWindow::setupSIMODCMotor(){
 
     dsys_simo_plt_.init();
     dsys_simo_plt_.setTitle("SIMO DC motor");
-    // dsys_simo_plt_.setDelay() = SAMPLING_PERIOD;
     dsys_simo_plt_.setPlotName({"Position", "Velocity", "Current", "Voltage"});
 
     dobserver_simo_plt_.init();
     dobserver_simo_plt_.setTitle("Observer SIMO DC motor");
-    // dobserver_simo_plt_.setDelay() = SAMPLING_PERIOD;
     dobserver_simo_plt_.setPlotName({"Est. Position", "Est. Velocity", "Est. Current"});
 
     {
@@ -838,10 +836,6 @@ void MainWindow::setupSIMODCMotor(){
         m_real_.setD(fD);
     }
     jacl::common::StateSpacePack dm_real_ = jacl::common::discretize(m_real_, SAMPLING_PERIOD);
-    // std::get<0>(dm_real_);
-    // std::get<1>(dm_real_);
-    // std::get<2>(dm_real_);
-    // std::get<3>(dm_real_);
     {
         arma::mat temp1, temp2, temp3;
         arma::mat zeros9x1(9,1,arma::fill::zeros);
@@ -928,7 +922,9 @@ void MainWindow::setupSIMODCMotor(){
     pos_icm_.D().print("Dicm : ");
     pos_dhinf_ = new PosDHinf(&pos_sys_, 2.0);
     auto K(pos_dhinf_->solve());
-       
+    pos_dctrl_.setA(std::get<0>(K)); pos_dctrl_.setB(std::get<1>(K));
+    pos_dctrl_.setC(std::get<2>(K)); pos_dctrl_.setD(std::get<3>(K));
+
 }
 
 void MainWindow::setupPositionController(){

@@ -161,7 +161,8 @@ auto DARE<_StateSpace>::solve(){
         T1 = T1 + .001*arma::eye(arma::size(T1));
         std::cout << "[DARE] Regularization triggered" << std::endl;
     }
-    arma::cx_mat T1_inv = arma::solve(T1, arma::eye<arma::cx_mat>(arma::size(T1)), arma::solve_opts::equilibrate);
+    arma::cx_mat T1_inv = arma::solve(T1, arma::eye<arma::cx_mat>(arma::size(T1)),
+        arma::solve_opts::refine);
     arma::cx_mat solution = T2 * T1_inv;
 
     return solution;

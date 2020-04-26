@@ -175,11 +175,11 @@ private:
                                          jacl::PhysicalParameter,
                                          jacl::PhysicalParameter,
                                          jacl::PhysicalParameter>;    
-    using MICM = jacl::LinearStateSpace<MReal::n_states, MReal::n_inputs+3, MReal::n_outputs+2>;    
+    using MICM = jacl::LinearStateSpace<MReal::n_states, MReal::n_inputs+3, MReal::n_outputs+2>;
     using MSys = jacl::system::DiscreteSystem<MICM>;
     MReal m_real_;
     MICM m_icm_;
-    MSys m_sys_; 
+    MSys m_sys_;
     using PosReal = jacl::LinearStateSpace<3, 1, 1>;
     using PosICM = jacl::LinearStateSpace<PosReal::n_states, PosReal::n_inputs+3, PosReal::n_outputs+2>;
     using PosSys = jacl::system::DiscreteSystem<PosICM>;
@@ -187,8 +187,8 @@ private:
     using PosDCtrl = jacl::LinearStateSpace<PosReal::n_states, PosReal::n_outputs, PosReal::n_inputs>;
     PosReal pos_real_;
     PosICM pos_icm_;
-    PosSys pos_sys_;    
-    PosDHinf* pos_dhinf_;    
+    PosSys pos_sys_;
+    PosDHinf* pos_dhinf_;
     PosDCtrl pos_dctrl_;
     jacl::system::DiscreteSystem<PosDCtrl> pos_dctrl_sys_;
     jacl::Plotter<jacl::system::DiscreteSystem<PosDCtrl>> pos_dctrl_plt_;
