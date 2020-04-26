@@ -30,7 +30,7 @@ MainWindow::MainWindow(QWidget *parent)
     , m_sys_(&m_icm_, SAMPLING_PERIOD)
     , pos_sys_(&pos_icm_, SAMPLING_PERIOD)
     , pos_dctrl_sys_(&pos_dctrl_, SAMPLING_PERIOD)
-    , pos_dctrl_plt_(&pos_dctrl_sys_, {10,11}, SAMPLING_PERIOD)
+    , pos_dctrl_plt_(&pos_dctrl_sys_, {4,5}, SAMPLING_PERIOD)
     //--
     , G_(&bm, &jm, &ki, &la, &kb, &ra)
     , ref_(3, 1, arma::fill::zeros)
@@ -665,6 +665,7 @@ void MainWindow::simulateAct(){
 
     //-- Discrete
     dsys_simo_plt_.start();
+    pos_dctrl_plt_.start();
     // dobserver_simo_plt_.start();
     sifd_.viewSignals();
 }
@@ -921,10 +922,13 @@ void MainWindow::setupSIMODCMotor(){
     pos_icm_.C().print("Cicm : ");
     pos_icm_.D().print("Dicm : ");
     pos_dhinf_ = new PosDHinf(&pos_sys_, 2.0);
-    auto K(pos_dhinf_->solve());
+    auto K( pos_dhinf_->solve() );
     pos_dctrl_.setA(std::get<0>(K)); pos_dctrl_.setB(std::get<1>(K));
     pos_dctrl_.setC(std::get<2>(K)); pos_dctrl_.setD(std::get<3>(K));
 
+    pos_dctrl_plt_.init();
+    pos_dctrl_plt_.setTitle("Discrete Position Controller");
+    pos_dctrl_plt_.setPlotName({"Error","Input"});
 }
 
 void MainWindow::setupPositionController(){
@@ -1074,13 +1078,10 @@ double MainWindow::angularSpeed2Voltage(double _speed, double _torque){
 
 void MainWindow::closedLoopProcess(){
     //-- Continuous
-    // arma::mat out(3,1,arma::fill::zeros),in(2,1,arma::fill::zeros);
-    // arma::mat err(out),est(out);
-    //-- Discrete
-    arma::vec dout(3,1,arma::fill::zeros),din(1,1,arma::fill::zeros);
-    arma::vec derr(dout),dest(dout);
-    din_ = din;
-    control_mode_ = jacl::traits::toUType(jacl::ControllerDialog::ControlMode::Velocity);
+    arma::mat out(3,1,arma::fill::zeros),in(1,1,arma::fill::zeros);
+    arma::mat err(in),est(out);
+    din_ = in;
+    control_mode_ = jacl::traits::toUType(jacl::ControllerDialog::ControlMode::Position);
 //    arma::mat last_err(err);
 //    arma::mat diff(err);
 //    auto Kp(10.), Kd(1.);
@@ -1105,7 +1106,7 @@ void MainWindow::closedLoopProcess(){
        }*/
 
         //-- Error between reference and output
-        // err = ref_ + out;
+        err(control_mode_) = ref_(control_mode_) - out(control_mode_);
 
         //-- H-infinity Controller
         // if(control_mode_ == jacl::traits::toUType(jacl::ControllerDialog::ControlMode::Position)){
@@ -1123,19 +1124,13 @@ void MainWindow::closedLoopProcess(){
         // est = cobserver_.convolve(in, out);
 
         //-- Discrete
-        dout = dsys_simo_.convolve(din_);
+        in = pos_dctrl_sys_.convolve(err);
+        out = dsys_simo_.convolve(in);
         // dest = dobserver_simo_.convolve(din_, dout);
-        arma::vec manip_out(dout);
-        makeFault(&manip_out);
+        arma::vec manip_out(out);
+        makeFault(&manip_out);        
         std::array<std::pair<arma::vec, bool>, 3> diag_pack = sifd_.detect(din_, manip_out);
-        // manip_out.print("Manip. Out : ");
-        // dout.print("Output : ");
-        // std::get<0>(diag_pack[0]).print("Est. Pos : ");
-        // std::get<0>(diag_pack[1]).print("Est. Vel : ");
-        // std::get<0>(diag_pack[2]).print("Est. Curr : ");
-        // std::cout << "Sensor 1 status : " << std::boolalpha << std::get<1>(diag_pack[0]) << std::endl;
-        // std::cout << "Sensor 2 status : " << std::boolalpha << std::get<1>(diag_pack[1]) << std::endl;
-        // std::cout << "Sensor 3 status : " << std::boolalpha << std::get<1>(diag_pack[2]) << std::endl;
+        
 
 //        err.submat(0,0,0,0).print("Err : ");
 //        in.submat(0,0,0,0).print("In : ");
