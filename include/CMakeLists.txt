@@ -139,7 +139,7 @@ add_library(dare ${JACL_HEADER_PREFIX}/dare.hpp)
 target_link_libraries(dare PRIVATE Boost::system py_stuff linear_state_space)
 set_target_properties(dare PROPERTIES LINKER_LANGUAGE CXX)
 
-#-- H-infinity Synthesis
+#-- Synthesis
 add_library(h_inf ${JACL_HEADER_PREFIX}/synthesis/h_inf.hpp)
 target_link_libraries(h_inf PRIVATE lower_lft are lti_common numerical_methods)
 set_target_properties(h_inf PROPERTIES LINKER_LANGUAGE CXX)
@@ -147,6 +147,11 @@ set_target_properties(h_inf PROPERTIES LINKER_LANGUAGE CXX)
 add_library(dh_inf ${JACL_HEADER_PREFIX}/synthesis/dh_inf.hpp)
 target_link_libraries(dh_inf PRIVATE lower_lft are lti_common numerical_methods)
 set_target_properties(dh_inf PROPERTIES LINKER_LANGUAGE CXX)
+
+#-- Analysis
+add_library(analysis ${JACL_HEADER_PREFIX}/analysis/analysis.hpp)
+target_link_libraries(analysis PRIVATE lower_lft are lti_common numerical_methods)
+set_target_properties(analysis PROPERTIES LINKER_LANGUAGE CXX)
 
 #-- Diagnosis
 add_library(ifd ${JACL_HEADER_PREFIX}/diagnosis/ifd.hpp)
@@ -183,6 +188,7 @@ set(JACL_LIB_LIST
     dare
     h_inf
     dh_inf
+    analysis
     observer_pattern
     singleton_pattern
     parser
