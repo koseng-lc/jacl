@@ -49,12 +49,6 @@ private:
     auto checkAssumption3();
     auto checkAllAssumption();
 
-    auto checkCondition1();
-    auto checkCondition2();
-    auto checkCondition3();
-    auto checkCondition4();
-    auto checkAllCondition();    
-
     template <typename _StateSpace>
     auto isInfNormLessThan(double _gam, const _StateSpace& _ss){
         arma::mat C_t = arma::trans( _ss.C() );
@@ -128,7 +122,7 @@ auto DHinf<_System,
     auto ctrb = common::stabilizable(llft_.A(), llft_.B2());
     auto obsv = common::detectability(llft_.A(), llft_.C2());
 #ifdef DHINF_VERBOSE
-    std::cout << "Assumption 1 : " << std::boolalpha << ctrb << " ; " << obsv << std::endl;
+    std::cout << "[DHinf] Assumption 1 : " << std::boolalpha << ctrb << " ; " << obsv << std::endl;
 #endif
     return ctrb & obsv;
 }
@@ -161,7 +155,7 @@ auto DHinf<_System,
     bool ok = !common::hasUnobservableModeInImAxis(A, C);
    
 #ifdef DHINF_VERBOSE
-    std::cout << "Assumption 2 : " << std::boolalpha << ok << std::endl;
+    std::cout << "[DHinf] Assumption 2 : " << std::boolalpha << ok << std::endl;
 #endif
     return ok;
 }
@@ -190,7 +184,7 @@ auto DHinf<_System,
     bool ok = !common::hasUncontrollableModeInImAxis(A, B);
 
 #ifdef DHINF_VERBOSE
-    std::cout << "Assumption 3 : " << std::boolalpha << ok << std::endl;
+    std::cout << "[DHinf] Assumption 3 : " << std::boolalpha << ok << std::endl;
 #endif
     return ok;
 }
@@ -211,82 +205,13 @@ template <typename _System,
           std::size_t perturbation_size>
 auto DHinf<_System,
     performance_size,
-    perturbation_size>::checkCondition1(){
-
-    arma::mat D11_ = llft_.D11().head_rows(performance_size - INPUT_SIZE);
-    arma::mat D_11 = llft_.D11().head_cols(perturbation_size - OUTPUT_SIZE);
-
-    arma::mat U, V;
-    arma::vec s;
-    arma::svd(U, s, V, D11_);
-    auto sval1( s.max() );
-    arma::svd(U, s, V, D_11);
-    auto sval2( s.max() );
-
-    return gam_ > std::max(sval1, sval2);
-}
-
-template <typename _System,
-          std::size_t performance_size,
-          std::size_t perturbation_size>
-auto DHinf<_System,
-    performance_size,
-    perturbation_size>::checkCondition2(){
-
-    return linear_algebra::isPosSemiDefinite(X_inf_);
-}
-
-template <typename _System,
-          std::size_t performance_size,
-          std::size_t perturbation_size>
-auto DHinf<_System,
-    performance_size,
-    perturbation_size>::checkCondition3(){
-
-    return linear_algebra::isPosSemiDefinite(Y_inf_);
-}
-
-template <typename _System,
-          std::size_t performance_size,
-          std::size_t perturbation_size>
-auto DHinf<_System,
-    performance_size,
-    perturbation_size>::checkCondition4(){
-    arma::cx_mat temp( X_inf_*Y_inf_ );
-    return linear_algebra::spectralRadius( std::move(temp) ) < gam_*gam_;
-}
-
-template <typename _System,
-          std::size_t performance_size,
-          std::size_t perturbation_size>
-auto DHinf<_System,
-    performance_size,
-    perturbation_size>::checkAllCondition(){
-    auto cond1 = checkCondition1();
-    auto cond2 = checkCondition2();
-    auto cond3 = checkCondition3();
-    auto cond4 = checkCondition4();
-#ifdef DHINF_VERBOSE
-    std::cout << "Condition 1 : " << std::boolalpha << cond1 << std::endl;
-    std::cout << "Condition 2 : " << std::boolalpha << cond2 << std::endl;
-    std::cout << "Condition 3 : " << std::boolalpha << cond3 << std::endl;
-    std::cout << "Condition 4 : " << std::boolalpha << cond4 << std::endl;
-#endif
-    return cond1 & cond2 & cond3 & cond4;
-}
-
-template <typename _System,
-          std::size_t performance_size,
-          std::size_t perturbation_size>
-auto DHinf<_System,
-    performance_size,
     perturbation_size>::solve() -> ::jacl::common::StateSpacePack{        
 
 #ifdef DHINF_VERBOSE
-    std::cout << ">>>>> Interconnection matrix assumptions : " << std::endl;
+    std::cout << "[DHinf] Interconnection matrix assumptions : " << std::endl;
 #endif
     bool check_assumption = checkAllAssumption();
-    assert(check_assumption && "The assumption made for interconnection matrix is not fulfill !");
+    assert(check_assumption && "[DHinf] The assumption made for interconnection matrix is not fulfill !");
 
     using namespace ::jacl::linear_algebra;
 
@@ -346,8 +271,10 @@ auto DHinf<_System,
         arma::mat A_tilde = A - (temp1*C1);
         if(arma::cond(A_tilde) > 1e6){
             //-- regularize the ill-conditioned matrix
-            A_tilde = A + .001*arma::eye(arma::size(A));
+            A_tilde = A_tilde + .001*arma::eye(arma::size(A));
+            #ifdef DHINF_VERBOSE
             std::cout << "[DHinf] Regularization triggered" << std::endl;
+            #endif
         }
         //-- more stable with solve() than with inv()
         arma::mat A_tilde_tinv = arma::solve(A_tilde.t(), arma::eye(arma::size(A)),
@@ -362,14 +289,17 @@ auto DHinf<_System,
             arma::join_rows(A_tilde+X*temp1, -X*A_tilde_tinv),
             arma::join_rows(-temp1, A_tilde_tinv)
         );
-        //-- test
+
+        #ifdef DHINF_VERBOSE
+        //-- check whether sympletic or not
         arma::mat J = arma::join_cols(
             arma::join_rows(arma::zeros(arma::size(A)), -arma::eye(arma::size(A))),
             arma::join_rows(arma::eye(arma::size(A)), arma::zeros(arma::size(A)))
-        );
-        //--
+        );      
         arma::mat check = H.t()*J*H;
-        check.print("Check sympletic 1 : ");
+        check.print("[DHinf] Check sympletic 1 : ");
+        #endif
+
         DARE<typename _System::StateSpace> solver(ss_);
         solver.setSympleticMatrix(H);
         arma::cx_mat P = solver.solve();
@@ -378,6 +308,8 @@ auto DHinf<_System,
         arma::cx_mat cx_X = toCx(X);
         arma::cx_mat cxA_tilde = toCx(A_tilde);
         arma::cx_mat cxA_tilde_t = arma::trans(cxA_tilde);
+
+        #ifdef DHINF_VERBOSE
         //-- check the DARE solution
         ctemp1 = cxA_tilde_t*P*cxA_tilde;
         ctemp2 = ctemp1 + toCx(C1_t*C1);
@@ -386,7 +318,8 @@ auto DHinf<_System,
         ctemp5 = P*cxA_tilde;
         ctemp6 = ctemp3*ctemp4*ctemp5;
         arma::cx_mat dare_rhs = ctemp2 - ctemp6 - P;
-        dare_rhs.print("Dare RHS 1 : ");
+        dare_rhs.print("[DHinf] DARE RHS 1 : ");
+        #endif
 
         //-- common term
         arma::cx_mat cterm1 = cxB2_t*P*cxA + toCx(D12_t*C1);
@@ -477,7 +410,9 @@ auto DHinf<_System,
         if(arma::cond(A_tilde) > 1e6){
             //-- regularize the ill-conditioned matrix
             A_tilde = A_tilde + .001*arma::eye(arma::size(Ap_t));
+            #ifdef DHINF_VERBOSE
             std::cout << "[DHinf] Regularization triggered" << std::endl;
+            #endif
         }
         //-- more stable with solve() than with inv()
         arma::cx_mat A_tilde_t = arma::trans(A_tilde);
@@ -494,19 +429,22 @@ auto DHinf<_System,
             arma::join_rows(-ctemp1, A_tilde_tinv)
         );
 
-        //-- test
+        #ifdef DHINF_VERBOSE
+        //-- check whether sympletic or not
         arma::cx_mat J = arma::join_cols(
             arma::join_rows(arma::zeros<arma::cx_mat>(arma::size(A)), -arma::eye<arma::cx_mat>(arma::size(A))),
             arma::join_rows(arma::eye<arma::cx_mat>(arma::size(A)), arma::zeros<arma::cx_mat>(arma::size(A)))
         );        
         arma::cx_mat check = H.t()*J*H;
-        check.print("Check sympletic 2 : ");
-        //--
+        check.print("[DHihf] Check sympletic 2 : ");
+        #endif
+
         DARE<typename _System::StateSpace> solver(ss_);
         solver.setSympleticMatrix(toReal(H));
         arma::cx_mat Y = solver.solve();
         arma::cx_mat Y_t = arma::trans(Y);
         
+        #ifdef DHINF_VERBOSE
         //-- check the DARE solution
         ctemp1 = A_tilde_t*Y*A_tilde;
         ctemp2 = ctemp1 + Ep*Ep_t;
@@ -515,7 +453,8 @@ auto DHinf<_System,
         ctemp5 = Y*A_tilde;
         ctemp6 = ctemp3*ctemp4*ctemp5;
         arma::cx_mat dare_rhs = ctemp2 - ctemp6 - Y;
-        dare_rhs.print("Dare RHS 2 : ");
+        dare_rhs.print("[DHinf] DARE RHS 2 : ");
+        #endif
 
         //-- common term
         arma::cx_mat cterm1 = C1p*Y*Ap_t + D12p*Ep_t;
@@ -532,7 +471,7 @@ auto DHinf<_System,
 
         ctemp1 = D22p*D22p_t + C2p*Y*C2p_t;
         ctemp2 = cterm4*V_inv*cterm3;
-        arma::cx_mat R = arma::eye<arma::cx_mat>(INPUT_SIZE, INPUT_SIZE)
+        arma::cx_mat R = (gam_*gam_)*arma::eye<arma::cx_mat>(INPUT_SIZE, INPUT_SIZE)
             - ctemp1 - ctemp2;
 
         arma::cx_mat G = S + arma::trans(C1_C2)*Y*C1_C2;
@@ -548,10 +487,16 @@ auto DHinf<_System,
     }
 
     /*
-        Controller symbol from A.A. Stoorvogel
+        Controller symbol adapted from A.A. Stoorvogel
         x(k+1) = K*x(k) + L*y(k)
         u(k) = M*x(k) + N*y(k)
     */
+    #ifdef DHINF_VERBOSE
+    std::cout << "[DHinf] Controller result : " << std::endl;
+    K.print("Ak : "); L.print("Bk : ");
+    M.print("Ck : "); N.print("Dk : ");
+    #endif
+    
     return std::make_tuple(toReal(K), toReal(L), toReal(M), toReal(N));
 }
 

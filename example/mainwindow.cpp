@@ -872,10 +872,6 @@ void MainWindow::setupSIMODCMotor(){
         m_icm_.setC(C);
         m_icm_.setD(D);
     }
-    // m_icm_.A().print("Aicm : ");
-    // m_icm_.B().print("Bicm : ");
-    // m_icm_.C().print("Cicm : ");
-    // m_icm_.D().print("Dicm : ");
 
     {
         pos_real_.setA(dsimo_.A());
@@ -921,7 +917,7 @@ void MainWindow::setupSIMODCMotor(){
     pos_icm_.B().print("Bicm : ");
     pos_icm_.C().print("Cicm : ");
     pos_icm_.D().print("Dicm : ");
-    pos_dhinf_ = new PosDHinf(&pos_sys_, 2.0);
+    pos_dhinf_ = new PosDHinf(&pos_sys_, 1.7);
     auto K( pos_dhinf_->solve() );
     pos_dctrl_.setA(std::get<0>(K)); pos_dctrl_.setB(std::get<1>(K));
     pos_dctrl_.setC(std::get<2>(K)); pos_dctrl_.setD(std::get<3>(K));

@@ -155,7 +155,7 @@ auto DARE<_StateSpace>::solve(){
 //    ISS.print("ISS : ");
     T1 = ISS.head_rows(ISS.n_rows >> 1);
     T2 = ISS.tail_rows(ISS.n_rows >> 1);
-    std::cout << "T1 condition number : " << arma::cond(T1) << std::endl;
+
     if(arma::cond(T1) > 1e6){
         //-- regularize the ill-conditioned matrix
         T1 = T1 + .001*arma::eye(arma::size(T1));
