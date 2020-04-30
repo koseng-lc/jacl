@@ -45,6 +45,14 @@ public:
     auto C() -> arma::mat { return this->ss_->C(); }
     auto D() -> arma::mat { return this->ss_->D(); }
     
+    auto reset(){
+        state_ = arma::zeros(_StateSpace::n_states, 1);
+        prev_state_ = state_;
+        in_ = arma::zeros(_StateSpace::n_inputs, 1);
+        prev_in_ = in_;
+        out_ = state_ = arma::zeros(_StateSpace::n_outputs, 1);
+    }
+
 protected:
     virtual void setIn(const arma::vec& _in) = 0;
     virtual auto dstate() -> arma::vec = 0;

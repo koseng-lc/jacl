@@ -877,7 +877,7 @@ void MainWindow::setupSIMODCMotor(){
         pos_real_.setA(dsimo_.A());
         pos_real_.setB(dsimo_.B());
         pos_real_.setC({1.,0.,0.});
-        pos_real_.setD(dsimo_.D());
+        pos_real_.setD(arma::zeros(1,1));
 
         arma::mat temp1, temp2, temp3;
         arma::mat zeros3x1(3,1,arma::fill::zeros);
@@ -921,6 +921,38 @@ void MainWindow::setupSIMODCMotor(){
     auto K( pos_dhinf_->solve() );
     pos_dctrl_.setA(std::get<0>(K)); pos_dctrl_.setB(std::get<1>(K));
     pos_dctrl_.setC(std::get<2>(K)); pos_dctrl_.setD(std::get<3>(K));
+
+    //-- Closed-loop
+    jacl::LinearStateSpace<6,1,1> cl_ss;
+    jacl::system::DiscreteSystem<jacl::LinearStateSpace<6,1,1>> cl_sys(&cl_ss);
+    {
+        arma::mat temp1, temp2;
+
+        temp1 = pos_real_.B()*pos_dctrl_.D()*pos_real_.C();
+        arma::mat A = arma::join_cols(
+            arma::join_rows(pos_real_.A() - temp1, pos_real_.B()*pos_dctrl_.C()),
+            arma::join_rows(-pos_dctrl_.B()*pos_real_.C(), pos_dctrl_.A())
+        );
+        
+        arma::mat B = arma::join_cols(
+            pos_real_.B()*pos_dctrl_.D(),
+            pos_dctrl_.B()
+        );
+
+        cl_ss.setA(A);
+        cl_ss.setB(B);
+        cl_ss.setC(arma::join_rows(pos_real_.C(), arma::zeros(1,3)));
+        cl_ss.setD(pos_real_.D());
+    }
+    cl_ss.A().print("Acl : ");
+    cl_ss.B().print("Bcl : ");
+    cl_ss.C().print("Ccl : ");
+    cl_ss.D().print("Dcl : ");
+    jacl::analysis::TransientData transient_data = jacl::analysis::transient(cl_sys);
+    std::cout << "Rise time : " << jacl::analysis::getRiseTime(transient_data) << std::endl;
+    std::cout << "Peak time : " << jacl::analysis::getPeakTime(transient_data) << std::endl;
+    std::cout << "Overshoot : " << jacl::analysis::getOvershoot(transient_data) << std::endl;
+    std::cout << "Settling time : " << jacl::analysis::getSettlingTime(transient_data) << std::endl;
 
     pos_dctrl_plt_.init();
     pos_dctrl_plt_.setTitle("Discrete Position Controller");

@@ -153,6 +153,10 @@ add_library(analysis ${JACL_HEADER_PREFIX}/analysis/analysis.hpp)
 target_link_libraries(analysis PRIVATE lower_lft are lti_common numerical_methods)
 set_target_properties(analysis PROPERTIES LINKER_LANGUAGE CXX)
 
+add_library(transient ${JACL_HEADER_PREFIX}/analysis/transient.hpp)
+target_link_libraries(transient PRIVATE armadillo)
+set_target_properties(transient PROPERTIES LINKER_LANGUAGE CXX)
+
 #-- Diagnosis
 add_library(ifd ${JACL_HEADER_PREFIX}/diagnosis/ifd.hpp)
 target_link_libraries(ifd PRIVATE continuous_system discrete_system)
@@ -189,6 +193,7 @@ set(JACL_LIB_LIST
     h_inf
     dh_inf
     analysis
+    transient
     observer_pattern
     singleton_pattern
     parser
