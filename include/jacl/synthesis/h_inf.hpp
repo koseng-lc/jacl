@@ -22,12 +22,12 @@ namespace jacl{ namespace synthesis{
 template <typename _System,
           std::size_t performance_size,
           std::size_t perturbation_size>
-class Hinf:public ::jacl::system::detail::BaseSystemClient<typename _System::base>{
+class Hinf:public ::jacl::system::detail::BaseSystemClient<typename _System::base_t>{
 public:
     template<typename __System = _System,
              typename std::enable_if_t<traits::is_continuous_system<__System>::value, int>* = nullptr>
     Hinf(__System* _sys, double _gam)
-        : ss_(::jacl::system::detail::BaseSystemClient<typename _System::base>::ss(_sys))
+        : ss_(::jacl::system::detail::BaseSystemClient<typename _System::base_t>::ss(_sys))
         , llft_(ss_)
         , gam_(_gam){}
 
@@ -113,10 +113,10 @@ private:
     }
 
 private:
-    typename _System::StateSpace* ss_;
+    typename _System::state_space_t* ss_;
     static constexpr auto INPUT_SIZE{_System::n_inputs - perturbation_size};
     static constexpr auto OUTPUT_SIZE{_System::n_outputs - performance_size};
-    lft::LowerLFT<typename _System::StateSpace,
+    lft::LowerLFT<typename _System::state_space_t,
              performance_size,
              perturbation_size,
              OUTPUT_SIZE,
@@ -146,7 +146,7 @@ auto Hinf<_System,
     auto ctrb = common::stabilizable(llft_.A(), llft_.B2());
     auto obsv = common::detectability(llft_.A(), llft_.C2());
 #ifdef HINF_VERBOSE
-    std::cout << "Assumption 1 : " << std::boolalpha << ctrb << " ; " << obsv << std::endl;
+    std::cout << "[Hinf] Assumption 1 : " << std::boolalpha << ctrb << " ; " << obsv << std::endl;
 #endif
     return ctrb & obsv;
 }
@@ -246,7 +246,7 @@ auto Hinf<_System,
         ~ok2;
     }
 #ifdef HINF_VERBOSE
-    std::cout << "Assumption 2 : " << std::boolalpha << ok << " ; " << ok2 << std::endl;
+    std::cout << "[Hinf] Assumption 2 : " << std::boolalpha << ok << " ; " << ok2 << std::endl;
 #endif
     return ok & ok2;
 }
@@ -279,7 +279,7 @@ auto Hinf<_System,
 
     bool ok = !common::hasUnobservableModeInImAxis(A, C);
 #ifdef HINF_VERBOSE
-    std::cout << "Assumption 3 : " << std::boolalpha << ok << std::endl;
+    std::cout << "[Hinf] Assumption 3 : " << std::boolalpha << ok << std::endl;
 #endif
     return ok;
 }
@@ -307,7 +307,7 @@ auto Hinf<_System,
 
     bool ok = !common::hasUncontrollableModeInImAxis(A, B);
 #ifdef HINF_VERBOSE
-    std::cout << "Assumption 4 : " << std::boolalpha << ok << std::endl;
+    std::cout << "[Hinf] Assumption 4 : " << std::boolalpha << ok << std::endl;
 #endif
     return ok;
 }
@@ -385,10 +385,10 @@ auto Hinf<_System,
     auto cond3 = checkCondition3();
     auto cond4 = checkCondition4();
 #ifdef HINF_VERBOSE
-    std::cout << "Condition 1 : " << std::boolalpha << cond1 << std::endl;
-    std::cout << "Condition 2 : " << std::boolalpha << cond2 << std::endl;
-    std::cout << "Condition 3 : " << std::boolalpha << cond3 << std::endl;
-    std::cout << "Condition 4 : " << std::boolalpha << cond4 << std::endl;
+    std::cout << "[Hinf] Condition 1 : " << std::boolalpha << cond1 << std::endl;
+    std::cout << "[Hinf] Condition 2 : " << std::boolalpha << cond2 << std::endl;
+    std::cout << "[Hinf] Condition 3 : " << std::boolalpha << cond3 << std::endl;
+    std::cout << "[Hinf] Condition 4 : " << std::boolalpha << cond4 << std::endl;
 #endif
     return cond1 & cond2 & cond3 & cond4;
 }
@@ -400,10 +400,10 @@ auto Hinf<_System,
     performance_size,
     perturbation_size>::solve() -> ::jacl::common::StateSpacePack{
 #ifdef HINF_VERBOSE
-    std::cout << ">>>>> Interconnection matrix assumptions : " << std::endl;
+    std::cout << "[Hinf] Interconnection matrix assumptions : " << std::endl;
 #endif
     bool check_assumption = checkAllAssumption();
-    assert(check_assumption && "The assumption made for interconnection matrix is not fulfill !");
+    assert(check_assumption && "[Hinf] The assumption made for interconnection matrix is not fulfill !");
 
     arma::mat temp1, temp2, temp3, temp4;
     arma::cx_mat ctemp1, ctemp2, ctemp3;
@@ -465,8 +465,8 @@ auto Hinf<_System,
     temp4 = temp2*R2_inv*temp3;
     arma::mat J_inf = temp1 - temp4;
 
-    ARE<typename _System::StateSpace> solver1(ss_);
-    ARE<typename _System::StateSpace> solver2(ss_);
+    ARE<typename _System::state_space_t> solver1(ss_);
+    ARE<typename _System::state_space_t> solver2(ss_);
 
     solver1.setHamiltonianMatrix(H_inf);
     solver2.setHamiltonianMatrix(J_inf);
@@ -475,7 +475,7 @@ auto Hinf<_System,
     arma::cx_mat Y_inf = solver2.solve();
 
 #ifdef HINF_VERBOSE
-    std::cout << ">>>>> Solution of ARE : " << std::endl;
+    std::cout << "[Hinf] Solution of ARE : " << std::endl;
     X_inf.print("X_inf : ");
     Y_inf.print("Y_inf : ");
 #endif
@@ -513,9 +513,9 @@ auto Hinf<_System,
 
     bool check_cond = checkAllCondition();
 #ifdef HINF_VERBOSE
-    std::cout << " >>>>> Condition : " << std::boolalpha << check_cond << std::endl;
+    std::cout << "[Hinf] Condition : " << std::boolalpha << check_cond << std::endl;
 #endif
-    assert(check_cond && "Condition for finding Controller that make the lower LFT is less than gamma was failed !");
+    assert(check_cond && "[Hinf] Condition for finding Controller that make the lower LFT is less than gamma was failed !");
 
     //-- I assume the arbitrary system that have property less than to gamma is zero
     ctemp1 = (1./(gam_*gam_))*Y_inf*X_inf;
@@ -561,7 +561,7 @@ auto Hinf<_System,
     arma::cx_mat A_hat = ss_->A() + L*ss_->C() + ctemp1;
 
 #ifdef HINF_VERBOSE
-    std::cout << ">>>>> Controller Result : " << std::endl;
+    std::cout << "[Hinf] Controller Result : " << std::endl;
     A_hat.print("A_hat : ");
     B1_hat.print("B1_hat : ");
     B2_hat.print("B2_hat : ");

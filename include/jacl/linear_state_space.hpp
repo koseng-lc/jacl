@@ -20,28 +20,43 @@
 namespace jacl{
 
 //-- force to have fixed size
-template<std::size_t num_states, std::size_t num_inputs, std::size_t num_outputs, class PhysicalParam = int, class ...Rest>
+template<typename Scalar,
+         std::size_t num_states,
+         std::size_t num_inputs,
+         std::size_t num_outputs,
+         class PhysicalParam = int,
+         class ...Rest>
 class LinearStateSpace:public pattern::Subject{
 public:
     typedef std::function<double(LinearStateSpace)> Formula;
     typedef std::vector<Formula> Formulas;
+    
+    using scalar_t = Scalar;
+    using state_matrix_t = typename arma::Mat<Scalar>::template fixed<num_states,num_states>;
+    using input_matrix_t = typename arma::Mat<Scalar>::template fixed<num_states,num_inputs>;
+    using output_matrix_t = typename arma::Mat<Scalar>::template fixed<num_outputs,num_states>;
+    using feedforward_matrix_t = typename arma::Mat<Scalar>::template fixed<num_outputs,num_inputs>;
 
 public:    
     template <typename _PhysicalParam = PhysicalParam,
               typename std::enable_if_t<
                   std::is_same<typename std::decay_t<_PhysicalParam>,
                                PhysicalParameter>::value, int>* = nullptr>
-    LinearStateSpace(_PhysicalParam* _param, Rest*... _rest)
-        : A_(num_states, num_states)
-        , B_(num_states, num_inputs)
-        , C_(num_outputs, num_states)
-        , D_(num_outputs, num_inputs){
-
+    LinearStateSpace(_PhysicalParam* _param, Rest*... _rest){
         push(_param, _rest...);
     }
-    LinearStateSpace(const arma::mat& _A, const arma::mat& _B, const arma::mat& _C, const arma::mat& _D);
-    LinearStateSpace();
-    ~LinearStateSpace();
+    LinearStateSpace(const state_matrix_t& _A,
+                     const input_matrix_t& _B,
+                     const output_matrix_t& _C,
+                     const feedforward_matrix_t& _D)
+        : A_(_A)
+        , B_(_B)
+        , C_(_C)
+        , D_(_D){
+
+    }
+    LinearStateSpace(){}
+    ~LinearStateSpace(){}
 
     const auto& A() const{ return A_; }
     const auto& B() const{ return B_; }
@@ -62,7 +77,7 @@ public:
         formulaToMat(FormulaToMatMode::A);        
     }
 
-    auto setA(const arma::mat& _A){
+    auto setA(const state_matrix_t& _A){
         A_ = _A;
         this->notify();
     }
@@ -73,7 +88,7 @@ public:
         formulaToMat(FormulaToMatMode::B);
     }
 
-    auto setB(const arma::mat& _B){
+    auto setB(const input_matrix_t& _B){
         B_ = _B;
         this->notify();
     }
@@ -84,7 +99,7 @@ public:
         formulaToMat(FormulaToMatMode::C);
     }
 
-    auto setC(const arma::mat& _C){
+    auto setC(const output_matrix_t& _C){
         C_ = _C;
         this->notify();
     }
@@ -95,7 +110,7 @@ public:
         formulaToMat(FormulaToMatMode::D);
     }
 
-    auto setD(const arma::mat& _D){
+    auto setD(const feedforward_matrix_t& _D){
         D_ = _D;
         this->notify();
     }
@@ -154,10 +169,10 @@ protected:
 
     std::vector<PhysicalParameter* > params_;
 
-    arma::mat A_;
-    arma::mat B_;
-    arma::mat C_;
-    arma::mat D_;
+    state_matrix_t A_;
+    input_matrix_t B_;
+    output_matrix_t C_;
+    feedforward_matrix_t D_;
 
 private:
     class ReturnGuard{
@@ -170,32 +185,18 @@ private:
 
 };
 
-template <std::size_t num_states, std::size_t num_inputs, std::size_t num_outputs, class PhysicalParam, class ...Rest>
-LinearStateSpace<num_states, num_inputs, num_outputs, PhysicalParam, Rest...>::LinearStateSpace()
-    : A_(num_states, num_states)
-    , B_(num_states, num_inputs)
-    , C_(num_outputs, num_states)
-    , D_(num_outputs, num_inputs){
-}
-
-template <std::size_t num_states, std::size_t num_inputs, std::size_t num_outputs, class PhysicalParam, class ...Rest>
-LinearStateSpace<num_states, num_inputs, num_outputs, PhysicalParam, Rest...>::LinearStateSpace(const arma::mat& _A,
-                                                                                                const arma::mat& _B,
-                                                                                                const arma::mat& _C,
-                                                                                                const arma::mat& _D)
-    : A_(_A)
-    , B_(_B)
-    , C_(_C)
-    , D_(_D){
-}
-
-template<std::size_t num_states, std::size_t num_inputs, std::size_t num_outputs, class PhysicalParam, class ...Rest>
-LinearStateSpace<num_states, num_inputs, num_outputs, PhysicalParam, Rest...>::~LinearStateSpace(){
-
-}
-
-template<std::size_t num_states, std::size_t num_inputs, std::size_t num_outputs, class PhysicalParam, class ...Rest>
-auto LinearStateSpace<num_states, num_inputs, num_outputs, PhysicalParam, Rest...>::formulaToMat(FormulaToMatMode _mode){
+template<typename Scalar,
+         std::size_t num_states,
+         std::size_t num_inputs,
+         std::size_t num_outputs,
+         class PhysicalParam,
+         class ...Rest>
+auto LinearStateSpace<Scalar,
+                      num_states,
+                      num_inputs,
+                      num_outputs,
+                      PhysicalParam,
+                      Rest...>::formulaToMat(FormulaToMatMode _mode){
     assert(fA_.size () > 0 && fB_.size() > 0 && fC_.size() > 0 && fD_.size() > 0);
     uint8_t mode = static_cast<typename std::underlying_type<FormulaToMatMode>::type>(_mode);
     bool change_A = static_cast<typename std::underlying_type<FormulaToMatMode>::type>(FormulaToMatMode::A) & mode;

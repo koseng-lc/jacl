@@ -1,6 +1,14 @@
+/**
+*   @author : koseng (Lintang)
+*   @brief : Data of transient performance
+*/
+
 #pragma once
 
+#include <jacl/traits.hpp>
+
 namespace jacl{ namespace analysis{
+
 using TransientData = std::tuple<double,double,double,double>;
 
 static auto getRiseTime(const TransientData& _data){
@@ -22,11 +30,12 @@ static auto getSettlingTime(const TransientData& _data){
 //-- we copy it because we call reset()
 template <typename _System>
 static auto transient(_System _sys, double _ts_threshold=.02)
-    -> typename std::enable_if_t<true,TransientData>{
+    -> typename std::enable_if_t<
+        ::jacl::traits::is_siso<typename _System::state_space_t>::value,TransientData>{
     _sys.reset();
     constexpr auto NUM_SAMPLE_DATA(1000);
-    const arma::Col<double>::fixed<_System::n_inputs> in{1};
-    arma::Col<double>::fixed<_System::n_outputs> out{0};
+    const typename _System::input_t in(arma::fill::ones);
+    typename _System::output_t out(arma::fill::zeros);
     std::array<double, NUM_SAMPLE_DATA> response;
 
     //-- rise time stuff

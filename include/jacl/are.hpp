@@ -1,30 +1,21 @@
 /**
 *   @author : koseng (Lintang)
-*   @brief : Simple implementation of Algebraic Ricatti Solver
+*   @brief : Simple implementation of Algebraic Ricatti Equations solver
 */
+
 #pragma once
 
-#include <boost/numeric/bindings/ublas/matrix.hpp>
-#include <boost/numeric/bindings/ublas/vector.hpp>
-#include <boost/numeric/ublas/assignment.hpp>
-#include <boost/numeric/bindings/lapack/computational.hpp>
 #include <boost/python.hpp>
 #include <boost/python/numpy.hpp>
 #include <numpy/ndarrayobject.h>
 
 #include <jacl/linear_state_space.hpp>
 
+// #define ARE_VERBOSE
+
 namespace jacl{
 
 namespace{
-    using real_t = double;
-    using cx_t = std::complex<real_t>;
-    namespace ublas = boost::numeric::ublas;
-    namespace bindings = boost::numeric::bindings;
-    using v_t = ublas::vector<real_t>;
-    using cxv_t = ublas::vector<cx_t>;
-    using cxm_t = ublas::matrix<cx_t>;
-
     namespace py = boost::python;
     namespace np = boost::python::numpy;
 }
@@ -46,45 +37,24 @@ public:
             genHamiltonianMatrix();
     }
 
-    auto setQ(const arma::mat& _Q, bool update_hamiltonian = false) -> void{
+    auto setQ(const arma::mat& _Q, bool update_hamiltonian = false){
         assert(arma::size(_Q) == arma::size(ss_->A()));
         Q_ = _Q;
         if(update_hamiltonian)
             genHamiltonianMatrix();
     }
 
-    auto setHamiltonianMatrix(const arma::mat& _H) -> void{
+    auto setHamiltonianMatrix(const arma::mat& _H){
         H_ = _H;
     }
 
     auto solve() -> arma::cx_mat;
 
 private:
-    auto genHamiltonianMatrix() -> void;
-
-    //-- create auxiliary lib !!!!!!!!!!!!!
-    auto toUBLASMat(const arma::cx_mat& _in) -> cxm_t{
-        cxm_t res(_in.n_rows, _in.n_cols);
-        for(int i(0); i < _in.n_rows; i++){
-            for(int j(0); j < _in.n_cols;j++){
-                res(i,j) = _in(i,j);
-            }
-        }
-        return res;
-    }
-
-    auto toARMAMat(const cxm_t& _in) -> arma::cx_mat{
-        arma::cx_mat res(_in.size1(), _in.size2());
-        for(int i(0); i < _in.size1(); i++){
-            for(int j(0); j < _in.size2();j++){
-                res(i,j) = _in(i,j);
-            }
-        }
-        return res;
-    }
+    auto genHamiltonianMatrix();
 
     //-- change to pointer arg for TZ
-    auto auxSchur(const arma::mat& _H, std::tuple<arma::cx_mat, arma::cx_mat>& TZ) -> int{
+    auto auxSchur(const arma::mat& _H, std::tuple<arma::cx_mat, arma::cx_mat>* _TZ){
         ::jacl::py_stuff::AcquireGIL lk;
         try{
             py::object sys = py::import("sys");
@@ -115,7 +85,7 @@ private:
             T.set_imag(dum[1]);
             Z.set_real(dum[2]);
             Z.set_imag(dum[3]);
-            TZ = std::make_tuple(T,Z);
+            *_TZ = std::make_tuple(T,Z);
         }catch(py::error_already_set){
             PyErr_Print();
             return 1;
@@ -163,113 +133,45 @@ ARE<_StateSpace>::~ARE(){
 }
 
 template <class _StateSpace>
-auto ARE<_StateSpace>::genHamiltonianMatrix() -> void{
-
-    H_.submat(                    0,                     0,     _StateSpace::n_states - 1,     _StateSpace::n_states - 1) = ss_->A();
-    H_.submat(                    0, _StateSpace::n_states,     _StateSpace::n_states - 1, _StateSpace::n_states * 2 - 1) = R_;
-    H_.submat(_StateSpace::n_states,                     0, _StateSpace::n_states * 2 - 1,     _StateSpace::n_states - 1) = -Q_;
-    H_.submat(_StateSpace::n_states, _StateSpace::n_states, _StateSpace::n_states * 2 - 1, _StateSpace::n_states * 2 - 1) = -1*arma::trans(ss_->A());
+auto ARE<_StateSpace>::genHamiltonianMatrix(){
+    H_ = arma::join_cols(
+        arma::join_rows(ss_->A(),R_),
+        arma::join_rows(-Q_,-arma::trans(ss_->A()))
+    );
 }
 
 template <class _StateSpace>
 auto ARE<_StateSpace>::solve() -> arma::cx_mat{
-
-    //-- Using QR-Algorithm
-    /*arma::mat T, U;
-    LinearAlgebra::QRAlgorithm(H_, &T, &U);
-
-    arma::mat A, T, U;
-    A << 1 << 0 << 0 << arma::endr
-      << 0 << cos(M_PI/3) << -sin(M_PI/3) << arma::endr
-      << 0 << sin(M_PI/3) << cos(M_PI/3) << arma::endr;
-
-    LinearAlgebra::QRAlgorithm(A, &T, &U);
-
-    T.print("T(ARE) : ");
-    U.print("U(ARE) : ");*/
-    //--
-
-    /*arma::mat H;
-    H << -3 << 2 << 0 << 0 << arma::endr
-      << -2 << 1 << 0 << -1 << arma::endr
-      << -0 << -0 << 3 << 2 << arma::endr
-      << -0 << -0 << -2 << -1 << arma::endr;
-    eig_gen(eigval, eigvec, H);*/
-
-    //-- using Lapack Binding from Boost
-    /*ublas::vector<unsigned int> sel( t.size1() );
-    for(int i(0); i < sel.size(); i++){
-        sel(i) = .0;
-        if(t(i,i).real() > .0)
-            sel(i) = 1.;
-    }
-    cxv_t w( t.size1() );
-    fortran_int_t m;
-    double s;
-    double sep;
-    int info = bindings::lapack::trsen('N','V',sel,t,q,w,m,s,sep);*/
-
     std::tuple<arma::cx_mat, arma::cx_mat> TZ;
-    int ret = auxSchur(H_, TZ);
+    int ret = auxSchur(H_, &TZ);
     arma::cx_mat T = std::get<0>(TZ);
     arma::cx_mat Z = std::get<1>(TZ);
+    #ifdef ARE_VERBOSE
+    T.print("[ARE] T : ");
+    Z.print("[ARE] Z : ");
+    #endif
 
     arma::cx_mat ISS, X1, X2;
-//    T.print("T : ");
-//    Z.print("Z : ");
     ISS = Z.head_cols(Z.n_cols >> 1);
-//    ISS.print("ISS : ");
+    #ifdef ARE_VERBOSE
+    ISS.print("[ARE] Invariant spectral subspace : ");
+    #endif
+
     X1 = ISS.head_rows(ISS.n_rows >> 1);
     X2 = ISS.tail_rows(ISS.n_rows >> 1);
-
-//    X1.print("X1 : ");
-//    X2.print("X2 : ");
+    #ifdef ARE_VERBOSE
+    X1.print("[ARE] X1 : ");
+    X2.print("[ARE] X2 : ");
+    #endif
     
-    arma::cx_mat solution = X2 * arma::inv(X1);
-    //-- Check, are the solution is fulfull the equation
-    /*int n = H_.n_rows >> 1;
-    arma::cx_mat A = toCx(H_.submat(0,0,n-1,n-1));
-    arma::cx_mat R = toCx(H_.submat(0,n,n-1,(n*2)-1));
-    arma::cx_mat Q = toCx(-1*H_.submat(n,0,(n*2)-1,n-1));
-    arma::cx_mat temp1 = arma::trans(A)*solution;
-    arma::cx_mat temp2 = solution*A;
-    arma::cx_mat temp3 = solution*R*solution;
-    arma::cx_mat temp4 = temp1 + temp2 + temp3;
-    arma::cx_mat check = temp4 + Q;
-    check.print("CHECK : ");*/
-
-//    arma::cx_vec eigval;
-//    arma::cx_mat eigvec;
-//    arma::eig_gen(eigval, eigvec, H_);
-
-//    eigval.print("EigenValue : ");
-//    eigvec.print("EigenVector : ");
-
-//    arma::mat eigval_re = arma::real(eigval);
-
-//    eigval_re.print("EigVal Re : ");
-
-    //-- invariant spectral subspace
-//    arma::cx_mat ISS;
-
-//    for(int i(0); i < eigval.n_rows; i++){
-//        if(eigval_re(i, 0) < .0){
-//            ISS = join_rows(ISS,eigvec.col(i));
-//        }
-//    }
-
-//    ISS.print("ISS : ");
-
-//    arma::cx_mat X1, X2;
-//    X1 = ISS.head_rows(ISS.n_rows * .5);
-//    X2 = ISS.tail_rows(ISS.n_rows * .5);
-
-//    X1.print("X1 : ");
-//    X2.print("X2 : ");
-
-//    arma::cx_mat inv_X1( arma::inv( X1 ) );
-//    arma::cx_mat solution( X2 * inv_X1 );
-//    solution.print("X : ");
+    if(arma::cond(X1) > 1e6){
+        //-- regularize the ill-conditioned matrix
+        X1 = X1 + .001*arma::eye(arma::size(X1));
+        std::cout << "[ARE] Regularization triggered" << std::endl;
+    }
+    arma::cx_mat X1_inv = arma::solve(X1, arma::eye<arma::cx_mat>(arma::size(X1)),
+        arma::solve_opts::refine);
+    arma::cx_mat solution = X2 * X1_inv;
 
     return solution;
 

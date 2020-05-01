@@ -22,12 +22,12 @@ namespace jacl{ namespace synthesis{
 template <typename _System,
           std::size_t performance_size,
           std::size_t perturbation_size>
-class DHinf:public ::jacl::system::detail::BaseSystemClient<typename _System::base>{
+class DHinf:public ::jacl::system::detail::BaseSystemClient<typename _System::base_t>{
 public:
     template<typename __System = _System,
              typename std::enable_if_t<traits::is_discrete_system<__System>::value, int>* = nullptr>
     DHinf(__System* _sys, double _gam)
-        : ss_(::jacl::system::detail::BaseSystemClient<typename _System::base>::ss(_sys))
+        : ss_(::jacl::system::detail::BaseSystemClient<typename _System::base_t>::ss(_sys))
         , llft_(ss_)
         , gam_(_gam){}
 
@@ -89,10 +89,10 @@ private:
     }
 
 private:
-    typename _System::StateSpace* ss_;
+    typename _System::state_space_t* ss_;
     static constexpr auto INPUT_SIZE{_System::n_inputs - perturbation_size};
     static constexpr auto OUTPUT_SIZE{_System::n_outputs - performance_size};
-    lft::LowerLFT<typename _System::StateSpace,
+    lft::LowerLFT<typename _System::state_space_t,
              performance_size,
              perturbation_size,
              OUTPUT_SIZE,
@@ -300,7 +300,7 @@ auto DHinf<_System,
         check.print("[DHinf] Check sympletic 1 : ");
         #endif
 
-        DARE<typename _System::StateSpace> solver(ss_);
+        DARE<typename _System::state_space_t> solver(ss_);
         solver.setSympleticMatrix(H);
         arma::cx_mat P = solver.solve();
         arma::cx_mat P_t = arma::trans(P);
@@ -439,7 +439,7 @@ auto DHinf<_System,
         check.print("[DHihf] Check sympletic 2 : ");
         #endif
 
-        DARE<typename _System::StateSpace> solver(ss_);
+        DARE<typename _System::state_space_t> solver(ss_);
         solver.setSympleticMatrix(toReal(H));
         arma::cx_mat Y = solver.solve();
         arma::cx_mat Y_t = arma::trans(Y);

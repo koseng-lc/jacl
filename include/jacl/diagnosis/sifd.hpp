@@ -1,3 +1,9 @@
+/**
+*   @author : koseng (Lintang)
+*   @brief : Simplified Instrument Fault Detection
+*/
+
+
 #pragma once
 
 #include <jacl/diagnosis/ifd.hpp>

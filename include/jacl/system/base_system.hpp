@@ -1,3 +1,8 @@
+/**
+*   @author : koseng (Lintang)
+*   @brief : Interface class for System
+*/
+
 #pragma once
 
 #include <jacl/pattern/observer.hpp>
@@ -13,44 +18,54 @@ public:
     static constexpr std::size_t n_states{_StateSpace::n_states};
     static constexpr std::size_t n_inputs{_StateSpace::n_inputs};
     static constexpr std::size_t n_outputs{_StateSpace::n_outputs};
-    using StateSpace = _StateSpace;
-    using base = BaseSystem;
+
+    using state_space_t = _StateSpace;
+    using base_t = BaseSystem;
+    using scalar_t = typename _StateSpace::scalar_t;
+    using state_t = typename arma::Col<scalar_t>::template fixed<n_states>;
+    using input_t = typename arma::Col<scalar_t>::template fixed<n_inputs>;
+    using output_t = typename arma::Col<scalar_t>::template fixed<n_outputs>;
 
     BaseSystem(_StateSpace* _ss, double _time_step = 1e-4)
         : pattern::Observer(_ss)
-        , state_(_StateSpace::n_states,1, arma::fill::zeros)
+        , state_(arma::fill::zeros)
         , prev_state_(state_)
-        , state_trans_(_StateSpace::n_states, _StateSpace::n_states, arma::fill::zeros)
-        , in_(_StateSpace::n_inputs, 1, arma::fill::zeros)
+        , state_trans_(arma::fill::zeros)
+        , in_(arma::fill::zeros)
         , prev_in_(in_)
-        , out_(_StateSpace::n_outputs, 1, arma::fill::zeros)
+        , out_(arma::fill::zeros)
         , ss_(_ss)
         , dt_(_time_step){
 
     }
     ~BaseSystem(){}    
 
-    inline auto recapitulate() -> arma::vec{
+    inline auto recapitulate()
+        -> typename arma::Col<scalar_t>::template fixed<n_states+n_inputs+n_outputs>{
         return arma::join_cols(prev_state_, arma::join_cols(in_, out_));
     }
-    virtual auto convolve(const arma::vec& _in) -> arma::vec{
+    virtual auto convolve(const arma::vec& _in)
+        -> output_t{
         setIn(_in);        
         this->state_ = dstate();
         this->prev_state_ = this->state_;
         this->out_ = output();
         return this->out_;
     }
+    // template <typename T = _StateSpace>
+    // auto A() -> typename std::enable_if_t<::jacl::traits::is_linear_state_space<T>::value,
+    //                              typename state_space_t::state_matrix_t> { return this->ss_->A(); }
     auto A() -> arma::mat { return this->ss_->A(); }
     auto B() -> arma::mat { return this->ss_->B(); }
     auto C() -> arma::mat { return this->ss_->C(); }
     auto D() -> arma::mat { return this->ss_->D(); }
     
     auto reset(){
-        state_ = arma::zeros(_StateSpace::n_states, 1);
+        state_.fill(.0);
         prev_state_ = state_;
-        in_ = arma::zeros(_StateSpace::n_inputs, 1);
+        in_.fill(.0);
         prev_in_ = in_;
-        out_ = state_ = arma::zeros(_StateSpace::n_outputs, 1);
+        out_.fill(.0);
     }
 
 protected:
@@ -70,12 +85,12 @@ protected:
     }
 
 protected:
-    arma::vec state_;
-    arma::vec prev_state_;
-    arma::mat state_trans_;
-    arma::vec in_;
-    arma::vec prev_in_;
-    arma::vec out_;
+    state_t state_;
+    state_t prev_state_;
+    typename state_space_t::state_matrix_t state_trans_;
+    input_t in_;
+    input_t prev_in_;
+    output_t out_;
     double dt_;
     _StateSpace* ss_;
     

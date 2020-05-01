@@ -27,7 +27,6 @@ namespace state_space::detail{
             }
             return out;
         }
-        // friend class ::jacl::system::BaseSystem<_StateSpace>;
     };
 }
 
@@ -35,7 +34,7 @@ namespace system::detail{
     template <typename _System>
     class BaseSystemClient{
     protected:
-        static auto ss(_System* _sys) -> typename _System::StateSpace*{
+        static auto ss(_System* _sys) -> typename _System::state_space_t*{
             if(_sys)
                 return _sys->ss_;
             return nullptr;

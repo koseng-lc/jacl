@@ -134,7 +134,7 @@ private:
     arma::vec::fixed<6> weight_;
 
     using LinearStateSpace =
-        jacl::LinearStateSpace<3, 2, 3,
+        jacl::LinearStateSpace<double,3, 2, 3,
                          jacl::PhysicalParameter,
                          jacl::PhysicalParameter,
                          jacl::PhysicalParameter,
@@ -149,7 +149,7 @@ private:
     jacl::Plotter<jacl::system::ContinuousObserver<LinearStateSpace> > cobserver_plt_;
 
     //-- Discrete SIMO DC motor
-    using SIMO = jacl::LinearStateSpace<3, 1, 3,
+    using SIMO = jacl::LinearStateSpace<double,3, 1, 3,
                                     jacl::PhysicalParameter,
                                     jacl::PhysicalParameter,
                                     jacl::PhysicalParameter,
@@ -157,34 +157,34 @@ private:
                                     jacl::PhysicalParameter,
                                     jacl::PhysicalParameter>;
     SIMO simo_;
-    jacl::LinearStateSpace<3,1,3> dsimo_;
-    jacl::system::DiscreteSystem<jacl::LinearStateSpace<3,1,3> > dsys_simo_;
-    jacl::system::DiscreteObserver<jacl::LinearStateSpace<3,1,3> > dobserver_simo_;
-    jacl::Plotter<jacl::system::DiscreteSystem<jacl::LinearStateSpace<3,1,3> > > dsys_simo_plt_;
-    jacl::Plotter<jacl::system::DiscreteObserver<jacl::LinearStateSpace<3,1,3> > > dobserver_simo_plt_;
+    jacl::LinearStateSpace<double,3,1,3> dsimo_;
+    jacl::system::DiscreteSystem<jacl::LinearStateSpace<double,3,1,3> > dsys_simo_;
+    jacl::system::DiscreteObserver<jacl::LinearStateSpace<double,3,1,3> > dobserver_simo_;
+    jacl::Plotter<jacl::system::DiscreteSystem<jacl::LinearStateSpace<double,3,1,3> > > dsys_simo_plt_;
+    jacl::Plotter<jacl::system::DiscreteObserver<jacl::LinearStateSpace<double,3,1,3> > > dobserver_simo_plt_;
     arma::mat din_;    
-    jacl::diagnosis::IFD<jacl::system::DiscreteSystem<jacl::LinearStateSpace<3,1,3> > > ifd_;
-    jacl::diagnosis::SIFD<jacl::system::DiscreteSystem<jacl::LinearStateSpace<3,1,3> >, 0> sifd_;
+    jacl::diagnosis::IFD<jacl::system::DiscreteSystem<jacl::LinearStateSpace<double,3,1,3> > > ifd_;
+    jacl::diagnosis::SIFD<jacl::system::DiscreteSystem<jacl::LinearStateSpace<double,3,1,3> >, 0> sifd_;
     void makeFault(arma::vec* _out);
     void setupSIMODCMotor();
     //-- Discrete H-infinity controller
-    using MReal = jacl::LinearStateSpace<9,1,1,
+    using MReal = jacl::LinearStateSpace<double,9,1,1,
                                          jacl::PhysicalParameter,
                                          jacl::PhysicalParameter,
                                          jacl::PhysicalParameter,
                                          jacl::PhysicalParameter,
                                          jacl::PhysicalParameter,
                                          jacl::PhysicalParameter>;    
-    using MICM = jacl::LinearStateSpace<MReal::n_states, MReal::n_inputs+3, MReal::n_outputs+2>;
+    using MICM = jacl::LinearStateSpace<double,MReal::n_states, MReal::n_inputs+3, MReal::n_outputs+2>;
     using MSys = jacl::system::DiscreteSystem<MICM>;
     MReal m_real_;
     MICM m_icm_;
     MSys m_sys_;
-    using PosReal = jacl::LinearStateSpace<3, 1, 1>;
-    using PosICM = jacl::LinearStateSpace<PosReal::n_states, PosReal::n_inputs+3, PosReal::n_outputs+2>;
+    using PosReal = jacl::LinearStateSpace<double,3, 1, 1>;
+    using PosICM = jacl::LinearStateSpace<double,PosReal::n_states, PosReal::n_inputs+3, PosReal::n_outputs+2>;
     using PosSys = jacl::system::DiscreteSystem<PosICM>;
     using PosDHinf = jacl::synthesis::DHinf<PosSys,2,3>;
-    using PosDCtrl = jacl::LinearStateSpace<PosReal::n_states, PosReal::n_outputs, PosReal::n_inputs>;
+    using PosDCtrl = jacl::LinearStateSpace<double,PosReal::n_states, PosReal::n_outputs, PosReal::n_inputs>;
     PosReal pos_real_;
     PosICM pos_icm_;
     PosSys pos_sys_;
@@ -195,7 +195,7 @@ private:
 
     //-- Another stuff
     using GRealization =
-        jacl::LinearStateSpace<3, 8, 9,
+        jacl::LinearStateSpace<double,3, 8, 9,
                          jacl::PhysicalParameter,
                          jacl::PhysicalParameter,
                          jacl::PhysicalParameter,
@@ -203,19 +203,19 @@ private:
                          jacl::PhysicalParameter,
                          jacl::PhysicalParameter>;
     GRealization G_;
-    using PRealization = jacl::LinearStateSpace<9, 2, 3>;
+    using PRealization = jacl::LinearStateSpace<double,9, 2, 3>;
     PRealization P_;
-    using InterConnMat = jacl::LinearStateSpace<9, 10, 8>;
+    using InterConnMat = jacl::LinearStateSpace<double,9, 10, 8>;
     InterConnMat ICM_;
     // using HInf = jacl::synthesis::Hinf<InterConnMat, 5, 8>;
     // HInf* hinf_;
 
     //-- Continuous H-infinity position control of dc motor
-    using SISOPos = jacl::LinearStateSpace<3,1,1>;
+    using SISOPos = jacl::LinearStateSpace<double,3,1,1>;
     SISOPos siso_pos_;
-    using InterConnMatPos = jacl::LinearStateSpace<6, 4, 3>;
+    using InterConnMatPos = jacl::LinearStateSpace<double,6, 4, 3>;
     InterConnMatPos icm_pos_;
-    using PosCtrl = jacl::LinearStateSpace<6, 1, 1>;
+    using PosCtrl = jacl::LinearStateSpace<double,6, 1, 1>;
     PosCtrl k_pos_;
     using HInfPC = jacl::synthesis::Hinf<jacl::system::ContinuousSystem<InterConnMatPos>, 2, 3>;
     HInfPC* hinf_pc_;
@@ -224,9 +224,9 @@ private:
     void setupPositionController();
 
     //-- H-infinity speed control of dc motor
-    using InterConnMatSpd = jacl::LinearStateSpace<5,4,3>;
+    using InterConnMatSpd = jacl::LinearStateSpace<double,5,4,3>;
     InterConnMatSpd icm_spd_;
-    using SpdCtrl = jacl::LinearStateSpace<5, 1, 1>;
+    using SpdCtrl = jacl::LinearStateSpace<double,5, 1, 1>;
     SpdCtrl k_spd_;
     using HInfSC = jacl::synthesis::Hinf<jacl::system::ContinuousSystem<InterConnMatSpd>, 2, 3>;
     HInfSC* hinf_sc_;
@@ -248,7 +248,7 @@ private:
     jacl::PhysicalParameter pl_;
     jacl::PhysicalParameter pk_;
     jacl::PhysicalParameter pm_;
-    using NLPendulum = jacl::NonLinearStateSpace<2,1,1,
+    using NLPendulum = jacl::NonLinearStateSpace<double,2,1,1,
                             jacl::PhysicalParameter,
                             jacl::PhysicalParameter,
                             jacl::PhysicalParameter,

@@ -923,8 +923,8 @@ void MainWindow::setupSIMODCMotor(){
     pos_dctrl_.setC(std::get<2>(K)); pos_dctrl_.setD(std::get<3>(K));
 
     //-- Closed-loop
-    jacl::LinearStateSpace<6,1,1> cl_ss;
-    jacl::system::DiscreteSystem<jacl::LinearStateSpace<6,1,1>> cl_sys(&cl_ss);
+    jacl::LinearStateSpace<double, 6,1,1> cl_ss;
+    jacl::system::DiscreteSystem<jacl::LinearStateSpace<double, 6,1,1>> cl_sys(&cl_ss);
     {
         arma::mat temp1, temp2;
 

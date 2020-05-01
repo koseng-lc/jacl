@@ -33,7 +33,8 @@ public:
     }
 
 protected:
-    auto convolve(const arma::vec& _in) -> arma::vec override{
+    auto convolve(const arma::vec& _in)
+        -> typename BaseSystem<_StateSpace>::output_t override{
         setIn(_in);
         this->state_ = dstate();        
         this->out_ = output();

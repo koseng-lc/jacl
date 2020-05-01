@@ -33,15 +33,16 @@ protected:
     }
 };
 
-template <std::size_t ns,
+template <typename Scalar,
+          std::size_t ns,
           std::size_t ni,
           std::size_t no,
           class PhysicalParam,
           class ...Rest>
-class DiscreteSystem<NonLinearStateSpace<ns,ni,no,PhysicalParam,Rest...> >
-        :public BaseSystem<NonLinearStateSpace<ns,ni,no,PhysicalParam,Rest...> >{
+class DiscreteSystem<NonLinearStateSpace<Scalar,ns,ni,no,PhysicalParam,Rest...> >
+        :public BaseSystem<NonLinearStateSpace<Scalar,ns,ni,no,PhysicalParam,Rest...> >{
 private:
-    typedef NonLinearStateSpace<ns,ni,no,PhysicalParam,Rest...> _StateSpace;
+    typedef NonLinearStateSpace<Scalar,ns,ni,no,PhysicalParam,Rest...> _StateSpace;
 
 public:
     DiscreteSystem(_StateSpace* _ss, double _time_step = 1e-4)

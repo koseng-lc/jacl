@@ -1,15 +1,18 @@
+/**
+*   @author : koseng (Lintang)
+*   @brief : jacl parser
+*/
+
 #pragma once
 
 #include <fstream>
 
 #include <boost/lexical_cast.hpp>
 
-#include "linear_state_space.hpp"
-#include "traits.hpp"
+#include <jacl/linear_state_space.hpp>
+#include <jacl/traits.hpp>
 
-namespace jacl{
-
-namespace parser{
+namespace jacl{ namespace parser{
 
 namespace detail{
     static auto serialize(const arma::mat& _m) -> std::string{
@@ -56,8 +59,7 @@ static auto saveStateSpace(const _StateSpace& _ss, std::string _file_path)
 }
 
 template <typename Type>
-static auto saveGain(const arma::Mat<Type>& _G, std::string _file_path)
-    -> int{
+static auto saveGain(const arma::Mat<Type>& _G, std::string _file_path){
     std::ofstream gain_file(_file_path);
     if(gain_file.is_open()){
         gain_file << "gain\n";
@@ -101,8 +103,7 @@ static auto readStateSpace(_StateSpace* _ss, std::string _file_path)
 }
 
 template <typename Type>
-static auto readGain(arma::Mat<Type>* _G, std::string _file_path)
-    -> int{
+static auto readGain(arma::Mat<Type>* _G, std::string _file_path){
     std::ifstream gain_file(_file_path);
     if(gain_file.is_open()){
         std::string type;
@@ -122,6 +123,4 @@ static auto readGain(arma::Mat<Type>* _G, std::string _file_path)
     return 0;
 }
 
-}
-
-}
+} }

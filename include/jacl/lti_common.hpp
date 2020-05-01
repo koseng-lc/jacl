@@ -2,6 +2,7 @@
 *   @author : koseng (Lintang)
 *   @brief : Some LTI Properties
 */
+
 #pragma once
 
 #include <cassert>

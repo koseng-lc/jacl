@@ -2,6 +2,7 @@
 *   @author : koseng (Lintang)
 *   @brief : Simple implementation of discrete Algebraic Riccati Equations solver
 */
+
 #pragma once
 
 #include <boost/python.hpp>
@@ -9,6 +10,8 @@
 #include <numpy/ndarrayobject.h>
 
 #include <jacl/linear_state_space.hpp>
+
+// #define DARE_VERBOSE
 
 namespace jacl{
 
@@ -34,7 +37,7 @@ public:
             genSympleticMatrix();
     }
 
-    auto setQ(const arma::mat& _Q, bool update_hamiltonian = false) -> void{
+    auto setQ(const arma::mat& _Q, bool update_hamiltonian = false){
         assert(arma::size(_Q) == arma::size(ss_->A()));
         Q_ = _Q;
         if(update_hamiltonian)
@@ -51,7 +54,7 @@ private:
     auto genSympleticMatrix();
 
     //-- change to pointer arg for TZ
-    auto auxSchur(const arma::mat& _S, std::tuple<arma::cx_mat, arma::cx_mat>& TZ) -> int{
+    auto auxSchur(const arma::mat& _S, std::tuple<arma::cx_mat, arma::cx_mat>* _TZ) -> int{
         ::jacl::py_stuff::AcquireGIL lk;
         try{
             py::object sys = py::import("sys");
@@ -82,7 +85,7 @@ private:
             T.set_imag(dum[1]);
             Z.set_real(dum[2]);
             Z.set_imag(dum[3]);
-            TZ = std::make_tuple(T,Z);
+            *_TZ = std::make_tuple(T,Z);
         }catch(py::error_already_set){
             PyErr_Print();
             return 1;
@@ -142,19 +145,27 @@ auto DARE<_StateSpace>::genSympleticMatrix(){
 
 template <class _StateSpace>
 auto DARE<_StateSpace>::solve(){
-
     std::tuple<arma::cx_mat, arma::cx_mat> TZ;
-    int ret = auxSchur(S_, TZ);
+    int ret = auxSchur(S_, &TZ);
     arma::cx_mat T = std::get<0>(TZ);
     arma::cx_mat Z = std::get<1>(TZ);
+    #ifdef DARE_VERBOSE
+    T.print("[DARE] T : ");
+    Z.print("[DARE] Z : ");
+    #endif
 
     arma::cx_mat ISS, T1, T2;
-//    T.print("T : ");
-//    Z.print("Z : ");
     ISS = Z.head_cols(Z.n_cols >> 1);
-//    ISS.print("ISS : ");
+    #ifdef DARE_VERBOSE
+    ISS.print("[DARE] Invariant spectral subspace : ");
+    #endif
+
     T1 = ISS.head_rows(ISS.n_rows >> 1);
     T2 = ISS.tail_rows(ISS.n_rows >> 1);
+    #ifdef DARE_VERBOSE
+    T1.print("[DARE] T1 : ");
+    T2.print("[DARE] T2 : ");
+    #endif
 
     if(arma::cond(T1) > 1e6){
         //-- regularize the ill-conditioned matrix

@@ -21,11 +21,20 @@
 namespace jacl{
 
 //-- force to have fixed size
-template<std::size_t num_states, std::size_t num_inputs, std::size_t num_outputs, class PhysicalParam = int, class ...Rest>
+template<typename Scalar,
+         std::size_t num_states,
+         std::size_t num_inputs,
+         std::size_t num_outputs,
+         class PhysicalParam = int,
+         class ...Rest>
 class NonLinearStateSpace:public pattern::Subject{
 public:
     typedef std::function<double(NonLinearStateSpace)> Formula;
     typedef std::vector<Formula> Formulas;
+
+    using scalar_t = Scalar;
+    //-- it's needed in BaseSystem
+    using state_matrix_t = typename arma::Mat<Scalar>::template fixed<num_states,num_states>;
 
 public:
     template <typename _PhysicalParam = PhysicalParam,
@@ -35,12 +44,14 @@ public:
     NonLinearStateSpace(_PhysicalParam* _param, Rest*... _rest)
         : state_fn_(n_states + n_inputs)
         , output_fn_(n_outputs){
-
         push(_param, _rest...);
     }
 
-    NonLinearStateSpace();
-    ~NonLinearStateSpace();           
+    NonLinearStateSpace()
+        : state_fn_(n_states + n_inputs)
+        , output_fn_(n_outputs){
+    }
+    ~NonLinearStateSpace(){}
 
     inline auto& stateFn(){
         return state_fn_;
@@ -61,16 +72,16 @@ public:
 private:
     template <typename _PhysicalParam = PhysicalParam>
     auto push(_PhysicalParam* _param)
-    -> typename std::enable_if_t<
-    std::is_same<typename std::decay_t<_PhysicalParam>,
+        -> typename std::enable_if_t<
+        std::is_same<typename std::decay_t<_PhysicalParam>,
                  PhysicalParameter>::value, void>{
         params_.push_back(_param);
     }
 
     template <typename _PhysicalParam = PhysicalParam, class ...PhysicalParamRest>
     auto push(_PhysicalParam* _param, PhysicalParamRest*... _rest)
-    -> typename std::enable_if_t<
-    std::is_same<typename std::decay_t<_PhysicalParam>,
+        -> typename std::enable_if_t<
+        std::is_same<typename std::decay_t<_PhysicalParam>,
                  PhysicalParameter>::value, void>{
         push(_param);
         push(_rest...);
@@ -114,16 +125,5 @@ private:
     friend class ::jacl::state_space::detail::NonLinearStateSpaceClient<NonLinearStateSpace>;
 
 };
-
-template <std::size_t num_states, std::size_t num_inputs, std::size_t num_outputs, class PhysicalParam, class ...Rest>
-NonLinearStateSpace<num_states, num_inputs, num_outputs, PhysicalParam, Rest...>::NonLinearStateSpace()
-    : state_fn_(n_states + n_inputs)
-    , output_fn_(n_outputs){
-}
-
-template<std::size_t num_states, std::size_t num_inputs, std::size_t num_outputs, class PhysicalParam, class ...Rest>
-NonLinearStateSpace<num_states, num_inputs, num_outputs, PhysicalParam, Rest...>::~NonLinearStateSpace(){
-
-}
 
 }

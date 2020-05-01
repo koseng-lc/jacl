@@ -1,3 +1,8 @@
+/**
+*   @author : koseng (Lintang)
+*   @brief : Instrument Fault Detection
+*/
+
 #pragma once
 
 #include <boost/variant.hpp>
@@ -13,7 +18,10 @@
 namespace jacl{ namespace diagnosis{
 
 template <typename _System>
-class IFD:public ::jacl::system::detail::BaseSystemClient<typename _System::base>{
+class IFD:public ::jacl::system::detail::BaseSystemClient<typename _System::base_t>{
+public:
+    using diag_pack_t = std::array<std::pair<arma::vec, bool>, _System::n_outputs>;
+
 public:    
     IFD(_System* _sys, std::initializer_list<double> _threshold)
         : sys_(_sys)
@@ -41,8 +49,8 @@ public:
         }        
     }
     virtual auto detect(const arma::vec& _in, const arma::vec& _out)
-        -> std::array<std::pair<arma::vec, bool>, _System::n_outputs>{
-        std::array<std::pair<arma::vec, bool>, _System::n_outputs> res;
+        -> diag_pack_t{
+        diag_pack_t res;
         std::vector<arma::vec> y_hat;
         arma::vec delta_y;
         getEst<_System::n_outputs-1, decltype(dos_)>::get(&dos_, _in, _out, &y_hat);
@@ -65,12 +73,12 @@ public:
     }
 protected:
     template <typename __System = _System, std::size_t chosen_state=0>
-    class DedicatedObserver:public ::jacl::system::BaseSystem<typename __System::StateSpace>{
+    class DedicatedObserver:public ::jacl::system::BaseSystem<typename __System::state_space_t>{
     public:
         static constexpr double CHOSEN_STATE{chosen_state};
         DedicatedObserver(__System* _sys=nullptr)
-            : ::jacl::system::BaseSystem<typename __System::StateSpace>(
-                    ::jacl::system::detail::BaseSystemClient<typename __System::base>::ss(_sys))
+            : ::jacl::system::BaseSystem<typename __System::state_space_t>(
+                    ::jacl::system::detail::BaseSystemClient<typename __System::base_t>::ss(_sys))
             , z_( arma::zeros<arma::vec>(__System::n_outputs-1, 1) )
             , prev_z_(z_){
         }
@@ -82,12 +90,13 @@ protected:
             prev_meas_ = meas_;
             return est;
         }    
-        void setPole(const arma::vec& _poles){
+        auto setPole(const arma::vec& _poles){
             poles_ = _poles;
             updateVar();
         }
     protected:
-        auto convolve(const arma::vec& _in) -> arma::vec override{
+        auto convolve(const arma::vec& _in)
+            -> typename __System::base_t::output_t override{
             setIn(_in);
             this->state_ = dstate();        
             this->out_ = output();
@@ -139,7 +148,7 @@ protected:
                 A22_ = A22(An_);
                 B1_ = B1(Bn_);
                 B2_ = B2(Bn_);
-                jacl::LinearStateSpace<_System::n_states-1,1,1> ss(A22_, arma::zeros(_System::n_states-1,1),
+                jacl::LinearStateSpace<double, _System::n_states-1,1,1> ss(A22_, arma::zeros(_System::n_states-1,1),
                                                                     A12_, arma::zeros(1,1));
                 jacl::pole_placement::KautskyNichols(&ss, poles_, &L_, jacl::pole_placement::PolePlacementType::Observer);
 
@@ -218,15 +227,15 @@ protected:
     template <int n, typename T>
     struct DOVariant;
     template <int n, typename ...Args>
-    struct DOVariant<n, boost::variant<Args...> >{
-        using type = typename DOVariant<n-1, boost::variant<Args..., DedicatedObserver<_System,n-1> > >::type;
+    struct DOVariant<n, boost::variant<Args...>>{
+        using type = typename DOVariant<n-1, boost::variant<Args..., DedicatedObserver<_System,n-1>>>::type;
     };
     template <typename ...Args>
-    struct DOVariant<1, boost::variant<Args...> >{
-        using type = typename boost::variant<Args..., DedicatedObserver<_System,0> >;
+    struct DOVariant<1, boost::variant<Args...>>{
+        using type = typename boost::variant<Args..., DedicatedObserver<_System,0>>;
     };
-    // using DOS = std::vector<DOVariant<_System::n_outputs-1, boost::variant<DedicatedObserver<_System, _System::n_outputs-1> > >::type >;
-    using DOS = std::vector<boost::variant<DedicatedObserver<_System,0>, DedicatedObserver<_System,1>, DedicatedObserver<_System,2> > >;
+    // using DOS = std::vector<DOVariant<_System::n_outputs-1, boost::variant<DedicatedObserver<_System, _System::n_outputs-1>>>::type>;
+    using DOS = std::vector<boost::variant<DedicatedObserver<_System,0>, DedicatedObserver<_System,1>, DedicatedObserver<_System,2>>>;
     DOS dos_;
 
     template <typename _StateSpace>
@@ -234,7 +243,7 @@ protected:
     public:
         AuxSys(_StateSpace* _ss)
             : ::jacl::system::BaseSystem<_StateSpace>(_ss){}
-        void collectSig(const arma::mat& _state, const arma::mat& _in, const arma::mat& _out){
+        auto collectSig(const arma::mat& _state, const arma::mat& _in, const arma::mat& _out){
             this->prev_state_ = _state;
             this->in_ = _in;
             this->out_ = _out;            
@@ -245,8 +254,8 @@ protected:
         auto output() -> arma::vec{}
     };
     //-- so we gonna have same dimension in all signals
-    AuxSys<typename _System::StateSpace> aux_sys_;
-    jacl::Plotter<AuxSys<typename _System::StateSpace>> plt_;
+    AuxSys<typename _System::state_space_t> aux_sys_;
+    jacl::Plotter<AuxSys<typename _System::state_space_t>> plt_;
 
     template <int n, typename DOs>
     struct initDOs{
@@ -267,18 +276,18 @@ protected:
     struct setSubjectDOs{
         static auto set(DOs* _dos, _System* _sys){
             //-- idk why with boost::variant the virtual method won't override
-            ::jacl::system::detail::BaseSystemClient<typename _System::base>::setSubject(
+            ::jacl::system::detail::BaseSystemClient<typename _System::base_t>::setSubject(
                 &boost::get<DedicatedObserver<_System, n>>((*_dos)[n]),
-                ::jacl::system::detail::BaseSystemClient<typename _System::base>::ss(_sys));
+                ::jacl::system::detail::BaseSystemClient<typename _System::base_t>::ss(_sys));
             setSubjectDOs<n-1, DOs>::set(_dos, _sys);
         }
     };
     template <typename DOs>
     struct setSubjectDOs<0, DOs>{
         static auto set(DOs* _dos, _System* _sys){
-            ::jacl::system::detail::BaseSystemClient<typename _System::base>::setSubject(
+            ::jacl::system::detail::BaseSystemClient<typename _System::base_t>::setSubject(
                 &boost::get<DedicatedObserver<_System, 0>>((*_dos)[0]),
-                ::jacl::system::detail::BaseSystemClient<typename _System::base>::ss(_sys));
+                ::jacl::system::detail::BaseSystemClient<typename _System::base_t>::ss(_sys));
         }
     };
     template <int n,typename DOs>
