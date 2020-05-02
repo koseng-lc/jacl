@@ -74,6 +74,14 @@ public:
 protected:
     template <typename __System = _System, std::size_t chosen_state=0>
     class DedicatedObserver:public ::jacl::system::BaseSystem<typename __System::state_space_t>{
+    protected:
+        using A11_t = typename arma::Mat<typename __System::scalar_t>::template fixed<1,1>;
+        using A12_t = typename arma::Mat<typename __System::scalar_t>::template fixed<1,_System::n_states-1>;
+        using A21_t = typename arma::Mat<typename __System::scalar_t>::template fixed<_System::n_states-1,1>;
+        using A22_t = typename arma::Mat<typename __System::scalar_t>::template fixed<_System::n_states-1,_System::n_states-1>;
+        using B1_t = typename arma::Mat<typename __System::scalar_t>::template fixed<1,_System::n_inputs>;
+        using B2_t = typename arma::Mat<typename __System::scalar_t>::template fixed<_System::n_states-1,_System::n_inputs>;
+
     public:
         static constexpr double CHOSEN_STATE{chosen_state};
         DedicatedObserver(__System* _sys=nullptr)
@@ -84,9 +92,9 @@ protected:
         }
         ~DedicatedObserver(){}
          //-- overload
-        auto convolve(const arma::vec& _in, const arma::vec& _meas){
+        auto convolve(const typename __System::base_t::input_t& _in, const typename __System::base_t::output_t& _meas){
             meas_ = _meas;
-            arma::vec est( convolve(_in) );
+            arma::vec est( convolve(_in) );            
             prev_meas_ = meas_;
             return est;
         }    
@@ -95,15 +103,15 @@ protected:
             updateVar();
         }
     protected:
-        auto convolve(const arma::vec& _in)
+        auto convolve(const typename __System::base_t::input_t& _in)
             -> typename __System::base_t::output_t override{
             setIn(_in);
-            this->state_ = dstate();        
+            this->state_ = dstate();  
             this->out_ = output();
             this->prev_state_ = this->state_;
             return this->out_;
         }
-        void setIn(const arma::vec& _in){
+        void setIn(const typename __System::base_t::input_t& _in){
             this->in_ = _in;
         }
         template <typename T = __System>
@@ -111,8 +119,8 @@ protected:
                     const arma::mat& term2,
                     const arma::mat& term3,
                     const arma::vec& _yI)
-            -> typename std::enable_if<
-                ::jacl::traits::is_continuous_system<T>::value, arma::vec>::type{
+            -> typename std::enable_if_t<
+                ::jacl::traits::is_continuous_system<T>::value, typename __System::base_t::state_t>{
             //-- not implemented yet
             return arma::vec(T::n_outputs, 1, arma::fill::zeros);
         }
@@ -121,12 +129,13 @@ protected:
                     const arma::mat& _term2,
                     const arma::mat& _term3,
                     const arma::vec& _yI)
-            -> typename std::enable_if<
-                ::jacl::traits::is_discrete_system<T>::value, arma::vec>::type{
+            -> typename std::enable_if_t<
+                ::jacl::traits::is_discrete_system<T>::value,
+                typename arma::Col<typename __System::base_t::scalar_t>::template fixed<__System::n_states-1>>{
             return _term1*prev_z_ + _term1*L_*_yI
                     + _term2*_yI + _term3*this->in_; 
         }
-        auto dstate() -> arma::vec override{
+        auto dstate() -> typename __System::base_t::state_t override{
             arma::mat term1( A22_ - L_*A12_ );
             arma::mat term2( A21_ - L_*A11_ );
             arma::mat term3( B2_ - L_*B1_ );
@@ -136,7 +145,7 @@ protected:
             prev_z_ = z_;
             return  arma::inv(M_) * q_hat_;
         }
-        auto output() -> arma::vec override{
+        auto output() -> typename __System::base_t::output_t override{
             return this->ss_->C() * this->prev_state_ + this->ss_->D() * this->in_;
         }
         void updateVar() override{
@@ -183,33 +192,40 @@ protected:
                 Bn_ = M_ * this->ss_->B(); 
             }                         
         }
-        inline auto A11(const arma::mat& _A){
+        inline auto A11(const typename __System::state_space_t::state_matrix_t& _A)
+            -> A11_t{
             return _A.submat(0,0,0,0);
         }
-        inline auto A12(const arma::mat& _A){
+        inline auto A12(const typename __System::state_space_t::state_matrix_t& _A)
+            -> A12_t{
             return _A.submat(0,1,0,__System::n_states-1);
         }
-        inline auto A21(const arma::mat& _A){
+        inline auto A21(const typename __System::state_space_t::state_matrix_t& _A)
+            -> A21_t{
             return _A.submat(1,0,__System::n_states-1,0);
         }
-        inline auto A22(const arma::mat& _A){
-            return _A.submat(1,1, __System::n_states-1 ,__System::n_states-1);
+        inline auto A22(const typename __System::state_space_t::state_matrix_t& _A)
+            -> A22_t{
+            return _A.submat(1,1,__System::n_states-1,__System::n_states-1);
         }
-        inline auto B1(const arma::mat& _B){
+        inline auto B1(const typename __System::state_space_t::input_matrix_t& _B)
+            -> B1_t{
             return _B.head_rows(1);
         }
-        inline auto B2(const arma::mat& _B){
+        inline auto B2(const typename __System::state_space_t::input_matrix_t& _B)
+            -> B2_t{
             return _B.tail_rows(__System::n_states-1);
         }
     protected:
-        arma::mat An_;
-        arma::mat Bn_;
-        arma::mat A11_;
-        arma::mat A12_;
-        arma::mat A21_;
-        arma::mat A22_;
-        arma::mat B1_;
-        arma::mat B2_;
+        typename __System::state_space_t::state_matrix_t An_;
+        typename __System::state_space_t::input_matrix_t Bn_;
+
+        A11_t A11_;
+        A12_t A12_;
+        A21_t A21_;
+        A22_t A22_;
+        B1_t B1_;
+        B2_t B2_;
         arma::mat M_;        
         arma::mat L_;
         arma::vec z_;
@@ -243,15 +259,17 @@ protected:
     public:
         AuxSys(_StateSpace* _ss)
             : ::jacl::system::BaseSystem<_StateSpace>(_ss){}
-        auto collectSig(const arma::mat& _state, const arma::mat& _in, const arma::mat& _out){
+        auto collectSig(const typename ::jacl::system::BaseSystem<_StateSpace>::state_t& _state,
+                        const typename ::jacl::system::BaseSystem<_StateSpace>::input_t& _in,
+                        const typename ::jacl::system::BaseSystem<_StateSpace>::output_t& _out){
             this->prev_state_ = _state;
             this->in_ = _in;
             this->out_ = _out;            
         }        
     protected:
-        void setIn(const arma::vec& _in){}
-        auto dstate() -> arma::vec{}
-        auto output() -> arma::vec{}
+        void setIn(const typename ::jacl::system::BaseSystem<_StateSpace>::input_t& _in){}
+        auto dstate() -> typename ::jacl::system::BaseSystem<_StateSpace>::state_t{}
+        auto output() -> typename ::jacl::system::BaseSystem<_StateSpace>::output_t{}
     };
     //-- so we gonna have same dimension in all signals
     AuxSys<typename _System::state_space_t> aux_sys_;

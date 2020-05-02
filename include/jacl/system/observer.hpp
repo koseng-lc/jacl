@@ -20,9 +20,11 @@ public:
     ~Observer(){}
         
     //-- overload
-    auto convolve(const arma::vec& _in, const arma::vec& _meas) -> arma::vec{
+    auto convolve(const typename BaseSystem<_StateSpace>::input_t& _in,
+                  const typename BaseSystem<_StateSpace>::output_t& _meas)
+        -> typename BaseSystem<_StateSpace>::output_t{
         meas_ = _meas;
-        arma::vec est( convolve(_in) );
+        typename BaseSystem<_StateSpace>::output_t est( convolve(_in) );
         prev_meas_ = meas_;
         return est;
     }    
@@ -33,7 +35,7 @@ public:
     }
 
 protected:
-    auto convolve(const arma::vec& _in)
+    auto convolve(const typename BaseSystem<_StateSpace>::input_t& _in)
         -> typename BaseSystem<_StateSpace>::output_t override{
         setIn(_in);
         this->state_ = dstate();        
@@ -41,14 +43,14 @@ protected:
         this->prev_state_ = this->state_;
         return this->out_;
     }
-    auto setIn(const arma::vec& _in) -> void{
+    void setIn(const typename BaseSystem<_StateSpace>::input_t& _in){
         this->in_ = _in;
     }
-    virtual auto dstate() -> arma::vec = 0;
-    auto output() -> arma::vec override{
+    virtual auto dstate() -> typename BaseSystem<_StateSpace>::state_t = 0;
+    auto output() -> typename BaseSystem<_StateSpace>::output_t override{
         return this->ss_->C() * this->prev_state_;
     }
-    virtual auto updateVar() -> void = 0;
+    virtual void updateVar() = 0;
 
 protected:
     arma::mat K_;

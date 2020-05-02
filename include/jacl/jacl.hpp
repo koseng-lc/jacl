@@ -6,6 +6,8 @@
 
 #pragma once
 
+#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+
 #include <jacl/physical_parameter.hpp>
 #include <jacl/defs.hpp>
 #include <jacl/transfer_matrix.hpp>

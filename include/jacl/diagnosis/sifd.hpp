@@ -3,11 +3,9 @@
 *   @brief : Simplified Instrument Fault Detection
 */
 
-
 #pragma once
 
 #include <jacl/diagnosis/ifd.hpp>
-#include <armadillo>
 
 namespace jacl{ namespace diagnosis {
 
@@ -31,10 +29,10 @@ public:
         }        
     }
     auto detect(const arma::vec& _in, const arma::vec& _out)
-        -> std::array<std::pair<arma::vec, bool>, _System::n_outputs> override{        
-        std::array<std::pair<arma::vec, bool>, _System::n_outputs> res;
-        std::vector<arma::vec> y_hat;
-        IFD<_System>::template getEst<_System::n_outputs-1, typename IFD<_System>::DOS>::get(&this->dos_, _in, _out, &y_hat);  
+        -> typename IFD<_System>::diag_pack_t override{        
+        typename IFD<_System>::diag_pack_t res;
+        std::vector<arma::vec> y_hat;        
+        IFD<_System>::template getEst<_System::n_outputs-1, typename IFD<_System>::DOS>::get(&this->dos_, _in, _out, &y_hat);
         arma::vec delta_y( _out - y_hat[CHOSEN_STATE] );
         bool chosen_state_status(true);
         for(int i(0); i < res.size(); i++){

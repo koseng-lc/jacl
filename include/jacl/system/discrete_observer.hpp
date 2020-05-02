@@ -17,13 +17,13 @@ public:
     ~DiscreteObserver(){} 
 
 protected:
-    auto dstate() -> arma::vec{
+    auto dstate() -> typename Observer<_StateSpace>::state_t{
         static arma::mat term1, term2;
         term1 = this->A_hat_ * this->prev_state_;
         term2 = this->K_ * this->meas_ + this->H_ * this->in_;
         return  term1 + term2;
     }
-    auto updateVar() -> void override{
+    void updateVar() override{
         this->A_hat_ = this->ss_->A() - (this->K_ * this->ss_->C());
         this->H_ = this->ss_->B();
     }

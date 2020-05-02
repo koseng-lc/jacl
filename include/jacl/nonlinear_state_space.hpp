@@ -35,6 +35,9 @@ public:
     using scalar_t = Scalar;
     //-- it's needed in BaseSystem
     using state_matrix_t = typename arma::Mat<Scalar>::template fixed<num_states,num_states>;
+    using input_matrix_t = typename arma::Mat<Scalar>::template fixed<num_states,num_inputs>;
+    using output_matrix_t = typename arma::Mat<Scalar>::template fixed<num_outputs,num_states>;
+    using feedforward_matrix_t = typename arma::Mat<Scalar>::template fixed<num_outputs,num_inputs>;
 
 public:
     template <typename _PhysicalParam = PhysicalParam,

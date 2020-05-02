@@ -17,7 +17,7 @@ public:
     ~ContinuousObserver(){}
         
 protected:
-    auto dstate() -> arma::vec{
+    auto dstate() -> typename Observer<_StateSpace>::state_t{
         static arma::mat term1, term2, term3, term4, term5;
 
         term1 = this->state_trans_ * this->prev_state_;
@@ -26,7 +26,7 @@ protected:
         term4 = this->state_trans_ * term3;
         term5 = (term2 + term4) * (this->dt_ * .5);
 
-        this->prev_in_ = this->in_;        
+        this->prev_in_ = this->in_;
 
         return term1 + term5;
     }

@@ -44,21 +44,14 @@ public:
         -> typename arma::Col<scalar_t>::template fixed<n_states+n_inputs+n_outputs>{
         return arma::join_cols(prev_state_, arma::join_cols(in_, out_));
     }
-    virtual auto convolve(const arma::vec& _in)
+    virtual auto convolve(const input_t& _in)
         -> output_t{
         setIn(_in);        
         this->state_ = dstate();
         this->prev_state_ = this->state_;
         this->out_ = output();
         return this->out_;
-    }
-    // template <typename T = _StateSpace>
-    // auto A() -> typename std::enable_if_t<::jacl::traits::is_linear_state_space<T>::value,
-    //                              typename state_space_t::state_matrix_t> { return this->ss_->A(); }
-    auto A() -> arma::mat { return this->ss_->A(); }
-    auto B() -> arma::mat { return this->ss_->B(); }
-    auto C() -> arma::mat { return this->ss_->C(); }
-    auto D() -> arma::mat { return this->ss_->D(); }
+    }  
     
     auto reset(){
         state_.fill(.0);
@@ -69,9 +62,9 @@ public:
     }
 
 protected:
-    virtual void setIn(const arma::vec& _in) = 0;
-    virtual auto dstate() -> arma::vec = 0;
-    virtual auto output() -> arma::vec = 0;
+    virtual void setIn(const input_t& _in) = 0;
+    virtual auto dstate() -> state_t = 0;
+    virtual auto output() -> output_t = 0;
     virtual void updateVar(){}
     void update() override{
         updateVar();
@@ -83,6 +76,10 @@ protected:
             this->s_->attach(this);
         }
     }
+    auto A() -> typename state_space_t::state_matrix_t { return this->ss_->A(); }
+    auto B() -> typename state_space_t::input_matrix_t { return this->ss_->B(); }
+    auto C() -> typename state_space_t::output_matrix_t { return this->ss_->C(); }
+    auto D() -> typename state_space_t::feedforward_matrix_t { return this->ss_->D(); }
 
 protected:
     state_t state_;

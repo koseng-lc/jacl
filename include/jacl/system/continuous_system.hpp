@@ -12,10 +12,10 @@ public:
     ~ContinuousSystem(){}
 
 protected:
-    void setIn(const arma::vec& _in) override{
+    void setIn(const typename BaseSystem<_StateSpace>::input_t& _in) override{
         this->in_ = _in;
     }
-    auto dstate() -> arma::vec override{
+    auto dstate() -> typename BaseSystem<_StateSpace>::state_t override{
         static arma::mat term1, term2, term3, term4;        
         term1 = this->state_trans_ * this->prev_state_;
         term2 = this->ss_->B() * this->in_;
@@ -24,7 +24,7 @@ protected:
         this->prev_in_ = this->in_;
         return term1 + term4;
     }    
-    auto output() -> arma::vec override{
+    auto output() -> typename BaseSystem<_StateSpace>::output_t override{
         static arma::mat term1;
         term1 = this->ss_->C() * this->prev_state_;
         return term1 + (this->ss_->D() * this->in_);
@@ -51,13 +51,13 @@ public:
     ~ContinuousSystem(){}    
 
 protected:
-    void setIn(const arma::vec& _in) override{
+    void setIn(const typename BaseSystem<_StateSpace>::input_t& _in) override{
         ::jacl::state_space::detail::NonLinearStateSpaceClient<_StateSpace>::setSig(this->ss_, arma::join_cols(this->prev_state_, _in));
     }
-    auto dstate() -> arma::vec override{
+    auto dstate() -> typename BaseSystem<_StateSpace>::state_t override{
         return ::jacl::state_space::detail::NonLinearStateSpaceClient<_StateSpace>::dstate(this->ss_) * this->dt_;
     }
-    auto output() -> arma::vec override{
+    auto output() -> typename BaseSystem<_StateSpace>::output_t override{
         return ::jacl::state_space::detail::NonLinearStateSpaceClient<_StateSpace>::output(this->ss_);
     }
     void updateVar() override{

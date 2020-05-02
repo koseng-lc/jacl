@@ -1,6 +1,6 @@
 /**
 *   @author : koseng (Lintang)
-*   @brief : Simple implementation of Kautsky-Nichols Robust pole placement
+*   @brief : Simple implementation of pole placement methods
 */
 
 #pragma once
@@ -18,7 +18,7 @@ namespace jacl{ namespace pole_placement{
 
 namespace detail{
     template <typename T>
-    static auto VietaFormula(const arma::Col<T> _roots, arma::Col<T>* _coeff) -> void{
+    static auto VietaFormula(const arma::Col<T> _roots, arma::Col<T>* _coeff){
         *_coeff = arma::Col<T>(_roots.n_rows + 1, _roots.n_cols, arma::fill::zeros);
         (*_coeff)(0) = 1. + .0i;
         (*_coeff)(1) = _roots(0);
@@ -43,13 +43,13 @@ enum class PolePlacementType{
 };
 
 template <class _StateSpace>
-static auto KautskyNichols(_StateSpace *_ss, const arma::mat& _poles, arma::mat* _K, PolePlacementType _type = PolePlacementType::Controller) -> void{
+static auto KautskyNichols(_StateSpace *_ss, const arma::mat& _poles, arma::mat* _K, PolePlacementType _type = PolePlacementType::Controller){
     assert(_poles.is_vec());
 
     arma::mat Q, R;
     arma::mat U0, U1, Z;    
 
-    arma::mat A( _ss->A() );
+    typename _StateSpace::state_matrix_t A( _ss->A() );
     arma::mat T; //type
     if(_type == PolePlacementType::Controller){
         T = _ss->B();
@@ -173,9 +173,9 @@ static auto KautskyNichols(_StateSpace *_ss, const arma::mat& _poles, arma::mat*
 }
 
 template <typename _StateSpace>
-static auto BassGura(_StateSpace* _ss, const arma::vec& _poles, arma::mat* _gain) -> void{
-    const arma::mat& A = _ss->A();
-    const arma::mat& C = _ss->C();
+static auto BassGura(_StateSpace* _ss, const arma::vec& _poles, arma::mat* _gain){
+    const typename _StateSpace::state_matrix_t& A = _ss->A();
+    const typename _StateSpace::output_matrix_t& C = _ss->C();
     arma::cx_vec eigval;
     arma::cx_mat eigvec;
     arma::eig_gen(eigval, eigvec, A);
