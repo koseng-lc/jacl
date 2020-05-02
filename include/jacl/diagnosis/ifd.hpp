@@ -37,19 +37,23 @@ public:
         setSubjectDOs<_System::n_outputs-1, decltype(dos_)>::set(&dos_, sys_);
     }
     ~IFD(){}
-    virtual void init(std::initializer_list<arma::vec > _poles,
+    virtual void init(std::initializer_list<
+                        typename arma::Col<
+                            typename _System::scalar_t>::template fixed<_System::n_states-1>> _poles,
                       std::string&& _plot_title = "",
                       std::initializer_list<std::string> _plot_name = {}){
-        std::vector<arma::vec> poles(_poles);
-        setPoleDOs<_System::n_outputs-1, decltype(dos_)>::set(&dos_, poles);
+        std::vector<typename arma::Col<
+                        typename _System::scalar_t>::template fixed<_System::n_states-1>> poles(_poles);
+        setPoleDOs<_System::n_outputs-1, decltype(dos_)>::set(&dos_, poles, ifd_tag());
         if(_plot_name.size()){
             plt_.init();
             plt_.setTitle(std::move(_plot_title));
             plt_.setPlotName(_plot_name);
         }        
     }
-    virtual auto detect(const arma::vec& _in, const arma::vec& _out)
-        -> diag_pack_t{
+    virtual auto detect(const typename _System::input_t& _in,
+                        const typename _System::output_t& _out)
+                        -> diag_pack_t{
         diag_pack_t res;
         std::vector<arma::vec> y_hat;
         arma::vec delta_y;
@@ -94,11 +98,12 @@ protected:
          //-- overload
         auto convolve(const typename __System::base_t::input_t& _in, const typename __System::base_t::output_t& _meas){
             meas_ = _meas;
-            arma::vec est( convolve(_in) );            
+            arma::vec est( convolve(_in) );
             prev_meas_ = meas_;
             return est;
         }    
-        auto setPole(const arma::vec& _poles){
+        auto setPole(const typename arma::Col<
+                            typename __System::scalar_t>::template fixed<__System::n_states-1>& _poles){
             poles_ = _poles;
             updateVar();
         }
@@ -161,7 +166,6 @@ protected:
                                                                     A12_, arma::zeros(1,1));
                 jacl::pole_placement::KautskyNichols(&ss, poles_, &L_, jacl::pole_placement::PolePlacementType::Observer);
 
-                // L_.print("Gain : ");
                 // if(jacl::common::observable(ss.A(), ss.C()))
                 //     std::cout << "SS Observable !" << std::endl;
                 // arma::cx_mat eigvec;
@@ -250,9 +254,8 @@ protected:
     struct DOVariant<1, boost::variant<Args...>>{
         using type = typename boost::variant<Args..., DedicatedObserver<_System,0>>;
     };
-    // using DOS = std::vector<DOVariant<_System::n_outputs-1, boost::variant<DedicatedObserver<_System, _System::n_outputs-1>>>::type>;
-    using DOS = std::vector<boost::variant<DedicatedObserver<_System,0>, DedicatedObserver<_System,1>, DedicatedObserver<_System,2>>>;
-    DOS dos_;
+    std::vector<typename DOVariant<_System::n_outputs-1,
+                boost::variant<DedicatedObserver<_System, _System::n_outputs-1>>>::type> dos_;
 
     template <typename _StateSpace>
     class AuxSys:public ::jacl::system::BaseSystem<_StateSpace>{
@@ -308,32 +311,66 @@ protected:
                 ::jacl::system::detail::BaseSystemClient<typename _System::base_t>::ss(_sys));
         }
     };
+    struct ifd_tag{};
+    struct sifd_tag{};
     template <int n,typename DOs>
     struct setPoleDOs{
-        static auto set(DOs* _dos, const std::vector<arma::vec>& _pole){
+        static auto set(DOs* _dos,
+                        const std::vector<typename arma::Col<
+                            typename _System::scalar_t>::template fixed<_System::n_states-1>>& _pole, ifd_tag){
             boost::get<DedicatedObserver<_System, n>>( (*_dos)[n] ).setPole(_pole[n]);
-            setPoleDOs<n-1,DOs>::set(_dos, _pole);
+            setPoleDOs<n-1,DOs>::set(_dos, _pole, ifd_tag());
+        }
+        static auto set(DOs* _dos,
+                        const std::vector<typename arma::Col<
+                            typename _System::scalar_t>::template fixed<_System::n_states-1>>& _pole, sifd_tag){
+            boost::get<DedicatedObserver<_System, n>>( (*_dos)[n] ).setPole(_pole[n]);
         }
     };
     template <typename DOs>
     struct setPoleDOs<0, DOs>{
-        static auto set(DOs* _dos, const std::vector<arma::vec>& _pole){
+        static auto set(DOs* _dos,
+                        const std::vector<typename arma::Col<
+                            typename _System::scalar_t>::template fixed<_System::n_states-1>>& _pole, ifd_tag){
+            boost::get<DedicatedObserver<_System, 0>>( (*_dos)[0] ).setPole(_pole[0]);
+        }
+        static auto set(DOs* _dos,
+                        const std::vector<typename arma::Col<
+                            typename _System::scalar_t>::template fixed<_System::n_states-1>>& _pole, sifd_tag){
             boost::get<DedicatedObserver<_System, 0>>( (*_dos)[0] ).setPole(_pole[0]);
         }
     };
     template <int n, typename DOs>
     struct getEst{
-        static auto get(DOs* _dos, const arma::vec& _in, const arma::vec& _meas, std::vector<arma::vec>* _y_hat){
+        static auto get(DOs* _dos,
+                        const typename _System::input_t& _in,
+                        const typename _System::output_t& _meas,
+                        std::vector<arma::vec>* _y_hat){
             static constexpr std::size_t IDX{_System::n_outputs-1 - n};
             _y_hat->emplace_back(boost::get<DedicatedObserver<_System, IDX>>( (*_dos)[IDX] ).convolve(_in, _meas));
             getEst<n-1, DOs>::get(_dos, _in, _meas, _y_hat);
         }
+        static auto get(DOs* _dos,
+                        const typename _System::input_t& _in,
+                        const typename _System::output_t& _meas,
+                        arma::vec* _y_hat){
+            *_y_hat = boost::get<DedicatedObserver<_System, n>>( (*_dos)[n] ).convolve(_in, _meas);
+        }
     };
     template <typename DOs>
     struct getEst<0,DOs>{
-        static auto get(DOs* _dos, const arma::vec& _in, const arma::vec& _meas, std::vector<arma::vec>* _y_hat){
+        static auto get(DOs* _dos,
+                        const typename _System::input_t& _in,
+                        const typename _System::output_t& _meas,
+                        std::vector<arma::vec>* _y_hat){
             static constexpr std::size_t IDX{_System::n_outputs-1 - 0};
             _y_hat->emplace_back(boost::get<DedicatedObserver<_System, IDX>>( (*_dos)[IDX] ).convolve(_in, _meas));
+        }
+        static auto get(DOs* _dos,
+                        const typename _System::input_t& _in,
+                        const typename _System::output_t& _meas,
+                        arma::vec* _y_hat){
+            *_y_hat = boost::get<DedicatedObserver<_System, 0>>( (*_dos)[0] ).convolve(_in, _meas);
         }
     };       
 };

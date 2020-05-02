@@ -948,7 +948,7 @@ void MainWindow::setupSIMODCMotor(){
     cl_ss.B().print("Bcl : ");
     cl_ss.C().print("Ccl : ");
     cl_ss.D().print("Dcl : ");
-    jacl::analysis::TransientData transient_data = jacl::analysis::transient(cl_sys);
+    jacl::analysis::transient_data_t transient_data = jacl::analysis::transient(cl_sys);
     std::cout << "Rise time : " << jacl::analysis::getRiseTime(transient_data) << std::endl;
     std::cout << "Peak time : " << jacl::analysis::getPeakTime(transient_data) << std::endl;
     std::cout << "Overshoot : " << jacl::analysis::getOvershoot(transient_data) << std::endl;
@@ -1114,7 +1114,7 @@ void MainWindow::closedLoopProcess(){
 //    arma::mat diff(err);
 //    auto Kp(10.), Kd(1.);
     // ifd_.init({{-.76,-.65}, {-.63,-.51}, {-.86,-.72}});
-    sifd_.init({{-.25,-.055}, {-.63,-.51}, {-.86,-.72}}, "SIFD", {"Est. Pos.","Est. Spd.","Est. Curr."});
+    sifd_.init({{-.25,-.055}}, "SIFD", {"Est. Pos.","Est. Spd.","Est. Curr."});
     arma::cx_vec p = jacl::common::poles(dsimo_);    
     p.print("Discrete DC motor poles : ");
     p = jacl::common::poles(simo_);
@@ -1157,7 +1157,7 @@ void MainWindow::closedLoopProcess(){
         // dest = dobserver_simo_.convolve(din_, dout);
         arma::vec manip_out(out);
         makeFault(&manip_out);        
-        std::array<std::pair<arma::vec, bool>, 3> diag_pack = sifd_.detect(din_, manip_out);
+        SIFD::diag_pack_t diag_pack = sifd_.detect(din_, manip_out);
 
 //        err.submat(0,0,0,0).print("Err : ");
 //        in.submat(0,0,0,0).print("In : ");

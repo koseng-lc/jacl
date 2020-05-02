@@ -68,7 +68,7 @@ private:
         temp4 = arma::eye(_StateSpace::n_outputs,
                           _StateSpace::n_outputs)
                  - temp3;
-        //-- Hamiltonian matrix
+        //-- Sympletic matrix
         arma::mat H = arma::join_cols(
             arma::join_rows(temp2, _ss.B()*R_inv*arma::trans(_ss.B())),
             arma::join_rows(-C_t*temp4*_ss.C(), -arma::trans(temp2))
@@ -98,9 +98,7 @@ private:
              OUTPUT_SIZE,
              INPUT_SIZE> llft_;
 
-    double gam_;
-    arma::cx_mat X_inf_;
-    arma::cx_mat Y_inf_;
+    double gam_;    
 };
 
 template <typename _System,

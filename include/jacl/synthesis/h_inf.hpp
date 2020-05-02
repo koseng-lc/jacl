@@ -371,7 +371,7 @@ auto Hinf<_System,
     performance_size,
     perturbation_size>::checkCondition4(){
     arma::cx_mat temp( X_inf_*Y_inf_ );
-    return linear_algebra::spectralRadius( std::move(temp) ) < gam_*gam_;
+    return linear_algebra::spectralRadius(temp) < gam_*gam_;
 }
 
 template <typename _System,
