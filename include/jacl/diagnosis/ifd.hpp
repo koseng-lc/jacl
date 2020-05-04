@@ -26,7 +26,7 @@ public:
     IFD(_System* _sys, std::initializer_list<double> _threshold)
         : sys_(_sys)
         , aux_sys_(nullptr)
-        , plt_(&aux_sys_, {5,6,7}, 0.01){   
+        , plt_(&aux_sys_, plotSig<_System::n_outputs-1>::idx(), 0.01){  
         
         auto _th_it = _threshold.begin();
         for(int i(0); i < threshold_.size() && _th_it != _threshold.end(); i++){
@@ -55,8 +55,8 @@ public:
                         const typename _System::output_t& _out)
                         -> diag_pack_t{
         diag_pack_t res;
-        std::vector<arma::vec> y_hat;
-        arma::vec delta_y;
+        std::vector<typename _System::output_t> y_hat;
+        typename _System::output_t delta_y;
         getEst<_System::n_outputs-1, decltype(dos_)>::get(&dos_, _in, _out, &y_hat);
         for(int i(0); i < _System::n_outputs; i++){
             delta_y = _out - y_hat[i];
@@ -96,9 +96,9 @@ protected:
         }
         ~DedicatedObserver(){}
          //-- overload
-        auto convolve(const typename __System::base_t::input_t& _in, const typename __System::base_t::output_t& _meas){
+        auto convolve(const typename __System::input_t& _in, const typename __System::output_t& _meas){
             meas_ = _meas;
-            arma::vec est( convolve(_in) );
+            typename __System::output_t est( convolve(_in) );
             prev_meas_ = meas_;
             return est;
         }    
@@ -108,15 +108,15 @@ protected:
             updateVar();
         }
     protected:
-        auto convolve(const typename __System::base_t::input_t& _in)
-            -> typename __System::base_t::output_t override{
+        auto convolve(const typename __System::input_t& _in)
+            -> typename __System::output_t override{
             setIn(_in);
             this->state_ = dstate();  
             this->out_ = output();
             this->prev_state_ = this->state_;
             return this->out_;
         }
-        void setIn(const typename __System::base_t::input_t& _in){
+        void setIn(const typename __System::input_t& _in){
             this->in_ = _in;
         }
         template <typename T = __System>
@@ -125,7 +125,7 @@ protected:
                     const arma::mat& term3,
                     const arma::vec& _yI)
             -> typename std::enable_if_t<
-                ::jacl::traits::is_continuous_system<T>::value, typename __System::base_t::state_t>{
+                ::jacl::traits::is_continuous_system<T>::value, typename __System::state_t>{
             //-- not implemented yet
             return arma::vec(T::n_outputs, 1, arma::fill::zeros);
         }
@@ -136,11 +136,11 @@ protected:
                     const arma::vec& _yI)
             -> typename std::enable_if_t<
                 ::jacl::traits::is_discrete_system<T>::value,
-                typename arma::Col<typename __System::base_t::scalar_t>::template fixed<__System::n_states-1>>{
+                typename arma::Col<typename __System::scalar_t>::template fixed<__System::n_states-1>>{
             return _term1*prev_z_ + _term1*L_*_yI
                     + _term2*_yI + _term3*this->in_; 
         }
-        auto dstate() -> typename __System::base_t::state_t override{
+        auto dstate() -> typename __System::state_t override{
             arma::mat term1( A22_ - L_*A12_ );
             arma::mat term2( A21_ - L_*A11_ );
             arma::mat term3( B2_ - L_*B1_ );
@@ -150,7 +150,7 @@ protected:
             prev_z_ = z_;
             return  arma::inv(M_) * q_hat_;
         }
-        auto output() -> typename __System::base_t::output_t override{
+        auto output() -> typename __System::output_t override{
             return this->ss_->C() * this->prev_state_ + this->ss_->D() * this->in_;
         }
         void updateVar() override{
@@ -165,7 +165,6 @@ protected:
                 jacl::LinearStateSpace<double, _System::n_states-1,1,1> ss(A22_, arma::zeros(_System::n_states-1,1),
                                                                     A12_, arma::zeros(1,1));
                 jacl::pole_placement::KautskyNichols(&ss, poles_, &L_, jacl::pole_placement::PolePlacementType::Observer);
-
                 // if(jacl::common::observable(ss.A(), ss.C()))
                 //     std::cout << "SS Observable !" << std::endl;
                 // arma::cx_mat eigvec;
@@ -230,13 +229,13 @@ protected:
         A22_t A22_;
         B1_t B1_;
         B2_t B2_;
-        arma::mat M_;        
-        arma::mat L_;
+        typename __System::state_space_t::state_matrix_t M_;
+        typename arma::Col<typename __System::scalar_t>::template fixed<__System::n_states-1> L_;
         arma::vec z_;
         arma::vec prev_z_;
-        arma::vec q_hat_;
-        arma::vec meas_;
-        arma::vec prev_meas_;
+        typename __System::state_t q_hat_;
+        typename __System::output_t meas_;
+        typename __System::output_t prev_meas_;
         arma::vec poles_;
     };
 
@@ -345,7 +344,7 @@ protected:
         static auto get(DOs* _dos,
                         const typename _System::input_t& _in,
                         const typename _System::output_t& _meas,
-                        std::vector<arma::vec>* _y_hat){
+                        std::vector<typename _System::output_t>* _y_hat){
             static constexpr std::size_t IDX{_System::n_outputs-1 - n};
             _y_hat->emplace_back(boost::get<DedicatedObserver<_System, IDX>>( (*_dos)[IDX] ).convolve(_in, _meas));
             getEst<n-1, DOs>::get(_dos, _in, _meas, _y_hat);
@@ -353,7 +352,7 @@ protected:
         static auto get(DOs* _dos,
                         const typename _System::input_t& _in,
                         const typename _System::output_t& _meas,
-                        arma::vec* _y_hat){
+                        typename _System::output_t* _y_hat){
             *_y_hat = boost::get<DedicatedObserver<_System, n>>( (*_dos)[n] ).convolve(_in, _meas);
         }
     };
@@ -362,17 +361,38 @@ protected:
         static auto get(DOs* _dos,
                         const typename _System::input_t& _in,
                         const typename _System::output_t& _meas,
-                        std::vector<arma::vec>* _y_hat){
+                        std::vector<typename _System::output_t>* _y_hat){
             static constexpr std::size_t IDX{_System::n_outputs-1 - 0};
             _y_hat->emplace_back(boost::get<DedicatedObserver<_System, IDX>>( (*_dos)[IDX] ).convolve(_in, _meas));
         }
         static auto get(DOs* _dos,
                         const typename _System::input_t& _in,
                         const typename _System::output_t& _meas,
-                        arma::vec* _y_hat){
+                        typename _System::output_t* _y_hat){
             *_y_hat = boost::get<DedicatedObserver<_System, 0>>( (*_dos)[0] ).convolve(_in, _meas);
         }
-    };       
+    };
+    template <std::size_t num_sig, std::size_t ...sig_idx>
+    struct plotSig{
+        static auto idx()
+            -> std::initializer_list<std::size_t>{            
+            return plotSig<num_sig-1,
+                        _System::n_states
+                            + _System::n_inputs
+                            + _System::n_outputs
+                            - num_sig, sig_idx...>::idx();
+        }
+    };
+    template <std::size_t ...sig_idx>
+    struct plotSig<0, sig_idx...>{
+        static auto idx()
+            -> std::initializer_list<std::size_t>{            
+            return {_System::n_states
+                            + _System::n_inputs
+                            + _System::n_outputs
+                            - 1, sig_idx...};
+        }
+    };
 };
 
 } } // namespace jacl::diagnosis

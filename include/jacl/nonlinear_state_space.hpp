@@ -1,6 +1,6 @@
 /**
 *   @author : koseng (Lintang)
-*   @brief : jacl Nonlinear State Space module
+*   @brief : jacl Nonlinear state Space module
 */
 
 #pragma once

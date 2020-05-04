@@ -43,7 +43,11 @@ enum class PolePlacementType{
 };
 
 template <class _StateSpace>
-static auto KautskyNichols(_StateSpace *_ss, const arma::mat& _poles, arma::mat* _K, PolePlacementType _type = PolePlacementType::Controller){
+static auto KautskyNichols(_StateSpace *_ss,
+                           const arma::mat& _poles,
+                           arma::mat* _K,
+                        //    typename arma::Mat<typenane _StateSpace::scalar_t>::template fixed<>* _K,
+                           PolePlacementType _type = PolePlacementType::Controller){
     assert(_poles.is_vec());
 
     arma::mat Q, R;
@@ -65,7 +69,7 @@ static auto KautskyNichols(_StateSpace *_ss, const arma::mat& _poles, arma::mat*
     int T_cols(T.n_cols);
 
     //-- special treatment
-    //-- due to the one of the span from orthogonal by QR of T is empty
+    //-- due to the one of the span from orthogonal subspace (left nullspace) by QR of T is empty
     //-- with assumption that T is invertible
     //-- we use the original A, B or C from _ss
     if(T_rows == T_cols){
@@ -167,9 +171,14 @@ static auto KautskyNichols(_StateSpace *_ss, const arma::mat& _poles, arma::mat*
     temp5 = temp3 * temp4;
     //-- because the original form on the paper is A + BK
     //-- but in general people will use form of A - BK
-    *_K = -1 * arma::inv(Z) * temp5;
-    if(_type == PolePlacementType::Observer)
-        *_K = arma::trans(*_K);
+    switch(_type){
+        case PolePlacementType::Observer:{
+            *_K = -1 * arma::trans(arma::inv(Z) * temp5);
+        };break;
+        case PolePlacementType::Controller:{
+            *_K = -1 * arma::inv(Z) * temp5;
+        };break;
+    }
 }
 
 template <typename _StateSpace>

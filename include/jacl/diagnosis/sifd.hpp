@@ -38,7 +38,7 @@ public:
                 const typename _System::output_t& _out)
         -> typename IFD<_System>::diag_pack_t override{        
         typename IFD<_System>::diag_pack_t res;
-        arma::vec y_hat;        
+        typename _System::output_t y_hat;        
         IFD<_System>::template getEst<CHOSEN_STATE, decltype(this->dos_)>::get(&this->dos_, _in, _out, &y_hat);
         arma::vec delta_y( _out - y_hat );
         bool chosen_state_status(true);

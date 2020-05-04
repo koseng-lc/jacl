@@ -1,3 +1,8 @@
+/**
+*   @author : koseng (Lintang)
+*   @brief : Continuous system
+*/
+
 #pragma once
 
 #include <jacl/system/base_system.hpp>

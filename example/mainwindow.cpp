@@ -1114,7 +1114,7 @@ void MainWindow::closedLoopProcess(){
 //    arma::mat diff(err);
 //    auto Kp(10.), Kd(1.);
     // ifd_.init({{-.76,-.65}, {-.63,-.51}, {-.86,-.72}});
-    sifd_.init({{-.25,-.055}}, "SIFD", {"Est. Pos.","Est. Spd.","Est. Curr."});
+    sifd_.init({{-.25,-.055}}, "SIFD", {"Est. Curr.","Est. Spd.","Est. Pos."});
     arma::cx_vec p = jacl::common::poles(dsimo_);    
     p.print("Discrete DC motor poles : ");
     p = jacl::common::poles(simo_);

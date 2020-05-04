@@ -1,6 +1,6 @@
 /**
 *   @author : koseng (Lintang)
-*   @brief : jacl State Space module
+*   @brief : jacl state Space module
 */
 
 #pragma once
