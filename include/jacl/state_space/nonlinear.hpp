@@ -1,6 +1,6 @@
 /**
 *   @author : koseng (Lintang)
-*   @brief : jacl Nonlinear state Space module
+*   @brief : jacl nonlinear state space module
 */
 
 #pragma once
@@ -9,16 +9,13 @@
 #include <vector>
 #include <type_traits>
 
-#include <boost/range/combine.hpp>
-#include <boost/tuple/tuple.hpp>
-
 #include <armadillo>
 
 #include <jacl/pattern/observer.hpp>
 #include <jacl/physical_parameter.hpp>
 #include <jacl/medium.hpp>
 
-namespace jacl{
+namespace jacl{ namespace state_space{
 
 //-- force to have fixed size
 template<typename Scalar,
@@ -27,9 +24,9 @@ template<typename Scalar,
          std::size_t num_outputs,
          class PhysicalParam = int,
          class ...Rest>
-class NonLinearStateSpace:public pattern::Subject{
+class NonLinear:public pattern::Subject{
 public:
-    typedef std::function<double(NonLinearStateSpace)> Formula;
+    typedef std::function<double(NonLinear)> Formula;
     typedef std::vector<Formula> Formulas;
 
     using scalar_t = Scalar;
@@ -44,17 +41,17 @@ public:
               typename std::enable_if_t<
                   std::is_same<typename std::decay_t<_PhysicalParam>,
                                PhysicalParameter>::value, int>* = nullptr>
-    NonLinearStateSpace(_PhysicalParam* _param, Rest*... _rest)
+    NonLinear(_PhysicalParam* _param, Rest*... _rest)
         : state_fn_(n_states + n_inputs)
         , output_fn_(n_outputs){
         push(_param, _rest...);
     }
 
-    NonLinearStateSpace()
+    NonLinear()
         : state_fn_(n_states + n_inputs)
         , output_fn_(n_outputs){
     }
-    ~NonLinearStateSpace(){}
+    ~NonLinear(){}
 
     inline auto& stateFn(){
         return state_fn_;
@@ -125,8 +122,8 @@ private:
     std::vector<PhysicalParameter* > params_;
     
 private:
-    friend class ::jacl::state_space::detail::NonLinearStateSpaceClient<NonLinearStateSpace>;
+    friend class ::jacl::state_space::detail::NonLinearStateSpaceClient<NonLinear>;
 
 };
 
-}
+} }

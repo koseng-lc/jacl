@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include <jacl/linear_state_space.hpp>
-#include <jacl/lft.hpp>
+#include <jacl/state_space/linear.hpp>
+#include <jacl/lft/lft.hpp>
 
 namespace jacl{ namespace lft{
 

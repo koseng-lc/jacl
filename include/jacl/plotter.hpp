@@ -19,7 +19,7 @@
 #include <boost/python/numpy.hpp>
 #include <boost/circular_buffer.hpp>
 
-#include <jacl/linear_state_space.hpp>
+#include <jacl/state_space/linear.hpp>
 
 namespace jacl{
 

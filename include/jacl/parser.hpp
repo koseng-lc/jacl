@@ -9,7 +9,7 @@
 
 #include <boost/lexical_cast.hpp>
 
-#include <jacl/linear_state_space.hpp>
+#include <jacl/state_space/linear.hpp>
 #include <jacl/traits.hpp>
 
 namespace jacl{ namespace parser{

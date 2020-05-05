@@ -11,11 +11,11 @@
 #include <jacl/physical_parameter.hpp>
 #include <jacl/defs.hpp>
 #include <jacl/transfer_matrix.hpp>
-#include <jacl/linear_state_space.hpp>
-#include <jacl/nonlinear_state_space.hpp>
+#include <jacl/state_space/linear.hpp>
+#include <jacl/state_space/nonlinear.hpp>
 #include <jacl/system/base_system.hpp>
-#include <jacl/system/continuous_system.hpp>
-#include <jacl/system/discrete_system.hpp>
+#include <jacl/system/continuous.hpp>
+#include <jacl/system/discrete.hpp>
 #include <jacl/system/observer.hpp>
 #include <jacl/system/continuous_observer.hpp>
 #include <jacl/system/discrete_observer.hpp>

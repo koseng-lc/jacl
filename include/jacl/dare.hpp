@@ -9,7 +9,7 @@
 #include <boost/python/numpy.hpp>
 #include <numpy/ndarrayobject.h>
 
-#include <jacl/linear_state_space.hpp>
+#include <jacl/state_space/linear.hpp>
 
 // #define DARE_VERBOSE
 

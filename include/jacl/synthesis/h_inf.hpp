@@ -8,8 +8,8 @@
 
 #include <jacl/lti_common.hpp>
 #include <jacl/are.hpp>
-#include <jacl/lower_lft.hpp>
-#include <jacl/linear_state_space.hpp>
+#include <jacl/lft/lower.hpp>
+#include <jacl/state_space/linear.hpp>
 #include <jacl/linear_algebra.hpp>
 #include <jacl/traits.hpp>
 #include <jacl/numerical_methods.hpp>

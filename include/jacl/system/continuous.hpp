@@ -1,6 +1,6 @@
 /**
 *   @author : koseng (Lintang)
-*   @brief : Discrete system
+*   @brief : Continuous system
 */
 
 #pragma once
@@ -10,31 +10,32 @@
 namespace jacl{ namespace system{
 
 template <class _StateSpace>
-class DiscreteSystem:public BaseSystem<_StateSpace>{
+class Continuous:public BaseSystem<_StateSpace>{
 public:
-    DiscreteSystem(_StateSpace* _ss, double _time_step = 1e-4)
+    Continuous(_StateSpace* _ss, double _time_step = 1e-4)
         : BaseSystem<_StateSpace>(_ss, _time_step){}
-    ~DiscreteSystem(){}
-    auto samplingPeriod(){
-        return this->dt_;
-    }
-protected:    
+    ~Continuous(){}
+
+protected:
     void setIn(const typename BaseSystem<_StateSpace>::input_t& _in) override{
         this->in_ = _in;
     }
     auto dstate() -> typename BaseSystem<_StateSpace>::state_t override{
-        static arma::mat term1, term2;
-        term1 = this->ss_->A() * this->prev_state_;
+        static arma::mat term1, term2, term3, term4;        
+        term1 = this->state_trans_ * this->prev_state_;
         term2 = this->ss_->B() * this->in_;
-        return term1 + term2;
-    }
+        term3 = this->state_trans_ * this->ss_->B() * this->prev_in_;
+        term4 = (term2 + term3) * (this->dt_ * .5);        
+        this->prev_in_ = this->in_;
+        return term1 + term4;
+    }    
     auto output() -> typename BaseSystem<_StateSpace>::output_t override{
         static arma::mat term1;
         term1 = this->ss_->C() * this->prev_state_;
         return term1 + (this->ss_->D() * this->in_);
     }
     void updateVar() override{
-        
+        this->state_trans_ = arma::expmat(this->ss_->A() * this->dt_);
     }
 };
 
@@ -44,22 +45,22 @@ template <typename Scalar,
           std::size_t no,
           class PhysicalParam,
           class ...Rest>
-class DiscreteSystem<NonLinearStateSpace<Scalar,ns,ni,no,PhysicalParam,Rest...> >
-        :public BaseSystem<NonLinearStateSpace<Scalar,ns,ni,no,PhysicalParam,Rest...> >{
+class Continuous<::jacl::state_space::NonLinear<Scalar,ns,ni,no,PhysicalParam,Rest...> >
+        :public BaseSystem<::jacl::state_space::NonLinear<Scalar,ns,ni,no,PhysicalParam,Rest...> >{
 private:
-    typedef NonLinearStateSpace<Scalar,ns,ni,no,PhysicalParam,Rest...> _StateSpace;
+    typedef ::jacl::state_space::NonLinear<Scalar,ns,ni,no,PhysicalParam,Rest...> _StateSpace;
 
 public:
-    DiscreteSystem(_StateSpace* _ss, double _time_step = 1e-4)
+    Continuous(_StateSpace* _ss, double _time_step = 1e-4)
         : BaseSystem<_StateSpace>(_ss, _time_step){}
-    ~DiscreteSystem(){}
+    ~Continuous(){}    
 
- protected:
+protected:
     void setIn(const typename BaseSystem<_StateSpace>::input_t& _in) override{
         ::jacl::state_space::detail::NonLinearStateSpaceClient<_StateSpace>::setSig(this->ss_, arma::join_cols(this->prev_state_, _in));
     }
     auto dstate() -> typename BaseSystem<_StateSpace>::state_t override{
-        return ::jacl::state_space::detail::NonLinearStateSpaceClient<_StateSpace>::dstate(this->ss_);
+        return ::jacl::state_space::detail::NonLinearStateSpaceClient<_StateSpace>::dstate(this->ss_) * this->dt_;
     }
     auto output() -> typename BaseSystem<_StateSpace>::output_t override{
         return ::jacl::state_space::detail::NonLinearStateSpaceClient<_StateSpace>::output(this->ss_);

@@ -8,8 +8,8 @@
 #include <boost/variant.hpp>
 
 #include <jacl/traits.hpp>
-#include <jacl/system/continuous_system.hpp>
-#include <jacl/system/discrete_system.hpp>
+#include <jacl/system/continuous.hpp>
+#include <jacl/system/discrete.hpp>
 #include <jacl/pole_placement.hpp>
 #include <jacl/lti_common.hpp>
 #include <jacl/plotter.hpp>
@@ -162,7 +162,7 @@ protected:
                 A22_ = A22(An_);
                 B1_ = B1(Bn_);
                 B2_ = B2(Bn_);
-                jacl::LinearStateSpace<double, _System::n_states-1,1,1> ss(A22_, arma::zeros(_System::n_states-1,1),
+                jacl::state_space::Linear<double, _System::n_states-1,1,1> ss(A22_, arma::zeros(_System::n_states-1,1),
                                                                     A12_, arma::zeros(1,1));
                 jacl::pole_placement::KautskyNichols(&ss, poles_, &L_, jacl::pole_placement::PolePlacementType::Observer);
                 // if(jacl::common::observable(ss.A(), ss.C()))

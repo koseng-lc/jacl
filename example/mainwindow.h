@@ -134,7 +134,7 @@ private:
     arma::vec::fixed<6> weight_;
 
     using LinearStateSpace =
-        jacl::LinearStateSpace<double,3, 2, 3,
+        jacl::state_space::Linear<double,3, 2, 3,
                          jacl::PhysicalParameter,
                          jacl::PhysicalParameter,
                          jacl::PhysicalParameter,
@@ -143,13 +143,13 @@ private:
                          jacl::PhysicalParameter>;
 
     LinearStateSpace ss_;
-    jacl::system::ContinuousSystem<LinearStateSpace> csys_;
-    jacl::Plotter<jacl::system::ContinuousSystem<LinearStateSpace> > csys_plt_;    
+    jacl::system::Continuous<LinearStateSpace> csys_;
+    jacl::Plotter<jacl::system::Continuous<LinearStateSpace> > csys_plt_;    
     jacl::system::ContinuousObserver<LinearStateSpace> cobserver_;
     jacl::Plotter<jacl::system::ContinuousObserver<LinearStateSpace> > cobserver_plt_;
 
     //-- Discrete SIMO DC motor
-    using SIMO = jacl::LinearStateSpace<double,3, 1, 3,
+    using SIMO = jacl::state_space::Linear<double,3, 1, 3,
                                     jacl::PhysicalParameter,
                                     jacl::PhysicalParameter,
                                     jacl::PhysicalParameter,
@@ -157,46 +157,46 @@ private:
                                     jacl::PhysicalParameter,
                                     jacl::PhysicalParameter>;
     SIMO simo_;
-    jacl::LinearStateSpace<double,3,1,3> dsimo_;
-    jacl::system::DiscreteSystem<jacl::LinearStateSpace<double,3,1,3>> dsys_simo_;
-    jacl::system::DiscreteObserver<jacl::LinearStateSpace<double,3,1,3>> dobserver_simo_;
-    jacl::Plotter<jacl::system::DiscreteSystem<jacl::LinearStateSpace<double,3,1,3>>> dsys_simo_plt_;
-    jacl::Plotter<jacl::system::DiscreteObserver<jacl::LinearStateSpace<double,3,1,3>>> dobserver_simo_plt_;
+    jacl::state_space::Linear<double,3,1,3> dsimo_;
+    jacl::system::Discrete<jacl::state_space::Linear<double,3,1,3>> dsys_simo_;
+    jacl::system::DiscreteObserver<jacl::state_space::Linear<double,3,1,3>> dobserver_simo_;
+    jacl::Plotter<jacl::system::Discrete<jacl::state_space::Linear<double,3,1,3>>> dsys_simo_plt_;
+    jacl::Plotter<jacl::system::DiscreteObserver<jacl::state_space::Linear<double,3,1,3>>> dobserver_simo_plt_;
     arma::mat din_;    
-    jacl::diagnosis::IFD<jacl::system::DiscreteSystem<jacl::LinearStateSpace<double,3,1,3>>> ifd_;
-    using SIFD = jacl::diagnosis::SIFD<jacl::system::DiscreteSystem<jacl::LinearStateSpace<double,3,1,3>>,0>;
+    jacl::diagnosis::IFD<jacl::system::Discrete<jacl::state_space::Linear<double,3,1,3>>> ifd_;
+    using SIFD = jacl::diagnosis::SIFD<jacl::system::Discrete<jacl::state_space::Linear<double,3,1,3>>,0>;
     SIFD sifd_;
     void makeFault(arma::vec* _out);
     void setupSIMODCMotor();
     //-- Discrete H-infinity controller
-    using MReal = jacl::LinearStateSpace<double,9,1,1,
+    using MReal = jacl::state_space::Linear<double,9,1,1,
                                          jacl::PhysicalParameter,
                                          jacl::PhysicalParameter,
                                          jacl::PhysicalParameter,
                                          jacl::PhysicalParameter,
                                          jacl::PhysicalParameter,
                                          jacl::PhysicalParameter>;    
-    using MICM = jacl::LinearStateSpace<double,MReal::n_states, MReal::n_inputs+3, MReal::n_outputs+2>;
-    using MSys = jacl::system::DiscreteSystem<MICM>;
+    using MICM = jacl::state_space::Linear<double,MReal::n_states, MReal::n_inputs+3, MReal::n_outputs+2>;
+    using MSys = jacl::system::Discrete<MICM>;
     MReal m_real_;
     MICM m_icm_;
     MSys m_sys_;
-    using PosReal = jacl::LinearStateSpace<double,3, 1, 1>;
-    using PosICM = jacl::LinearStateSpace<double,PosReal::n_states, PosReal::n_inputs+3, PosReal::n_outputs+2>;
-    using PosSys = jacl::system::DiscreteSystem<PosICM>;
+    using PosReal = jacl::state_space::Linear<double,3, 1, 1>;
+    using PosICM = jacl::state_space::Linear<double,PosReal::n_states, PosReal::n_inputs+3, PosReal::n_outputs+2>;
+    using PosSys = jacl::system::Discrete<PosICM>;
     using PosDHinf = jacl::synthesis::DHinf<PosSys,2,3>;
-    using PosDCtrl = jacl::LinearStateSpace<double,PosReal::n_states, PosReal::n_outputs, PosReal::n_inputs>;
+    using PosDCtrl = jacl::state_space::Linear<double,PosReal::n_states, PosReal::n_outputs, PosReal::n_inputs>;
     PosReal pos_real_;
     PosICM pos_icm_;
     PosSys pos_sys_;
     PosDHinf* pos_dhinf_;
     PosDCtrl pos_dctrl_;
-    jacl::system::DiscreteSystem<PosDCtrl> pos_dctrl_sys_;
-    jacl::Plotter<jacl::system::DiscreteSystem<PosDCtrl>> pos_dctrl_plt_;
+    jacl::system::Discrete<PosDCtrl> pos_dctrl_sys_;
+    jacl::Plotter<jacl::system::Discrete<PosDCtrl>> pos_dctrl_plt_;
 
     //-- Another stuff
     using GRealization =
-        jacl::LinearStateSpace<double,3, 8, 9,
+        jacl::state_space::Linear<double,3, 8, 9,
                          jacl::PhysicalParameter,
                          jacl::PhysicalParameter,
                          jacl::PhysicalParameter,
@@ -204,35 +204,35 @@ private:
                          jacl::PhysicalParameter,
                          jacl::PhysicalParameter>;
     GRealization G_;
-    using PRealization = jacl::LinearStateSpace<double,9, 2, 3>;
+    using PRealization = jacl::state_space::Linear<double,9, 2, 3>;
     PRealization P_;
-    using InterConnMat = jacl::LinearStateSpace<double,9, 10, 8>;
+    using InterConnMat = jacl::state_space::Linear<double,9, 10, 8>;
     InterConnMat ICM_;
     // using HInf = jacl::synthesis::Hinf<InterConnMat, 5, 8>;
     // HInf* hinf_;
 
     //-- Continuous H-infinity position control of dc motor
-    using SISOPos = jacl::LinearStateSpace<double,3,1,1>;
+    using SISOPos = jacl::state_space::Linear<double,3,1,1>;
     SISOPos siso_pos_;
-    using InterConnMatPos = jacl::LinearStateSpace<double,6, 4, 3>;
+    using InterConnMatPos = jacl::state_space::Linear<double,6, 4, 3>;
     InterConnMatPos icm_pos_;
-    using PosCtrl = jacl::LinearStateSpace<double,6, 1, 1>;
+    using PosCtrl = jacl::state_space::Linear<double,6, 1, 1>;
     PosCtrl k_pos_;
-    using HInfPC = jacl::synthesis::Hinf<jacl::system::ContinuousSystem<InterConnMatPos>,2,3>;
+    using HInfPC = jacl::synthesis::Hinf<jacl::system::Continuous<InterConnMatPos>,2,3>;
     HInfPC* hinf_pc_;
-    jacl::system::ContinuousSystem<PosCtrl> posctrl_sys_;
-    jacl::Plotter<jacl::system::ContinuousSystem<PosCtrl>> posctrl_plt_;
+    jacl::system::Continuous<PosCtrl> posctrl_sys_;
+    jacl::Plotter<jacl::system::Continuous<PosCtrl>> posctrl_plt_;
     void setupPositionController();
 
     //-- H-infinity speed control of dc motor
-    using InterConnMatSpd = jacl::LinearStateSpace<double,5,4,3>;
+    using InterConnMatSpd = jacl::state_space::Linear<double,5,4,3>;
     InterConnMatSpd icm_spd_;
-    using SpdCtrl = jacl::LinearStateSpace<double,5,1,1>;
+    using SpdCtrl = jacl::state_space::Linear<double,5,1,1>;
     SpdCtrl k_spd_;
-    using HInfSC = jacl::synthesis::Hinf<jacl::system::ContinuousSystem<InterConnMatSpd>,2,3>;
+    using HInfSC = jacl::synthesis::Hinf<jacl::system::Continuous<InterConnMatSpd>,2,3>;
     HInfSC* hinf_sc_;
-    jacl::system::ContinuousSystem<SpdCtrl> spdctrl_sys_;
-    jacl::Plotter<jacl::system::ContinuousSystem<SpdCtrl>> spdctrl_plt_;
+    jacl::system::Continuous<SpdCtrl> spdctrl_sys_;
+    jacl::Plotter<jacl::system::Continuous<SpdCtrl>> spdctrl_plt_;
     void setupSpeedController();    
 
     //-- Non-Linear Pendulum Model
@@ -249,13 +249,13 @@ private:
     jacl::PhysicalParameter pl_;
     jacl::PhysicalParameter pk_;
     jacl::PhysicalParameter pm_;
-    using NLPendulum = jacl::NonLinearStateSpace<double,2,1,1,
+    using NLPendulum = jacl::state_space::NonLinear<double,2,1,1,
                             jacl::PhysicalParameter,
                             jacl::PhysicalParameter,
                             jacl::PhysicalParameter,
                             jacl::PhysicalParameter>;
     NLPendulum nlp_;
-    using NLPSys = jacl::system::ContinuousSystem<NLPendulum>;
+    using NLPSys = jacl::system::Continuous<NLPendulum>;
     NLPSys nlp_sys_;
     void setupNLP();                        
 

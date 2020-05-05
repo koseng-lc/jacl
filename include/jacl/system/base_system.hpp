@@ -6,8 +6,8 @@
 #pragma once
 
 #include <jacl/pattern/observer.hpp>
-#include <jacl/linear_state_space.hpp>
-#include <jacl/nonlinear_state_space.hpp>
+#include <jacl/state_space/linear.hpp>
+#include <jacl/state_space/nonlinear.hpp>
 #include <jacl/medium.hpp>
 
 namespace jacl{ namespace system{

@@ -1,6 +1,11 @@
+/**
+*   @author : koseng (Lintang)
+*   @brief : jacl Linear Fractional Transformation base class
+*/
+
 #pragma once
 
-#include <jacl/linear_state_space.hpp>
+#include <jacl/state_space/linear.hpp>
 
 namespace jacl{ namespace lft{
 template <class _StateSpace,

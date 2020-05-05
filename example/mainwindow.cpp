@@ -923,8 +923,8 @@ void MainWindow::setupSIMODCMotor(){
     pos_dctrl_.setC(std::get<2>(K)); pos_dctrl_.setD(std::get<3>(K));
 
     //-- Closed-loop
-    jacl::LinearStateSpace<double, 6,1,1> cl_ss;
-    jacl::system::DiscreteSystem<jacl::LinearStateSpace<double, 6,1,1>> cl_sys(&cl_ss);
+    jacl::state_space::Linear<double, 6,1,1> cl_ss;
+    jacl::system::Discrete<jacl::state_space::Linear<double, 6,1,1>> cl_sys(&cl_ss);
     {
         arma::mat temp1, temp2;
 
@@ -1005,7 +1005,7 @@ void MainWindow::setupPositionController(){
     icm_pos_.setB(fB);
     icm_pos_.setC(fC);
     icm_pos_.setD(fD);
-    jacl::system::ContinuousSystem<InterConnMatPos> icm_pos_sys(&icm_pos_);
+    jacl::system::Continuous<InterConnMatPos> icm_pos_sys(&icm_pos_);
     hinf_pc_ = new HInfPC(&icm_pos_sys, 2.7882);
     jacl::common::StateSpacePack K( hinf_pc_->solve() );
     k_pos_.setA(std::get<0>(K));
@@ -1067,7 +1067,7 @@ void MainWindow::setupSpeedController(){
     icm_spd_.setB(fB);
     icm_spd_.setC(fC);
     icm_spd_.setD(fD);
-    jacl::system::ContinuousSystem<InterConnMatSpd> icm_spd_sys(&icm_spd_);
+    jacl::system::Continuous<InterConnMatSpd> icm_spd_sys(&icm_spd_);
     hinf_sc_ = new HInfSC(&icm_spd_sys, 3.1);
     jacl::common::StateSpacePack K( hinf_sc_->solve() );
     k_spd_.setA(std::get<0>(K));

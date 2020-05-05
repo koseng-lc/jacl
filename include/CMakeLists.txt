@@ -33,11 +33,11 @@ add_library(physical_parameter ${JACL_HEADER_PREFIX}/physical_parameter.hpp)
 set_target_properties(physical_parameter PROPERTIES LINKER_LANGUAGE CXX)
 
 #-- State Space
-add_library(linear_state_space ${JACL_HEADER_PREFIX}/linear_state_space.hpp)
+add_library(linear_state_space ${JACL_HEADER_PREFIX}/state_space/linear.hpp)
 set_target_properties(linear_state_space PROPERTIES LINKER_LANGUAGE CXX)
 target_link_libraries(linear_state_space PRIVATE armadillo physical_parameter observer_pattern)
 
-add_library(nonlinear_state_space ${JACL_HEADER_PREFIX}/nonlinear_state_space.hpp)
+add_library(nonlinear_state_space ${JACL_HEADER_PREFIX}/state_space/nonlinear.hpp)
 set_target_properties(nonlinear_state_space PROPERTIES LINKER_LANGUAGE CXX)
 target_link_libraries(nonlinear_state_space PRIVATE armadillo medium physical_parameter observer_pattern)
 
@@ -48,13 +48,13 @@ set_target_properties(base_system PROPERTIES LINKER_LANGUAGE CXX)
 target_link_libraries(base_system PRIVATE armadillo medium physical_parameter)
 
 #-- Continuous System
-add_library(continuous_system ${JACL_HEADER_PREFIX}/system/continuous_system.hpp)
+add_library(continuous_system ${JACL_HEADER_PREFIX}/system/continuous.hpp)
 set_target_properties(continuous_system PROPERTIES LINKER_LANGUAGE CXX)
 #target_include_directories(continuous_system PUBLIC ${PROJECT_SOURCE_DIR})
 target_link_libraries(continuous_system PRIVATE base_system)
 
 #-- Discrete System
-add_library(discrete_system ${JACL_HEADER_PREFIX}/system/discrete_system.hpp)
+add_library(discrete_system ${JACL_HEADER_PREFIX}/system/discrete.hpp)
 set_target_properties(discrete_system PROPERTIES LINKER_LANGUAGE CXX)
 #target_include_directories(discrete_system PUBLIC ${PROJECT_SOURCE_DIR})
 target_link_libraries(discrete_system PRIVATE base_system)
@@ -110,17 +110,17 @@ target_link_libraries(plotter PRIVATE
 set_target_properties(plotter PROPERTIES LINKER_LANGUAGE CXX)
 
 #-- LFT
-add_library(lft ${JACL_HEADER_PREFIX}/lft.hpp)
+add_library(lft ${JACL_HEADER_PREFIX}/lft/lft.hpp)
 target_link_libraries(lft PRIVATE linear_state_space)
 set_target_properties(lft PROPERTIES LINKER_LANGUAGE CXX)
 
 #-- Upper LFT
-add_library(upper_lft ${JACL_HEADER_PREFIX}/upper_lft.hpp)
+add_library(upper_lft ${JACL_HEADER_PREFIX}/lft/upper.hpp)
 target_link_libraries(upper_lft PRIVATE linear_state_space lft)
 set_target_properties(upper_lft PROPERTIES LINKER_LANGUAGE CXX)
 
 #-- Lower LFT
-add_library(lower_lft ${JACL_HEADER_PREFIX}/lower_lft.hpp)
+add_library(lower_lft ${JACL_HEADER_PREFIX}/lft/lower.hpp)
 target_link_libraries(lower_lft PRIVATE linear_state_space lft)
 set_target_properties(lower_lft PROPERTIES LINKER_LANGUAGE CXX)
 

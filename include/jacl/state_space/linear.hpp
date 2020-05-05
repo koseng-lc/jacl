@@ -1,6 +1,6 @@
 /**
 *   @author : koseng (Lintang)
-*   @brief : jacl state Space module
+*   @brief : jacl state space module
 */
 
 #pragma once
@@ -9,15 +9,12 @@
 #include <vector>
 #include <type_traits>
 
-#include <boost/range/combine.hpp>
-#include <boost/tuple/tuple.hpp>
-
 #include <armadillo>
 
 #include <jacl/pattern/observer.hpp>
 #include <jacl/physical_parameter.hpp>
 
-namespace jacl{
+namespace jacl{ namespace state_space{
 
 //-- force to have fixed size
 template<typename Scalar,
@@ -26,9 +23,9 @@ template<typename Scalar,
          std::size_t num_outputs,
          class PhysicalParam = int,
          class ...Rest>
-class LinearStateSpace:public pattern::Subject{
+class Linear:public pattern::Subject{
 public:
-    typedef std::function<double(LinearStateSpace)> Formula;
+    typedef std::function<double(Linear)> Formula;
     typedef std::vector<Formula> Formulas;
     
     using scalar_t = Scalar;
@@ -42,10 +39,10 @@ public:
               typename std::enable_if_t<
                   std::is_same<typename std::decay_t<_PhysicalParam>,
                                PhysicalParameter>::value, int>* = nullptr>
-    LinearStateSpace(_PhysicalParam* _param, Rest*... _rest){
+    Linear(_PhysicalParam* _param, Rest*... _rest){
         push(_param, _rest...);
     }
-    LinearStateSpace(const state_matrix_t& _A,
+    Linear(const state_matrix_t& _A,
                      const input_matrix_t& _B,
                      const output_matrix_t& _C,
                      const feedforward_matrix_t& _D)
@@ -55,8 +52,8 @@ public:
         , D_(_D){
 
     }
-    LinearStateSpace(){}
-    ~LinearStateSpace(){}
+    Linear(){}
+    ~Linear(){}
 
     const auto& A() const{ return A_; }
     const auto& B() const{ return B_; }
@@ -177,10 +174,10 @@ protected:
 private:
     class ReturnGuard{
     public:
-        ReturnGuard(LinearStateSpace* _ss):ss_(_ss){}
+        ReturnGuard(Linear* _ss):ss_(_ss){}
         ~ReturnGuard(){ ss_->formulaToMat(); ss_ = nullptr;}
     private:
-        LinearStateSpace* ss_;
+        Linear* ss_;
     };
 
 };
@@ -191,7 +188,7 @@ template<typename Scalar,
          std::size_t num_outputs,
          class PhysicalParam,
          class ...Rest>
-auto LinearStateSpace<Scalar,
+auto Linear<Scalar,
                       num_states,
                       num_inputs,
                       num_outputs,
@@ -227,4 +224,4 @@ auto LinearStateSpace<Scalar,
     this->notify();
 }
 
-}
+} }

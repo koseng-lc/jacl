@@ -11,7 +11,7 @@
 
 #include <boost/thread.hpp>
 
-#include <jacl/linear_state_space.hpp>
+#include <jacl/state_space/linear.hpp>
 #include <jacl/lti_common.hpp>
 
 namespace jacl{ namespace pole_placement{
