@@ -150,7 +150,7 @@ auto DHinf<_System,
     temp2 = temp1*llft_.C1();
     arma::mat A = llft_.A() - temp2;    
 
-    bool ok = !common::hasUnobservableModeInImAxis(A, C);
+    bool ok = !common::hasUnobservableModeInUnitCircle(A, C);
    
 #ifdef DHINF_VERBOSE
     std::cout << "[DHinf] Assumption 2 : " << std::boolalpha << ok << std::endl;
@@ -179,7 +179,7 @@ auto DHinf<_System,
     temp2 = (I - temp1);
     arma::mat B = llft_.B1()*temp2;
 
-    bool ok = !common::hasUncontrollableModeInImAxis(A, B);
+    bool ok = !common::hasUncontrollableModeInUnitCircle(A, B);
 
 #ifdef DHINF_VERBOSE
     std::cout << "[DHinf] Assumption 3 : " << std::boolalpha << ok << std::endl;
