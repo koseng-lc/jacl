@@ -56,61 +56,52 @@ private:
     auto checkCondition4();
     auto checkAllCondition();
 
-    inline auto toCx(const arma::mat& _in) const
-        -> decltype(arma::cx_mat(_in, arma::zeros<arma::mat>( arma::size(_in) ))){
-        return arma::cx_mat(_in, arma::zeros<arma::mat>( arma::size(_in) ));
-    }
+    // template <typename _StateSpace>
+    // auto isInfNormLessThan(double _gam, const _StateSpace& _ss){
+    //     arma::mat C_t = arma::trans( _ss.C() );
+    //     arma::mat D_t = arma::trans( _ss.D() );
+    //     arma::mat D_tD = D_t * _ss.D();
+    //     arma::mat R = (_gam*_gam)*arma::eye(_StateSpace::n_inputs,
+    //                                         _StateSpace::n_inputs)
+    //                     - D_tD;
+    //     arma::mat R_inv = arma::inv(R);
 
-    inline auto toReal(const arma::cx_mat& _in) const -> decltype(arma::real(_in)){
-        return arma::real(_in);
-    }
+    //     //-- Hamiltonian matrix
+    //     arma::mat H(_StateSpace::n_states << 1,
+    //                 _StateSpace::n_states << 1);
 
-    template <typename _StateSpace>
-    auto isInfNormLessThan(double _gam, const _StateSpace& _ss){
-        arma::mat C_t = arma::trans( _ss.C() );
-        arma::mat D_t = arma::trans( _ss.D() );
-        arma::mat D_tD = D_t * _ss.D();
-        arma::mat R = (_gam*_gam)*arma::eye(_StateSpace::n_inputs,
-                                            _StateSpace::n_inputs)
-                        - D_tD;
-        arma::mat R_inv = arma::inv(R);
+    //     arma::mat temp1, temp2;
 
-        //-- Hamiltonian matrix
-        arma::mat H(_StateSpace::n_states << 1,
-                    _StateSpace::n_states << 1);
+    //     //-- block 1,1
+    //     temp1 = R_inv*D_t*_ss.C();
+    //     temp2 = _ss.A() + temp1;
+    //     H.submat(                         0,                          0,
+    //              _StateSpace::n_states - 1, _StateSpace::n_states - 1) = temp2;
+    //     //-- block 2,2
+    //     H.submat(_StateSpace::n_states, _StateSpace::n_states, _StateSpace::n_states * 2 - 1, _StateSpace::n_states * 2 - 1) = -arma::trans(temp2);
+    //     //-- block 1,2
+    //     H.submat(                         0,         _StateSpace::n_states,
+    //              _StateSpace::n_states - 1, _StateSpace::n_states * 2 - 1) = _ss.B()*R_inv*arma::trans(_ss.B());
+    //     //-- block 2,1
+    //     temp1 = _ss.D()*R_inv*D_t;
+    //     temp2 = arma::eye(_StateSpace::n_outputs,
+    //                       _StateSpace::n_outputs)
+    //              - temp1;
+    //     H.submat(_StateSpace::n_states, 0, _StateSpace::n_states * 2 - 1, _StateSpace::n_states - 1) = -C_t*temp2*_ss.C();
 
-        arma::mat temp1, temp2;
-
-        //-- block 1,1
-        temp1 = R_inv*D_t*_ss.C();
-        temp2 = _ss.A() + temp1;
-        H.submat(                         0,                          0,
-                 _StateSpace::n_states - 1, _StateSpace::n_states - 1) = temp2;
-        //-- block 2,2
-        H.submat(_StateSpace::n_states, _StateSpace::n_states, _StateSpace::n_states * 2 - 1, _StateSpace::n_states * 2 - 1) = -arma::trans(temp2);
-        //-- block 1,2
-        H.submat(                         0,         _StateSpace::n_states,
-                 _StateSpace::n_states - 1, _StateSpace::n_states * 2 - 1) = _ss.B()*R_inv*arma::trans(_ss.B());
-        //-- block 2,1
-        temp1 = _ss.D()*R_inv*D_t;
-        temp2 = arma::eye(_StateSpace::n_outputs,
-                          _StateSpace::n_outputs)
-                 - temp1;
-        H.submat(_StateSpace::n_states, 0, _StateSpace::n_states * 2 - 1, _StateSpace::n_states - 1) = -C_t*temp2*_ss.C();
-
-        arma::cx_mat eigvec;
-        arma::cx_vec eigval;
-        arma::eig_gen(eigval, eigvec, H);
-        arma::mat eigval_re = arma::real(eigval);
-        auto ok(true);
-        for(int i(0); i < eigval.n_rows; i++){
-            if(std::fabs(eigval_re(i, 0)) < std::numeric_limits<double>::epsilon()){
-                ~ok;
-                break;
-            }
-        }
-        return ok;
-    }
+    //     arma::cx_mat eigvec;
+    //     arma::cx_vec eigval;
+    //     arma::eig_gen(eigval, eigvec, H);
+    //     arma::mat eigval_re = arma::real(eigval);
+    //     auto ok(true);
+    //     for(int i(0); i < eigval.n_rows; i++){
+    //         if(std::fabs(eigval_re(i, 0)) < std::numeric_limits<double>::epsilon()){
+    //             ~ok;
+    //             break;
+    //         }
+    //     }
+    //     return ok;
+    // }
 
 private:
     typename _System::state_space_t* ss_;
@@ -404,6 +395,8 @@ auto Hinf<_System,
 #endif
     bool check_assumption = checkAllAssumption();
     assert(check_assumption && "[Hinf] The assumption made for interconnection matrix is not fulfill !");
+
+    using namespace ::jacl::linear_algebra;
 
     arma::mat temp1, temp2, temp3, temp4;
     arma::cx_mat ctemp1, ctemp2, ctemp3;
