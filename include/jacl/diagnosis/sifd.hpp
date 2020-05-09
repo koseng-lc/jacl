@@ -55,7 +55,7 @@ public:
                 if(i == CHOSEN_STATE)continue;
                 std::get<1>(res[i]) = false;
             }
-        }        
+        }
         this->aux_sys_.collectSig(y_hat, _in, y_hat);
         return res;
     }

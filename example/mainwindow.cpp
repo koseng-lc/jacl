@@ -622,6 +622,8 @@ void MainWindow::setupActions(){
 
     connect(controller_dialog_, SIGNAL(setRefSig()), this, SLOT(refAct()));
     connect(controller_dialog_, SIGNAL(setModeSig(int)), this, SLOT(modeAct(int)));
+    qRegisterMetaType<QVector<double>>("QVector<double>");
+    connect(this, SIGNAL(setDataMonitor(QVector<double>)), controller_dialog_, SLOT(setDataMonitor(QVector<double>)));
 }
 
 void MainWindow::perturbAct(){
@@ -672,9 +674,9 @@ void MainWindow::simulateAct(){
 
 void MainWindow::setInputAct(){
     arma::mat in(2, 1);
-    in(0) = voltage_in_dsb_->value();
-    in(1) = torque_in_dsb_->value();
-    din_ = in.submat(0,0,0,0);
+    in(0) += voltage_in_dsb_->value();
+    in(1) += torque_in_dsb_->value();
+    din_ += in.submat(0,0,0,0);
 }
 
 void MainWindow::biasDialConv(double _val){
@@ -1152,16 +1154,24 @@ void MainWindow::closedLoopProcess(){
         // est = cobserver_.convolve(in, out);
 
         //-- Discrete
-        in = pos_dctrl_sys_.convolve(err);
-        out = dsys_simo_.convolve(in);
-        // dest = dobserver_simo_.convolve(din_, dout);
+        din_ = pos_dctrl_sys_.convolve(err);
+
+        //-- saturation
+        if(din_(0) > 24.)
+            din_(0) = 24.;
+        else if(din_(0) < -24.)
+            din_(0) = -24.;
+        
+        out = dsys_simo_.convolve(din_);
         arma::vec manip_out(out);
         makeFault(&manip_out);        
         SIFD::diag_pack_t diag_pack = sifd_.detect(din_, manip_out);
-
-//        err.submat(0,0,0,0).print("Err : ");
-//        in.submat(0,0,0,0).print("In : ");
-//        out.print("Out : ");
+        out = manip_out;
+        Q_EMIT setDataMonitor(
+            QVector<double>::fromStdVector(
+                arma::conv_to<std::vector<double>>::from(arma::join_cols(out, std::get<0>(diag_pack[0])))
+            )
+        );
         boost::this_thread::sleep_for(boost::chrono::milliseconds((int)(SAMPLING_PERIOD*1000.)));
     }
 }

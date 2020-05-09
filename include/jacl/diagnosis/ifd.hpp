@@ -26,7 +26,8 @@ public:
     IFD(_System* _sys, std::initializer_list<double> _threshold)
         : sys_(_sys)
         , aux_sys_(nullptr)
-        , plt_(&aux_sys_, plotSig<_System::n_outputs-1>::idx(), 0.01){  
+        , plt_(&aux_sys_, plotSig<_System::n_outputs-1>::idx(),
+               ::jacl::system::detail::BaseSystemClient<typename _System::base_t>::dt(sys_)){  
         
         auto _th_it = _threshold.begin();
         for(int i(0); i < threshold_.size() && _th_it != _threshold.end(); i++){
@@ -68,6 +69,8 @@ public:
             std::get<0>(res[i]) = y_hat[i];
             std::get<1>(res[i]) = err > threshold_[i];
         }
+        //-- temporary yet - it's not the actual implementation
+        //-- we're gonna have many estimation signals
         aux_sys_.collectSig(y_hat[0], _in, y_hat[0]);
         return res;
     }
@@ -389,8 +392,8 @@ protected:
             -> std::initializer_list<std::size_t>{            
             return {_System::n_states
                             + _System::n_inputs
-                            + _System::n_outputs
-                            - 1, sig_idx...};
+                            + _System::n_outputs,
+                            sig_idx...};
         }
     };
 };

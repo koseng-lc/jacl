@@ -68,10 +68,67 @@ ControllerDialog::ControllerDialog(QWidget* parent)
     mode_gb_->setTitle(tr("Control Mode"));
     //--
 
+    //-- Data Monitor
+    dm_out_label_[traits::toUType(ControlMode::Position)] = new QLabel;
+    dm_out_label_[traits::toUType(ControlMode::Position)]->setText(tr("Position : "));
+    dm_out_lined_[traits::toUType(ControlMode::Position)] = new QLineEdit;
+    dm_out_lined_[traits::toUType(ControlMode::Position)]->setText(QString::number(0.));
+    dm_out_lined_[traits::toUType(ControlMode::Position)]->setReadOnly(true);
+
+    dm_out_label_[traits::toUType(ControlMode::Velocity)] = new QLabel;
+    dm_out_label_[traits::toUType(ControlMode::Velocity)]->setText(tr("Velocity : "));
+    dm_out_lined_[traits::toUType(ControlMode::Velocity)] = new QLineEdit;
+    dm_out_lined_[traits::toUType(ControlMode::Velocity)]->setText(QString::number(0.));
+    dm_out_lined_[traits::toUType(ControlMode::Velocity)]->setReadOnly(true);
+
+    dm_out_label_[traits::toUType(ControlMode::Current)] = new QLabel;
+    dm_out_label_[traits::toUType(ControlMode::Current)]->setText(tr("Current : "));
+    dm_out_lined_[traits::toUType(ControlMode::Current)] = new QLineEdit;
+    dm_out_lined_[traits::toUType(ControlMode::Current)]->setText(QString::number(0.));
+    dm_out_lined_[traits::toUType(ControlMode::Current)]->setReadOnly(true);
+
+    dm_est_label_[traits::toUType(ControlMode::Position)] = new QLabel;
+    dm_est_label_[traits::toUType(ControlMode::Position)]->setText(tr("Est. Position : "));
+    dm_est_lined_[traits::toUType(ControlMode::Position)] = new QLineEdit;
+    dm_est_lined_[traits::toUType(ControlMode::Position)]->setText(QString::number(0.));
+    dm_est_lined_[traits::toUType(ControlMode::Position)]->setReadOnly(true);
+
+    dm_est_label_[traits::toUType(ControlMode::Velocity)] = new QLabel;
+    dm_est_label_[traits::toUType(ControlMode::Velocity)]->setText(tr("Est. Velocity : "));
+    dm_est_lined_[traits::toUType(ControlMode::Velocity)] = new QLineEdit;
+    dm_est_lined_[traits::toUType(ControlMode::Velocity)]->setText(QString::number(0.));
+    dm_est_lined_[traits::toUType(ControlMode::Velocity)]->setReadOnly(true);
+
+    dm_est_label_[traits::toUType(ControlMode::Current)] = new QLabel;
+    dm_est_label_[traits::toUType(ControlMode::Current)]->setText(tr("Est. Current : "));
+    dm_est_lined_[traits::toUType(ControlMode::Current)] = new QLineEdit;
+    dm_est_lined_[traits::toUType(ControlMode::Current)]->setText(QString::number(0.));
+    dm_est_lined_[traits::toUType(ControlMode::Current)]->setReadOnly(true);
+
+    dm_gl_ = new QGridLayout;
+    dm_gl_->addWidget(dm_out_label_[traits::toUType(ControlMode::Position)], 0,0,1,1);
+    dm_gl_->addWidget(dm_out_lined_[traits::toUType(ControlMode::Position)], 0,1,1,1);
+    dm_gl_->addWidget(dm_out_label_[traits::toUType(ControlMode::Velocity)], 1,0,1,1);
+    dm_gl_->addWidget(dm_out_lined_[traits::toUType(ControlMode::Velocity)], 1,1,1,1);
+    dm_gl_->addWidget(dm_out_label_[traits::toUType(ControlMode::Current)], 2,0,1,1);
+    dm_gl_->addWidget(dm_out_lined_[traits::toUType(ControlMode::Current)], 2,1,1,1);
+    dm_gl_->addWidget(dm_est_label_[traits::toUType(ControlMode::Position)], 3,0,1,1);
+    dm_gl_->addWidget(dm_est_lined_[traits::toUType(ControlMode::Position)], 3,1,1,1);
+    dm_gl_->addWidget(dm_est_label_[traits::toUType(ControlMode::Velocity)], 4,0,1,1);
+    dm_gl_->addWidget(dm_est_lined_[traits::toUType(ControlMode::Velocity)], 4,1,1,1);
+    dm_gl_->addWidget(dm_est_label_[traits::toUType(ControlMode::Current)], 5,0,1,1);
+    dm_gl_->addWidget(dm_est_lined_[traits::toUType(ControlMode::Current)], 5,1,1,1);
+    dm_gl_->addItem(new QSpacerItem(0,0,QSizePolicy::Expanding,QSizePolicy::Expanding),6,2);
+
+    dm_gb_ = new QGroupBox;
+    dm_gb_->setTitle(tr("Data Monitor"));
+    dm_gb_->setLayout(dm_gl_);
+
     main_layout_ = new QGridLayout;
     main_layout_->addWidget(ref_gb_,0,0,1,1);
-    main_layout_->addWidget(mode_gb_,1,0,1,1);
-    main_layout_->addItem(new QSpacerItem(0,0,QSizePolicy::Expanding,QSizePolicy::Expanding),2,1);
+    main_layout_->addWidget(mode_gb_,1,0,2,1);
+    main_layout_->addWidget(dm_gb_,0,1,2,1);
+    main_layout_->addItem(new QSpacerItem(0,0,QSizePolicy::Expanding,QSizePolicy::Expanding),3,1);
     this->setLayout(main_layout_);
     this->setWindowTitle(tr("Controller"));
 
@@ -100,5 +157,14 @@ void ControllerDialog::setModeAct(){
         ref_dsb_[traits::toUType(RefType::Position)]->setValue(.0);
         ref_dsb_[traits::toUType(RefType::Position)]->setEnabled(false);
         ref_dsb_[traits::toUType(RefType::Velocity)]->setEnabled(true);
+    }
+}
+
+void ControllerDialog::setDataMonitor(QVector<double> _data){
+    for(int i(0); i < 6; i++){
+        if(i < 3)
+            dm_out_lined_[i]->setText(QString::number(_data[i]));
+        else
+            dm_est_lined_[i-3]->setText(QString::number(_data[i]));
     }
 }

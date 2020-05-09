@@ -39,10 +39,13 @@ namespace system::detail{
                 return _sys->ss_;
             return nullptr;
         }
+        static auto dt(_System* _sys){
+            return _sys->dt_;
+        }
         template <typename __System, typename _StateSpace>
         static auto setSubject(__System* _sys, _StateSpace* _ss) -> void{
             _sys->setSubject(_ss);
-        }
+        }        
     };
 }
 

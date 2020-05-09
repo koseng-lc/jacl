@@ -7,6 +7,7 @@
 #include <QPushButton>
 #include <QLabel>
 #include <QRadioButton>
+#include <QLineEdit>
 
 #include <jacl/traits.hpp>
 
@@ -24,7 +25,8 @@ public:
     };
     enum class ControlMode: int{
         Position,
-        Velocity
+        Velocity,
+        Current
     };
 
     inline auto getPosition() const -> double{
@@ -50,14 +52,23 @@ private:
     QLabel* mode_label_[2];
     QRadioButton* mode_rb_[2];
     QGridLayout* mode_gl_;
+    //-- Data Monitor
+    QGroupBox* dm_gb_;
+    QGridLayout* dm_gl_;
+    QLabel* dm_out_label_[3];
+    QLabel* dm_est_label_[3];
+    QLineEdit* dm_out_lined_[3];
+    QLineEdit* dm_est_lined_[3];
 
 Q_SIGNALS:
     void setRefSig();
-    void setModeSig(int);
+    void setModeSig(int);    
 
 private Q_SLOTS:
     void setRefAct();
     void setModeAct();
+    void setDataMonitor(QVector<double> _data);
+    
 };
 
 }

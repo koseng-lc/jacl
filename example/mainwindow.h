@@ -262,6 +262,9 @@ private:
     arma::mat ref_;
     int control_mode_;        
 
+Q_SIGNALS:
+    void setDataMonitor(QVector<double> _data);
+
 private Q_SLOTS:
     void perturbAct();
     void resetAct();
