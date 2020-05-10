@@ -25,7 +25,7 @@ MainWindow::MainWindow(QWidget *parent)
     , dsys_simo_plt_(&dsys_simo_, {1,2,3,4}, SAMPLING_PERIOD)
     , dobserver_simo_plt_(&dobserver_simo_, {1,2,3}, SAMPLING_PERIOD)
     , ifd_(&dsys_simo_, {10.,9.,8.})
-    , sifd_(&dsys_simo_, {10.,9.,8.})
+    , sifd_(&dsys_simo_, {10., .05, .07})
     , m_real_(&bm,&jm,&ki,&la,&kb,&ra)
     , m_sys_(&m_icm_, SAMPLING_PERIOD)
     , pos_sys_(&pos_icm_, SAMPLING_PERIOD)
@@ -331,6 +331,13 @@ MainWindow::MainWindow(QWidget *parent)
     setupMenus();
     setupActions();
 
+    std::vector<double> y;
+    auto dt(M_PI/180.);
+    for(int i(0); i < 1000; i++){
+        y.push_back(sin((double)i*dt));
+    }
+    jacl::plot(y,dt,"TEST",{"XY"});
+
     cl_thread_ = boost::thread{boost::bind(&MainWindow::closedLoopProcess, this)};
 
 }
@@ -622,8 +629,10 @@ void MainWindow::setupActions(){
 
     connect(controller_dialog_, SIGNAL(setRefSig()), this, SLOT(refAct()));
     connect(controller_dialog_, SIGNAL(setModeSig(int)), this, SLOT(modeAct(int)));
-    qRegisterMetaType<QVector<double>>("QVector<double>");
-    connect(this, SIGNAL(setDataMonitor(QVector<double>)), controller_dialog_, SLOT(setDataMonitor(QVector<double>)));
+    qRegisterMetaType<arma::vec>("arma::vec");
+    connect(this, SIGNAL(setDataMonitor(arma::vec)), controller_dialog_, SLOT(setDataMonitor(arma::vec)));
+    qRegisterMetaType<arma::Col<uint8_t>>("arma::Col<uint8_t>");
+    connect(this, SIGNAL(setSensorStatus(arma::Col<uint8_t>)), controller_dialog_, SLOT(setSensorStatus(arma::Col<uint8_t>)));
 }
 
 void MainWindow::perturbAct(){
@@ -1108,19 +1117,19 @@ double MainWindow::angularSpeed2Voltage(double _speed, double _torque){
 
 void MainWindow::closedLoopProcess(){
     //-- Continuous
-    arma::mat out(3,1,arma::fill::zeros),in(1,1,arma::fill::zeros);
-    arma::mat err(in),est(out);
+    arma::vec out(3,1,arma::fill::zeros),in(1,1,arma::fill::zeros);
+    arma::vec err(in),est(out);
     din_ = in;
     control_mode_ = jacl::traits::toUType(jacl::ControllerDialog::ControlMode::Position);
 //    arma::mat last_err(err);
 //    arma::mat diff(err);
 //    auto Kp(10.), Kd(1.);
     // ifd_.init({{-.76,-.65}, {-.63,-.51}, {-.86,-.72}});
-    sifd_.init({{-.25,-.055}}, "SIFD", {"Est. Curr.","Est. Spd.","Est. Pos."});
+    sifd_.init({{-.11,-.15}}, "SIFD", {"Est. Curr.","Est. Spd.","Est. Pos."});
     arma::cx_vec p = jacl::common::poles(dsimo_);    
     p.print("Discrete DC motor poles : ");
     p = jacl::common::poles(simo_);
-    p.print("Continuous DC motor poles : ");
+    p.print("Continuous DC motor poles : ");        
     while(cl_status_){
         //-- PD Control
        /*err(1) = ref_(1) - out(1);
@@ -1163,15 +1172,20 @@ void MainWindow::closedLoopProcess(){
             din_(0) = -24.;
         
         out = dsys_simo_.convolve(din_);
-        arma::vec manip_out(out);
-        makeFault(&manip_out);        
-        SIFD::diag_pack_t diag_pack = sifd_.detect(din_, manip_out);
-        out = manip_out;
+        makeFault(&out);
+        SIFD::diag_pack_t diag_pack = sifd_.detect(din_, out);        
         Q_EMIT setDataMonitor(
-            QVector<double>::fromStdVector(
-                arma::conv_to<std::vector<double>>::from(arma::join_cols(out, std::get<0>(diag_pack[0])))
+            arma::join_cols(out,
+                arma::join_cols(
+                    std::get<0>(diag_pack[0]),
+                    arma::join_cols(std::get<0>(diag_pack[1]),
+                                    std::get<0>(diag_pack[2])
+                    )
+                )
             )
         );
+        arma::Col<uint8_t> status{std::get<1>(diag_pack[0]), std::get<1>(diag_pack[1]), std::get<1>(diag_pack[2])};
+        Q_EMIT setSensorStatus(status);
         boost::this_thread::sleep_for(boost::chrono::milliseconds((int)(SAMPLING_PERIOD*1000.)));
     }
 }

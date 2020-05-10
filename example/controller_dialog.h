@@ -59,6 +59,11 @@ private:
     QLabel* dm_est_label_[3];
     QLineEdit* dm_out_lined_[3];
     QLineEdit* dm_est_lined_[3];
+    //-- Fault Monitor
+    QGroupBox* fm_gb_;
+    QGridLayout* fm_gl_;
+    QLabel* fm_label_[3];
+    QLabel* fm_status_[3];
 
 Q_SIGNALS:
     void setRefSig();
@@ -67,7 +72,8 @@ Q_SIGNALS:
 private Q_SLOTS:
     void setRefAct();
     void setModeAct();
-    void setDataMonitor(QVector<double> _data);
+    void setDataMonitor(arma::vec _data);
+    void setSensorStatus(arma::Col<uint8_t> _status);
     
 };
 

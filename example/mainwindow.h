@@ -263,7 +263,8 @@ private:
     int control_mode_;        
 
 Q_SIGNALS:
-    void setDataMonitor(QVector<double> _data);
+    void setDataMonitor(arma::vec _data);
+    void setSensorStatus(arma::Col<uint8_t> _status);
 
 private Q_SLOTS:
     void perturbAct();

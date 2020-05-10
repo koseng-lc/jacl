@@ -60,7 +60,7 @@ public:
         prev_in_ = in_;
         out_.fill(.0);
     }
-
+    inline auto dt() const{ return dt_; }
 protected:
     virtual void setIn(const input_t& _in) = 0;
     virtual auto dstate() -> state_t = 0;

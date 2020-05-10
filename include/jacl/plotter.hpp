@@ -28,6 +28,51 @@ namespace{
     namespace np = boost::python::numpy;
 }
 
+static void plot(std::vector<double>& _y,
+                 double _time_step,
+                 std::string&& _title,
+                 std::initializer_list<std::string> _plot_name){
+    ::jacl::py_stuff::AcquireGIL lk;
+    try{
+        py::object sys = py::import("sys");
+        sys.attr("path").attr("append")("../python");
+        std::vector<double> x(_y.size(), .0);
+        for(std::size_t i(0); i < _y.size(); i++){
+            x[i] = (double)i * _time_step;
+        }
+
+        py::object sim_module = py::import("plotter");
+        py::object sim = sim_module.attr("Plotter")(1, _time_step, (double)_y.size()*_time_step, false);
+
+        py::dict plot_name_dict;
+        auto pn_it = _plot_name.begin();
+        for(std::size_t i(0); i < _plot_name.size() && pn_it != _plot_name.end(); i++){
+            std::stringstream ss;
+            ss << "signal" << i;
+            plot_name_dict[ss.str().c_str()] = *pn_it++;
+            sim.attr("setPlotName")(plot_name_dict);
+        }
+
+        sim.attr("setTitle")(_title.c_str());
+        sim.attr("setDelay")(.02);
+        sim.attr("beginSimulation")();
+
+        Py_intptr_t signal_shape[2] = {(int)_y.size(), 1};
+        PyObject* np_signals = PyArray_SimpleNewFromData(2, signal_shape, NPY_FLOAT64, reinterpret_cast<void*>(_y.data()));
+        py::handle<> signals_handle(np_signals);
+        py::object signals_obj(signals_handle);
+
+        Py_intptr_t time_shape[1] = {(int)x.size()};
+        PyObject* np_time = PyArray_SimpleNewFromData(1, time_shape, NPY_FLOAT64, reinterpret_cast<void*>(x.data()));
+        py::handle<> time_handle(np_time);
+        py::object time_obj(time_handle);
+
+        sim.attr("setData")(signals_obj, time_obj);
+    }catch(py::error_already_set){
+        PyErr_Print();
+    }
+}
+
 template <class _System>
 class Plotter{
 public:    

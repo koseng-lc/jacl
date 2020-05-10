@@ -14,11 +14,12 @@ matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
 class Plotter:
-    def __init__(self, n_signals, d_time, view_interval):
+    def __init__(self, n_signals, d_time, view_interval,online=True):
         self.n_signals = n_signals        
         self.max_data = int(view_interval / d_time)
         self.d_time = d_time
         self.view_interval = view_interval
+        self.online = online
 
         self.sim_thread = Process(target = self.simulate, args = ())
 
@@ -40,7 +41,7 @@ class Plotter:
     def signalHandler(self, sig, frame):
         self.running.value = False
     
-    def setData(self, _signal_data, _time_data):
+    def setData(self, _signal_data, _time_data):        
         assert _signal_data.shape == (self.max_data, self.n_signals)
         assert _time_data.shape == (self.max_data, )
 
@@ -101,7 +102,7 @@ class Plotter:
         while self.running.value:
             n_data = n_data + 1 if n_data < self.max_data else self.max_data
             total_signal = np.array([np.sum(np.abs(self.signal_data[:,i])) for i in range(0, self.n_signals)])
-            signal_avg = total_signal / n_data #min(n_data, self.max_data)
+            signal_avg = total_signal / len(self.signal_data) #n_data #min(n_data, self.max_data)
 
             for i in range(0, self.n_signals):
                 # Replace data
@@ -111,7 +112,10 @@ class Plotter:
                 sp[i].draw_artist(sp[i].patch)
                 sp[i].draw_artist(plot[i])
                 # To maintain sight of signal in plotter
-                sp[i].set_xlim(left = max(0, self.time_data[-1] - 0.75 * self.view_interval), right = max(self.view_interval, self.time_data[-1] + 0.25 * self.view_interval))
+                if self.online:
+                    sp[i].set_xlim(left = max(0, self.time_data[-1] - 0.75 * self.view_interval), right = max(self.view_interval, self.time_data[-1] + 0.25 * self.view_interval))
+                else:
+                    sp[i].set_xlim(left = self.time_data[0], right = self.time_data[-1])
                 # To adjust the signal interval
                 sp[i].set_ylim(bottom = min(-0.001, -signal_avg[i] * 1.75), top = max(0.001, signal_avg[i] * 1.75))
 

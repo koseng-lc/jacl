@@ -124,11 +124,41 @@ ControllerDialog::ControllerDialog(QWidget* parent)
     dm_gb_->setTitle(tr("Data Monitor"));
     dm_gb_->setLayout(dm_gl_);
 
+    //-- Fault Monitor
+    fm_label_[traits::toUType(ControlMode::Position)] = new QLabel;
+    fm_label_[traits::toUType(ControlMode::Position)]->setText(tr("Position Sensor : "));
+    fm_status_[traits::toUType(ControlMode::Position)] = new QLabel;
+    fm_status_[traits::toUType(ControlMode::Position)]->setText(tr("Normal"));
+
+    fm_label_[traits::toUType(ControlMode::Velocity)] = new QLabel;
+    fm_label_[traits::toUType(ControlMode::Velocity)]->setText(tr("Velocity Sensor : "));
+    fm_status_[traits::toUType(ControlMode::Velocity)] = new QLabel;
+    fm_status_[traits::toUType(ControlMode::Velocity)]->setText(tr("Normal"));
+
+    fm_label_[traits::toUType(ControlMode::Current)] = new QLabel;
+    fm_label_[traits::toUType(ControlMode::Current)]->setText(tr("Current Sensor : "));
+    fm_status_[traits::toUType(ControlMode::Current)] = new QLabel;
+    fm_status_[traits::toUType(ControlMode::Current)]->setText(tr("Normal"));
+
+    fm_gl_ = new QGridLayout;
+    fm_gl_->addWidget(fm_label_[traits::toUType(ControlMode::Position)], 0,0,1,1);
+    fm_gl_->addWidget(fm_status_[traits::toUType(ControlMode::Position)], 0,1,1,1);
+    fm_gl_->addWidget(fm_label_[traits::toUType(ControlMode::Velocity)], 1,0,1,1);
+    fm_gl_->addWidget(fm_status_[traits::toUType(ControlMode::Velocity)], 1,1,1,1);
+    fm_gl_->addWidget(fm_label_[traits::toUType(ControlMode::Current)], 2,0,1,1);
+    fm_gl_->addWidget(fm_status_[traits::toUType(ControlMode::Current)], 2,1,1,1);
+    // fm_gl_->addItem(new QSpacerItem(0,0,QSizePolicy::Expanding,QSizePolicy::Expanding),3,2);
+
+    fm_gb_ = new QGroupBox;
+    fm_gb_->setLayout(fm_gl_);
+    fm_gb_->setTitle(tr("Status"));
+
     main_layout_ = new QGridLayout;
-    main_layout_->addWidget(ref_gb_,0,0,1,1);
-    main_layout_->addWidget(mode_gb_,1,0,2,1);
-    main_layout_->addWidget(dm_gb_,0,1,2,1);
-    main_layout_->addItem(new QSpacerItem(0,0,QSizePolicy::Expanding,QSizePolicy::Expanding),3,1);
+    main_layout_->addWidget(ref_gb_,  0,0,2,1);
+    main_layout_->addWidget(mode_gb_, 2,0,2,1);
+    main_layout_->addWidget(dm_gb_,   0,1,3,1);
+    main_layout_->addWidget(fm_gb_,   0,2,1,1);
+    main_layout_->addItem(new QSpacerItem(0,0,QSizePolicy::Expanding,QSizePolicy::Expanding),4,3);
     this->setLayout(main_layout_);
     this->setWindowTitle(tr("Controller"));
 
@@ -160,11 +190,20 @@ void ControllerDialog::setModeAct(){
     }
 }
 
-void ControllerDialog::setDataMonitor(QVector<double> _data){
+void ControllerDialog::setDataMonitor(arma::vec _data){
     for(int i(0); i < 6; i++){
         if(i < 3)
-            dm_out_lined_[i]->setText(QString::number(_data[i]));
+            dm_out_lined_[i]->setText(QString::number(_data(i)));
         else
-            dm_est_lined_[i-3]->setText(QString::number(_data[i]));
+            dm_est_lined_[i-3]->setText(QString::number(_data(i)));
+    }
+}
+
+void ControllerDialog::setSensorStatus(arma::Col<uint8_t> _status){
+    for(int i(0); i < 3; i++){
+        if(_status(i))
+            fm_status_[i]->setText(tr("Fault"));
+        else
+            fm_status_[i]->setText(tr("Normal"));
     }
 }

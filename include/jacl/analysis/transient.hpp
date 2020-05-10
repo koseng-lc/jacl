@@ -6,6 +6,7 @@
 #pragma once
 
 #include <jacl/traits.hpp>
+#include <jacl/plotter.hpp>
 
 namespace jacl{ namespace analysis{
 
@@ -80,7 +81,8 @@ static auto transient(_System _sys, double _ts_threshold=.02)
             break;
         }
     }
-    
+    std::vector<double> resp(response.begin(), response.end());
+    jacl::plot(resp, _sys.dt(), "Transient Response", {"Response"});
     return std::make_tuple(tr,tp,overshoot,ts);
 }
 
