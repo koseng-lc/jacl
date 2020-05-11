@@ -99,29 +99,32 @@ class Plotter:
         fig.show()        
         n_data = 0
 
+        if ~self.online:
+            sp[i].set_xlim(left = self.time_data[0], right = self.time_data[-1])
+            sp[i].set_ylim(bottom = min(-0.001, np.amin(self.signal_data[:,i]) * 1.75), top = max(0.001, np.amax(self.signal_data[:,i]) * 1.75))
+
         while self.running.value:
             n_data = n_data + 1 if n_data < self.max_data else self.max_data
             total_signal = np.array([np.sum(np.abs(self.signal_data[:,i])) for i in range(0, self.n_signals)])
             signal_avg = total_signal / len(self.signal_data) #n_data #min(n_data, self.max_data)
-
+            
             for i in range(0, self.n_signals):
                 # Replace data
                 plot[i].set_ydata(self.signal_data[:,i])
                 plot[i].set_xdata(self.time_data)
                 # Draw into the figure
                 sp[i].draw_artist(sp[i].patch)
-                sp[i].draw_artist(plot[i])
-                # To maintain sight of signal in plotter
+                sp[i].draw_artist(plot[i])                
                 if self.online:
+                    # To maintain sight of signal in plotter
                     sp[i].set_xlim(left = max(0, self.time_data[-1] - 0.75 * self.view_interval), right = max(self.view_interval, self.time_data[-1] + 0.25 * self.view_interval))
-                else:
-                    sp[i].set_xlim(left = self.time_data[0], right = self.time_data[-1])
-                # To adjust the signal interval
-                sp[i].set_ylim(bottom = min(-0.001, -signal_avg[i] * 1.75), top = max(0.001, signal_avg[i] * 1.75))
+                    # To adjust the signal interval
+                    sp[i].set_ylim(bottom = min(-0.001, -signal_avg[i] * 1.75), top = max(0.001, signal_avg[i] * 1.75))
+                    
 
             fig.canvas.draw_idle()
             fig.canvas.flush_events()
-            
+
             time.sleep(self.delay)
 
          

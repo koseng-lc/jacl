@@ -45,18 +45,20 @@ public:
         for(int i(0); i < res.size(); i++){
             if(i == CHOSEN_STATE)continue;
             std::get<0>(res[i]) = y_hat(i);
+            std::get<1>(res[i]) = delta_y(i);
             if(delta_y(i) <= 1e-6)
-                std::get<1>(res[i]) = false;
+                std::get<2>(res[i]) = false;
             else    
-                std::get<1>(res[i]) = std::fabs(delta_y(i)/_out(i)) > this->threshold_[i];
-            chosen_state_status &= std::get<1>(res[i]);
+                std::get<2>(res[i]) = std::fabs(delta_y(i)/_out(i)) > this->threshold_[i];
+            chosen_state_status &= std::get<2>(res[i]);
         }
         std::get<0>(res[CHOSEN_STATE]) = y_hat(CHOSEN_STATE);
-        std::get<1>(res[CHOSEN_STATE]) = chosen_state_status;
+        std::get<1>(res[CHOSEN_STATE]) = delta_y(CHOSEN_STATE);
+        std::get<2>(res[CHOSEN_STATE]) = chosen_state_status;
         if(chosen_state_status){
             for(int i(0); i < res.size(); i++){
                 if(i == CHOSEN_STATE)continue;
-                std::get<1>(res[i]) = false;
+                std::get<2>(res[i]) = false;
             }
         }
         this->aux_sys_.collectSig(y_hat, _in, y_hat);

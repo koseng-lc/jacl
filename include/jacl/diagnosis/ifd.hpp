@@ -20,7 +20,7 @@ namespace jacl{ namespace diagnosis{
 template <typename _System>
 class IFD:public ::jacl::system::detail::BaseSystemClient<typename _System::base_t>{
 public:
-    using diag_pack_t = std::array<std::pair<arma::vec, bool>, _System::n_outputs>;
+    using diag_pack_t = std::array<std::tuple<arma::vec, arma::vec, bool>, _System::n_outputs>;
 
 public:    
     IFD(_System* _sys, std::initializer_list<double> _threshold)
@@ -67,7 +67,8 @@ public:
                     err *= delta_y(j);
             }
             std::get<0>(res[i]) = y_hat[i];
-            std::get<1>(res[i]) = err > threshold_[i];
+            std::get<1>(res[i]) = delta_y;
+            std::get<2>(res[i]) = err > threshold_[i];
         }
         //-- temporary yet - it's not the actual implementation
         //-- we're gonna have many estimation signals

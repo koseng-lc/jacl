@@ -331,12 +331,46 @@ MainWindow::MainWindow(QWidget *parent)
     setupMenus();
     setupActions();
 
-    std::vector<double> y;
-    auto dt(M_PI/180.);
-    for(int i(0); i < 1000; i++){
-        y.push_back(sin((double)i*dt));
+    //-- Transient reponse
+    {
+        arma::vec out(3,1,arma::fill::zeros),in(1,1,arma::fill::zeros);
+        arma::vec err(in),est(out);
+        din_ = in;
+        control_mode_ = jacl::traits::toUType(jacl::ControllerDialog::ControlMode::Position);
+        sifd_.init({{-.11,-.15}}, "SIFD", {"Est. Curr.","Est. Spd.","Est. Pos."});
+        constexpr std::size_t ND(500);
+        std::vector<double> resp_err1(ND,.0), resp_err2(ND,.0), resp_err3(ND,.0);
+        ref_(control_mode_) = 1.;
+        for(std::size_t i(0); i < ND; i++){
+
+            //-- Error between reference and output
+            err(control_mode_) = ref_(control_mode_) - out(control_mode_);
+
+            //-- Discrete
+            din_ = pos_dctrl_sys_.convolve(err);
+
+            //-- saturation
+            if(din_(0) > 24.)
+                din_(0) = 24.;
+            else if(din_(0) < -24.)
+                din_(0) = -24.;
+            
+            out = dsys_simo_.convolve(din_);
+
+            out(control_mode_) += .0;
+            if(std::fabs(out(control_mode_)) < .0)
+                out(control_mode_) = 0;
+            out(control_mode_) *= 1.;
+
+            SIFD::diag_pack_t diag_pack = sifd_.detect(din_, out);
+            resp_err1[i] = std::get<1>(diag_pack[0])(0);
+            resp_err2[i] = std::get<1>(diag_pack[1])(0);
+            resp_err3[i] = std::get<1>(diag_pack[2])(0);
+        }
+        jacl::plot(resp_err1, SAMPLING_PERIOD, "Position error", {"Position sensor error"});
+        jacl::plot(resp_err2, SAMPLING_PERIOD, "Velocity error", {"Velocity sensor error"});
+        jacl::plot(resp_err3, SAMPLING_PERIOD, "Current error", {"Current sensor error"});
     }
-    jacl::plot(y,dt,"TEST",{"XY"});
 
     cl_thread_ = boost::thread{boost::bind(&MainWindow::closedLoopProcess, this)};
 
@@ -1116,7 +1150,6 @@ double MainWindow::angularSpeed2Voltage(double _speed, double _torque){
 }
 
 void MainWindow::closedLoopProcess(){
-    //-- Continuous
     arma::vec out(3,1,arma::fill::zeros),in(1,1,arma::fill::zeros);
     arma::vec err(in),est(out);
     din_ = in;
@@ -1184,7 +1217,7 @@ void MainWindow::closedLoopProcess(){
                 )
             )
         );
-        arma::Col<uint8_t> status{std::get<1>(diag_pack[0]), std::get<1>(diag_pack[1]), std::get<1>(diag_pack[2])};
+        arma::Col<uint8_t> status{std::get<2>(diag_pack[0]), std::get<2>(diag_pack[1]), std::get<2>(diag_pack[2])};
         Q_EMIT setSensorStatus(status);
         boost::this_thread::sleep_for(boost::chrono::milliseconds((int)(SAMPLING_PERIOD*1000.)));
     }
