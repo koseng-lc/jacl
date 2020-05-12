@@ -68,6 +68,7 @@ class Plotter:
 
     def simulate(self):
         # Plotter setup
+        plt.rcParams['savefig.facecolor'] = 'black'
         fig = plt.figure(facecolor='black', edgecolor='white')
         fig.canvas.set_window_title(self.title)
         fig.canvas.mpl_connect('close_event', self.pltCloseHandle)
@@ -95,6 +96,7 @@ class Plotter:
         # plt.subplots_adjust(left=0.05,bottom=0.05,right=0.99,top=0.96,wspace=0.21,hspace=0.3)
         plt.grid(True)        
         fig.canvas.draw()
+
         # plt.pause(0.1)
         fig.show()        
         n_data = 0

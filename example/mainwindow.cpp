@@ -341,6 +341,7 @@ MainWindow::MainWindow(QWidget *parent)
         constexpr std::size_t ND(500);
         std::vector<double> resp_err1(ND,.0), resp_err2(ND,.0), resp_err3(ND,.0);
         ref_(control_mode_) = 1.;
+        std::pair<double, double> peak1(-1e6,1e6), peak2(-1e6,1e6), peak3(-1e6,1e6);
         for(std::size_t i(0); i < ND; i++){
 
             //-- Error between reference and output
@@ -360,15 +361,36 @@ MainWindow::MainWindow(QWidget *parent)
             out(control_mode_) += .0;
             if(std::fabs(out(control_mode_)) < .0)
                 out(control_mode_) = 0;
-            out(control_mode_) *= 1.;
+            out(control_mode_) *= 1.2;
 
             SIFD::diag_pack_t diag_pack = sifd_.detect(din_, out);
-            resp_err1[i] = std::get<1>(diag_pack[0])(0);
+            resp_err1[i] = std::get<1>(diag_pack[0])(0);            
             resp_err2[i] = std::get<1>(diag_pack[1])(0);
             resp_err3[i] = std::get<1>(diag_pack[2])(0);
+
+            if(resp_err1[i] > std::get<0>(peak1))
+                std::get<0>(peak1) = resp_err1[i];
+            if(resp_err1[i] < std::get<1>(peak1))
+                std::get<1>(peak1) = resp_err1[i];
+
+            if(resp_err2[i] > std::get<0>(peak2))
+                std::get<0>(peak2) = resp_err2[i];
+            if(resp_err2[i] < std::get<1>(peak2))
+                std::get<1>(peak2) = resp_err2[i];
+
+            if(resp_err3[i] > std::get<0>(peak3))
+                std::get<0>(peak3) = resp_err3[i];
+            if(resp_err3[i] < std::get<1>(peak3))
+                std::get<1>(peak3) = resp_err3[i];
         }
+        std::cout << "Position error max : " << std::get<0>(peak1)
+                  << " ; min : " << std::get<1>(peak1) << std::endl;
         jacl::plot(resp_err1, SAMPLING_PERIOD, "Position error", {"Position sensor error"});
+        std::cout << "Velocity error max : " << std::get<0>(peak2)
+                  << " ; min : " << std::get<1>(peak2) << std::endl;
         jacl::plot(resp_err2, SAMPLING_PERIOD, "Velocity error", {"Velocity sensor error"});
+        std::cout << "Current error max : " << std::get<0>(peak3)
+                  << " ; min : " << std::get<1>(peak3) << std::endl;
         jacl::plot(resp_err3, SAMPLING_PERIOD, "Current error", {"Current sensor error"});
     }
 
@@ -1158,7 +1180,6 @@ void MainWindow::closedLoopProcess(){
 //    arma::mat diff(err);
 //    auto Kp(10.), Kd(1.);
     // ifd_.init({{-.76,-.65}, {-.63,-.51}, {-.86,-.72}});
-    sifd_.init({{-.11,-.15}}, "SIFD", {"Est. Curr.","Est. Spd.","Est. Pos."});
     arma::cx_vec p = jacl::common::poles(dsimo_);    
     p.print("Discrete DC motor poles : ");
     p = jacl::common::poles(simo_);
