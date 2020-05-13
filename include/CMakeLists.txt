@@ -80,6 +80,10 @@ set_target_properties(transfer_matrix PROPERTIES LINKER_LANGUAGE CXX)
 add_library(traits ${JACL_HEADER_PREFIX}/traits.hpp)
 set_target_properties(traits PROPERTIES LINKER_LANGUAGE CXX)
 
+#-- Random
+add_library(random ${JACL_HEADER_PREFIX}/random.hpp)
+set_target_properties(random PROPERTIES LINKER_LANGUAGE CXX)
+
 #-- Linear Algebra
 add_library(linear_algebra ${JACL_HEADER_PREFIX}/linear_algebra.hpp)
 target_link_libraries(linear_algebra PRIVATE armadillo)
@@ -178,6 +182,7 @@ set(JACL_LIB_LIST
     nonlinear_state_space
     transfer_matrix
     traits
+    random
     linear_algebra
     numerical_methods
     lti_common

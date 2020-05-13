@@ -103,7 +103,6 @@ protected:
         auto convolve(const typename __System::input_t& _in, const typename __System::output_t& _meas){
             meas_ = _meas;
             typename __System::output_t est( convolve(_in) );
-            prev_meas_ = meas_;
             return est;
         }    
         auto setPole(const typename arma::Col<
@@ -115,9 +114,11 @@ protected:
         auto convolve(const typename __System::input_t& _in)
             -> typename __System::output_t override{
             setIn(_in);
-            this->state_ = dstate();  
-            this->out_ = output();
+            this->state_ = dstate();
+            //-- it must be not here, just adapt with the reality
             this->prev_state_ = this->state_;
+            //--
+            this->out_ = output();            
             return this->out_;
         }
         void setIn(const typename __System::input_t& _in){
@@ -240,7 +241,6 @@ protected:
         arma::vec prev_z_;
         typename __System::state_t q_hat_;
         typename __System::output_t meas_;
-        typename __System::output_t prev_meas_;
         arma::vec poles_;
     };
 

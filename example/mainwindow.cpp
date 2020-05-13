@@ -341,9 +341,17 @@ MainWindow::MainWindow(QWidget *parent)
         constexpr std::size_t ND(500);
         std::vector<double> resp_err1(ND,.0), resp_err2(ND,.0), resp_err3(ND,.0);
         ref_(control_mode_) = 1.;
-        std::pair<double, double> peak1(-1e6,1e6), peak2(-1e6,1e6), peak3(-1e6,1e6);
+        auto min = std::numeric_limits<double>::min();
+        auto max = std::numeric_limits<double>::max();
+        std::pair<double, double> peak1(min,max), peak2(min,max), peak3(min,max);
+        jacl::Random<double,3,std::normal_distribution<double>> noise_gen(
+            {0,0,0},
+            {{10.,0,0},
+             {0,10.,0},
+             {0,0,5.}}
+        );
+        arma::vec::fixed<3> noise;
         for(std::size_t i(0); i < ND; i++){
-
             //-- Error between reference and output
             err(control_mode_) = ref_(control_mode_) - out(control_mode_);
 
@@ -356,17 +364,20 @@ MainWindow::MainWindow(QWidget *parent)
             else if(din_(0) < -24.)
                 din_(0) = -24.;
             
-            out = dsys_simo_.convolve(din_);
+            out = dsys_simo_.convolve(din_);            
+            noise = noise_gen();
+            // out(1) += noise(1);
+            // out(2) += noise(2);
 
             out(control_mode_) += .0;
             if(std::fabs(out(control_mode_)) < .0)
-                out(control_mode_) = 0;
+                out(control_mode_) = .0;
             out(control_mode_) *= 1.2;
 
-            SIFD::diag_pack_t diag_pack = sifd_.detect(din_, out);
+            SIFD::diag_pack_t diag_pack = sifd_.detect(din_, out);            
             resp_err1[i] = std::get<1>(diag_pack[0])(0);            
             resp_err2[i] = std::get<1>(diag_pack[1])(0);
-            resp_err3[i] = std::get<1>(diag_pack[2])(0);
+            resp_err3[i] = std::get<1>(diag_pack[2])(0);            
 
             if(resp_err1[i] > std::get<0>(peak1))
                 std::get<0>(peak1) = resp_err1[i];

@@ -28,3 +28,5 @@
 #include <jacl/synthesis/dh_inf.hpp>
 #include <jacl/plotter.hpp>
 #include <jacl/parser.hpp>
+#include <jacl/traits.hpp>
+#include <jacl/random.hpp>
