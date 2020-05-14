@@ -82,7 +82,7 @@ static auto transient(_System _sys, double _ts_threshold=.02)
         }
     }
     std::vector<double> resp(response.begin(), response.end());
-    jacl::plot(resp, _sys.dt(), "Transient Response", {"Response"});
+    jacl::plot(resp, _sys.dt(), "Transient Response", {"Transient Response"});
     return std::make_tuple(tr,tp,overshoot,ts);
 }
 

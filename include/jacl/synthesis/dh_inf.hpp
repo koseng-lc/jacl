@@ -33,15 +33,7 @@ public:
 
     ~DHinf();
 
-    auto solve() -> ::jacl::common::StateSpacePack;
-
-    template <typename SS1, typename SS2>
-    auto starProducts(const SS1 &_ss1, const SS2 &_ss2){
-        arma::cx_mat A_bar(SS1::n_states + SS2::n_states, SS1::n_states + SS2::n_states);
-        arma::cx_mat B_bar(SS1::n_states + SS2::n_states, SS1::w1_size + SS2::u_sz);
-        arma::cx_mat C_bar(SS1::z1_sz + SS2::y_sz, SS1::n_states + SS2::n_states);
-        arma::cx_mat D_bar(SS1::z1_sz + SS2::y_sz, SS1::w1_size, + SS2::u_sz);
-    }
+    auto solve() -> ::jacl::lti_common::StateSpacePack;
 
 private:
     auto checkAssumption1();
@@ -117,8 +109,8 @@ auto DHinf<_System,
     performance_size,
     perturbation_size>::checkAssumption1(){
 
-    auto ctrb = common::stabilizable(llft_.A(), llft_.B2());
-    auto obsv = common::detectability(llft_.A(), llft_.C2());
+    auto ctrb = lti_common::stabilizable(llft_.A(), llft_.B2());
+    auto obsv = lti_common::detectability(llft_.A(), llft_.C2());
 #ifdef DHINF_VERBOSE
     std::cout << "[DHinf] Assumption 1 : " << std::boolalpha << ctrb << " ; " << obsv << std::endl;
 #endif
@@ -150,7 +142,7 @@ auto DHinf<_System,
     temp2 = temp1*llft_.C1();
     arma::mat A = llft_.A() - temp2;    
 
-    bool ok = !common::hasUnobservableModeInUnitCircle(A, C);
+    bool ok = !lti_common::hasUnobservableModeInUnitCircle(A, C);
    
 #ifdef DHINF_VERBOSE
     std::cout << "[DHinf] Assumption 2 : " << std::boolalpha << ok << std::endl;
@@ -179,7 +171,7 @@ auto DHinf<_System,
     temp2 = (I - temp1);
     arma::mat B = llft_.B1()*temp2;
 
-    bool ok = !common::hasUncontrollableModeInUnitCircle(A, B);
+    bool ok = !lti_common::hasUncontrollableModeInUnitCircle(A, B);
 
 #ifdef DHINF_VERBOSE
     std::cout << "[DHinf] Assumption 3 : " << std::boolalpha << ok << std::endl;
@@ -203,7 +195,7 @@ template <typename _System,
           std::size_t perturbation_size>
 auto DHinf<_System,
     performance_size,
-    perturbation_size>::solve() -> ::jacl::common::StateSpacePack{        
+    perturbation_size>::solve() -> ::jacl::lti_common::StateSpacePack{        
 
 #ifdef DHINF_VERBOSE
     std::cout << "[DHinf] Interconnection matrix assumptions : " << std::endl;

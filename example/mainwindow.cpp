@@ -104,8 +104,8 @@ MainWindow::MainWindow(QWidget *parent)
     ss_.C().print("C : ");
     ss_.D().print("D : ");
 
-    std::cout << "Controllable : " << jacl::common::controllable(ss_.A(), ss_.B()) << std::endl;
-    std::cout << "Observable : " << jacl::common::observable(ss_.A(), ss_.C()) << std::endl;
+    std::cout << "Controllable : " << jacl::lti_common::controllable(ss_.A(), ss_.B()) << std::endl;
+    std::cout << "Observable : " << jacl::lti_common::observable(ss_.A(), ss_.C()) << std::endl;
 
     //-- Observer for MIMO DC motor
     arma::mat observer_K;
@@ -306,7 +306,7 @@ MainWindow::MainWindow(QWidget *parent)
 //    ICM_.D().print("ICM D : ");
 
     // hinf_ = new HInf(&ICM_, 1.6204);
-    // jacl::common::StateSpacePack K( hinf_->solve() );
+    // jacl::lti_common::StateSpacePack K( hinf_->solve() );
 
     setupSIMODCMotor();
     setupPositionController();
@@ -833,7 +833,7 @@ void MainWindow::setupSIMODCMotor(){
         simo_.setD(fD);
     }
     jacl::parser::saveStateSpace(simo_, "motor_dc_simo.jacl");
-    jacl::common::StateSpacePack dsimo = jacl::common::discretize(simo_, SAMPLING_PERIOD);
+    jacl::lti_common::StateSpacePack dsimo = jacl::lti_common::discretize(simo_, SAMPLING_PERIOD);
     dsimo_.setA(std::get<0>(dsimo)); dsimo_.setB(std::get<1>(dsimo));
     dsimo_.setC(std::get<2>(dsimo)); dsimo_.setD(std::get<3>(dsimo));
     dsimo_.A().print("Ad : "); dsimo_.B().print("Bd : ");
@@ -914,7 +914,7 @@ void MainWindow::setupSIMODCMotor(){
         m_real_.setC(fC);
         m_real_.setD(fD);
     }
-    jacl::common::StateSpacePack dm_real_ = jacl::common::discretize(m_real_, SAMPLING_PERIOD);
+    jacl::lti_common::StateSpacePack dm_real_ = jacl::lti_common::discretize(m_real_, SAMPLING_PERIOD);
     {
         arma::mat temp1, temp2, temp3;
         arma::mat zeros9x1(9,1,arma::fill::zeros);
@@ -1085,7 +1085,7 @@ void MainWindow::setupPositionController(){
     icm_pos_.setD(fD);
     jacl::system::Continuous<InterConnMatPos> icm_pos_sys(&icm_pos_);
     hinf_pc_ = new HInfPC(&icm_pos_sys, 2.7882);
-    jacl::common::StateSpacePack K( hinf_pc_->solve() );
+    jacl::lti_common::StateSpacePack K( hinf_pc_->solve() );
     k_pos_.setA(std::get<0>(K));
     k_pos_.setB(std::get<1>(K));
     k_pos_.setC(std::get<2>(K));
@@ -1147,7 +1147,7 @@ void MainWindow::setupSpeedController(){
     icm_spd_.setD(fD);
     jacl::system::Continuous<InterConnMatSpd> icm_spd_sys(&icm_spd_);
     hinf_sc_ = new HInfSC(&icm_spd_sys, 3.1);
-    jacl::common::StateSpacePack K( hinf_sc_->solve() );
+    jacl::lti_common::StateSpacePack K( hinf_sc_->solve() );
     k_spd_.setA(std::get<0>(K));
     k_spd_.setB(std::get<1>(K));
     k_spd_.setC(std::get<2>(K));
@@ -1191,9 +1191,9 @@ void MainWindow::closedLoopProcess(){
 //    arma::mat diff(err);
 //    auto Kp(10.), Kd(1.);
     // ifd_.init({{-.76,-.65}, {-.63,-.51}, {-.86,-.72}});
-    arma::cx_vec p = jacl::common::poles(dsimo_);    
+    arma::cx_vec p = jacl::lti_common::poles(dsimo_);    
     p.print("Discrete DC motor poles : ");
-    p = jacl::common::poles(simo_);
+    p = jacl::lti_common::poles(simo_);
     p.print("Continuous DC motor poles : ");        
     while(cl_status_){
         //-- PD Control

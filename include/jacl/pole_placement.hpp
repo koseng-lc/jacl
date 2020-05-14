@@ -198,7 +198,7 @@ static auto BassGura(_StateSpace* _ss, const arma::vec& _poles, arma::mat* _gain
         T.submat(j,i,T.n_rows-1,i) = a_real.head_rows(T.n_rows - j);
     }
     arma::mat O;
-    bool ok = common::observable(A,C,&O);
+    bool ok = lti_common::observable(A,C,&O);
     if(!ok)
         std::cerr << "The system was not observable" << std::endl;
     arma::mat term1, term2;

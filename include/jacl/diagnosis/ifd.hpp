@@ -26,8 +26,7 @@ public:
     IFD(_System* _sys, std::initializer_list<double> _threshold)
         : sys_(_sys)
         , aux_sys_(nullptr)
-        , plt_(&aux_sys_, plotSig<_System::n_outputs-1>::idx(),
-               ::jacl::system::detail::BaseSystemClient<typename _System::base_t>::dt(sys_)){  
+        , plt_(&aux_sys_, plotSig<_System::n_outputs-1>::idx(), sys_->dt()){  
         
         auto _th_it = _threshold.begin();
         for(int i(0); i < threshold_.size() && _th_it != _threshold.end(); i++){
@@ -171,7 +170,7 @@ protected:
                                                                     A12_, arma::zeros(1,1));
                 jacl::pole_placement::KautskyNichols(&ss, poles_, &L_, jacl::pole_placement::PolePlacementType::Observer);
                 L_.print("DOS GAIN : ");
-                // if(jacl::common::observable(ss.A(), ss.C()))
+                // if(jacl::lti_common::observable(ss.A(), ss.C()))
                 //     std::cout << "SS Observable !" << std::endl;
                 // arma::cx_mat eigvec;
                 // arma::cx_vec eigval;

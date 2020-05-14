@@ -68,7 +68,7 @@ class Plotter:
 
     def simulate(self):
         # Plotter setup
-        plt.rcParams['savefig.facecolor'] = 'black'
+        plt.rcParams['savefig.facecolor'] = 'white'
         fig = plt.figure(facecolor='black', edgecolor='white')
         fig.canvas.set_window_title(self.title)
         fig.canvas.mpl_connect('close_event', self.pltCloseHandle)
@@ -77,15 +77,19 @@ class Plotter:
         sp = []
         plot = []
 
+        # change it to black when try to save the fig
+        # edge_col = 'black'
+        edge_col = 'white'
         for i in range(0, self.n_signals):
             sp.append(fig.add_subplot(n_sp_rows, n_sp_cols, i+1))
-            sp[i].set_title(self.plot_name['signal{}'.format(i)], color='white')
-            sp[i].set_xlabel('Time (s)')
+            sp[i].set_title(self.plot_name['signal{}'.format(i)], color=edge_col)            
             sp[i].grid(True)
             sp[i].set_facecolor((0.294117647, 0.294117647, 0.294117647)) # Gray
-            sp[i].tick_params(color='white', labelcolor='white')
+            sp[i].tick_params(color=edge_col, labelcolor=edge_col)
+            sp[i].set_xlabel('Time (s)')
+            sp[i].xaxis.label.set_color(edge_col)  
             for spine in sp[i].spines.values():
-                spine.set_edgecolor('white')
+                spine.set_edgecolor(edge_col)
 
             line, = sp[i].plot(self.time_data, self.signal_data[:,i], color='r')
             plot.append(line)

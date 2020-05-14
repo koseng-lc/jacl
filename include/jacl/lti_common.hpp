@@ -9,65 +9,134 @@
 
 #include <armadillo>
 
-namespace jacl{ namespace common{
+namespace jacl{ namespace lti_common{
+
+namespace detail{
+    template <typename StateMatrix, typename InputMatrix>
+    static auto controllable(const StateMatrix& _A, const InputMatrix& _B){
+        //-- must be square matrix
+        assert(_A.n_rows == _A.n_cols);
+        //-- must be compatible with A
+        assert(_B.n_rows == _A.n_rows);
+
+        int system_order = _A.n_cols;
+        int input_size = _B.n_cols;
+
+        arma::mat ctrb(_B);
+        for(int i(1); i < system_order; i++){
+            int first = (i-1) * input_size;
+            int last = i * input_size - 1;
+            ctrb = join_rows(ctrb, _A * ctrb.cols(first, last));
+        }
+
+        return arma::rank(ctrb) == system_order;
+    }
+
+    template <typename StateMatrix, typename InputMatrix>
+    static auto stabilizable(const StateMatrix& _A, const InputMatrix& _B){
+        //-- must be square matrix
+        assert(_A.n_rows == _A.n_cols);
+        //-- must be compatible with A
+        assert(_B.n_rows == _A.n_rows);
+
+        arma::cx_vec eigval;
+        arma::cx_mat eigvec;
+        arma::eig_gen(eigval, eigvec, _A);
+        arma::vec eigval_re = arma::real(eigval);
+
+        arma::cx_mat temp;
+        arma::cx_mat eye(arma::size(_A), arma::fill::eye);
+        arma::cx_mat cx_B( arma::size(_B) );
+        cx_B.set_real(_B);
+        bool ok(true);
+        for(int i(0); i < eigval_re.n_rows; i++){
+            if(eigval_re(i) > .0){
+                temp = _A - eigval(i)*eye;
+                if(arma::rank( arma::join_horiz(temp, cx_B) ) < _A.n_rows){
+                    ~ok;
+                    break;
+                }
+            }
+        }
+
+        return ok;
+    }
+
+    template <typename StateMatrix, typename OutputMatrix>
+    static auto observable(const StateMatrix& _A, const OutputMatrix& _C, arma::mat* _O = nullptr){
+        //-- must be square matrix
+        assert(_A.n_rows == _A.n_cols);
+        //-- must be compatible with A
+        assert(_C.n_cols == _A.n_cols);
+
+        int system_order = _A.n_cols;
+        int output_size = _C.n_rows;
+
+        arma::mat obsv(_C);
+        for(int i(1); i < system_order; i++){
+            int first = (i-1) * output_size;
+            int last = i * output_size - 1;
+            obsv = join_cols(obsv, obsv.rows(first, last) * _A);
+        }
+        if(_O != nullptr)
+            *_O = obsv;
+        return arma::rank(obsv) == system_order;
+    }
+
+    template <typename StateMatrix, typename OutputMatrix>
+    static auto detectability(const StateMatrix& _A, const OutputMatrix& _C){
+        //-- must be square matrix
+        assert(_A.n_rows == _A.n_cols);
+        //-- must be compatible with A
+        assert(_C.n_cols == _A.n_cols);
+
+        arma::cx_vec eigval;
+        arma::cx_mat eigvec;
+        arma::eig_gen(eigval, eigvec, _A);
+        arma::vec eigval_re = arma::real(eigval);
+
+        arma::cx_mat temp;
+        arma::cx_mat eye(arma::size(_A), arma::fill::eye);
+        arma::cx_mat cx_C( arma::size(_C) );
+        cx_C.set_real(_C);
+        bool ok(true);
+        for(int i(0); i < eigval_re.n_rows; i++){
+            if(eigval_re(i) > .0){
+                temp = _A - eigval(i)*eye;
+                if(arma::rank( arma::join_vert(temp, cx_C) ) < _A.n_cols){
+                    ~ok;
+                    break;
+                }
+            }
+        }
+        return ok;
+    }
+}
 
 using StateSpacePack = std::tuple<arma::mat, arma::mat, arma::mat, arma::mat >;
 
-enum class PBHTestType{
-    Column,
-    Row
-};
-
-static auto controllable(const arma::mat& _A, const arma::mat& _B){
-    //-- must be square matrix
-    assert(_A.n_rows == _A.n_cols);
-    //-- must be compatible with A
-    assert(_B.n_rows == _A.n_rows);
-
-    int system_order = _A.n_cols;
-    int input_size = _B.n_cols;
-
-    arma::mat ctrb(_B);
-    for(int i(1); i < system_order; i++){
-        int first = (i-1) * input_size;
-        int last = i * input_size - 1;
-        ctrb = join_rows(ctrb, _A * ctrb.cols(first, last));
-    }
-
-    return arma::rank(ctrb) == system_order;
-
+template <typename StateMatrix, typename InputMatrix>
+static auto controllable(const StateMatrix& _A, const InputMatrix& _B){
+    return detail::controllable(_A, _B);
 }
 
-static auto stabilizable(const arma::mat& _A, const arma::mat& _B){
-    //-- must be square matrix
-    assert(_A.n_rows == _A.n_cols);
-    //-- must be compatible with A
-    assert(_B.n_rows == _A.n_rows);
-
-    arma::cx_vec eigval;
-    arma::cx_mat eigvec;
-    arma::eig_gen(eigval, eigvec, _A);
-    arma::vec eigval_re = arma::real(eigval);
-
-    arma::cx_mat temp;
-    arma::cx_mat eye(arma::size(_A), arma::fill::eye);
-    arma::cx_mat cx_B( arma::size(_B) );
-    cx_B.set_real(_B);
-    bool ok(true);
-    for(int i(0); i < eigval_re.n_rows; i++){
-        if(eigval_re(i) > .0){
-            temp = _A - eigval(i)*eye;
-            if(arma::rank( arma::join_horiz(temp, cx_B) ) < _A.n_rows){
-                ~ok;
-                break;
-            }
-        }
-    }
-
-    return ok;
+template <typename _StateSpace>
+static auto controllable(const _StateSpace& _ss){
+    return detail::controllable(_ss.A(), _ss.B());
 }
 
-static auto hasUncontrollableModeInImAxis(const arma::mat& _A, const arma::mat& _B){
+template <typename StateMatrix, typename InputMatrix>
+static auto stabilizable(const StateMatrix& _A, const InputMatrix& _B){
+    return detail::stabilizable(_A, _B);
+}
+
+template <typename _StateSpace>
+static auto stabilizable(const _StateSpace& _ss){
+    return detail::stabilizable(_ss.A(), _ss.B());
+}
+
+template <typename StateMatrix, typename InputMatrix>
+static auto hasUncontrollableModeInImAxis(const StateMatrix& _A, const InputMatrix& _B){
     //-- must be square matrix
     assert(_A.n_rows == _A.n_cols);
     //-- must be compatible with A
@@ -96,7 +165,8 @@ static auto hasUncontrollableModeInImAxis(const arma::mat& _A, const arma::mat& 
     return ok;
 }
 
-static auto hasUncontrollableModeInUnitCircle(const arma::mat& _A, const arma::mat& _B){
+template <typename StateMatrix, typename InputMatrix>
+static auto hasUncontrollableModeInUnitCircle(const StateMatrix& _A, const InputMatrix& _B){
     //-- must be square matrix
     assert(_A.n_rows == _A.n_cols);
     //-- must be compatible with A
@@ -124,55 +194,28 @@ static auto hasUncontrollableModeInUnitCircle(const arma::mat& _A, const arma::m
     return ok; 
 }
 
-static auto observable(const arma::mat& _A, const arma::mat& _C, arma::mat* _O = nullptr){
-    //-- must be square matrix
-    assert(_A.n_rows == _A.n_cols);
-    //-- must be compatible with A
-    assert(_C.n_cols == _A.n_cols);
-
-    int system_order = _A.n_cols;
-    int output_size = _C.n_rows;
-
-    arma::mat obsv(_C);
-    for(int i(1); i < system_order; i++){
-        int first = (i-1) * output_size;
-        int last = i * output_size - 1;
-        obsv = join_cols(obsv, obsv.rows(first, last) * _A);
-    }
-    if(_O != nullptr)
-        *_O = obsv;
-    return arma::rank(obsv) == system_order;
+template <typename StateMatrix, typename OutputMatrix>
+static auto observable(const StateMatrix& _A, const OutputMatrix& _C, arma::mat* _O = nullptr){
+    return detail::observable(_A, _C, _O);
 }
 
-static auto detectability(const arma::mat& _A, const arma::mat& _C){
-    //-- must be square matrix
-    assert(_A.n_rows == _A.n_cols);
-    //-- must be compatible with A
-    assert(_C.n_cols == _A.n_cols);
-
-    arma::cx_vec eigval;
-    arma::cx_mat eigvec;
-    arma::eig_gen(eigval, eigvec, _A);
-    arma::vec eigval_re = arma::real(eigval);
-
-    arma::cx_mat temp;
-    arma::cx_mat eye(arma::size(_A), arma::fill::eye);
-    arma::cx_mat cx_C( arma::size(_C) );
-    cx_C.set_real(_C);
-    bool ok(true);
-    for(int i(0); i < eigval_re.n_rows; i++){
-        if(eigval_re(i) > .0){
-            temp = _A - eigval(i)*eye;
-            if(arma::rank( arma::join_vert(temp, cx_C) ) < _A.n_cols){
-                ~ok;
-                break;
-            }
-        }
-    }
-    return ok;
+template <typename _StateSpace>
+static auto observable(const _StateSpace& _ss, arma::mat* _O = nullptr){
+    return detail::observable(_ss.A(), _ss.C(), _O);
 }
 
-static auto hasUnobservableModeInImAxis(const arma::mat& _A, const arma::mat& _C){
+template <typename StateMatrix, typename OutputMatrix>
+static auto detectability(const StateMatrix& _A, const OutputMatrix& _C){
+    return detail::detectability(_A, _C);
+}
+
+template <typename _StateSpace>
+static auto detectability(const _StateSpace& _ss){
+    return detail::detectability(_ss.A(), _ss.C());
+}
+
+template <typename StateMatrix, typename OutputMatrix>
+static auto hasUnobservableModeInImAxis(const StateMatrix& _A, const OutputMatrix& _C){
     //-- must be square matrix
     assert(_A.n_rows == _A.n_cols);
     //-- must be compatible with A
@@ -200,7 +243,8 @@ static auto hasUnobservableModeInImAxis(const arma::mat& _A, const arma::mat& _C
     return ok;
 }
 
-static auto hasUnobservableModeInUnitCircle(const arma::mat& _A, const arma::mat& _C){
+template <typename StateMatrix, typename OutputMatrix>
+static auto hasUnobservableModeInUnitCircle(const StateMatrix& _A, const OutputMatrix& _C){
     //-- must be square matrix
     assert(_A.n_rows == _A.n_cols);
     //-- must be compatible with A

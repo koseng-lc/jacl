@@ -33,15 +33,7 @@ public:
 
     ~Hinf();
 
-    auto solve() -> ::jacl::common::StateSpacePack;
-
-    template <typename SS1, typename SS2>
-    auto starProducts(const SS1 &_ss1, const SS2 &_ss2){
-        arma::cx_mat A_bar(SS1::n_states + SS2::n_states, SS1::n_states + SS2::n_states);
-        arma::cx_mat B_bar(SS1::n_states + SS2::n_states, SS1::w1_size + SS2::u_sz);
-        arma::cx_mat C_bar(SS1::z1_sz + SS2::y_sz, SS1::n_states + SS2::n_states);
-        arma::cx_mat D_bar(SS1::z1_sz + SS2::y_sz, SS1::w1_size, + SS2::u_sz);
-    }
+    auto solve() -> ::jacl::lti_common::StateSpacePack;
 
 private:
     auto checkAssumption1();
@@ -134,8 +126,8 @@ auto Hinf<_System,
     performance_size,
     perturbation_size>::checkAssumption1(){
 
-    auto ctrb = common::stabilizable(llft_.A(), llft_.B2());
-    auto obsv = common::detectability(llft_.A(), llft_.C2());
+    auto ctrb = lti_common::stabilizable(llft_.A(), llft_.B2());
+    auto obsv = lti_common::detectability(llft_.A(), llft_.C2());
 #ifdef HINF_VERBOSE
     std::cout << "[Hinf] Assumption 1 : " << std::boolalpha << ctrb << " ; " << obsv << std::endl;
 #endif
@@ -268,7 +260,7 @@ auto Hinf<_System,
     temp2 = temp1*llft_.C1();
     arma::mat A = llft_.A() - temp2;    
 
-    bool ok = !common::hasUnobservableModeInImAxis(A, C);
+    bool ok = !lti_common::hasUnobservableModeInImAxis(A, C);
 #ifdef HINF_VERBOSE
     std::cout << "[Hinf] Assumption 3 : " << std::boolalpha << ok << std::endl;
 #endif
@@ -296,7 +288,7 @@ auto Hinf<_System,
     temp2 = (I - temp1);
     arma::mat B = llft_.B1()*temp2;
 
-    bool ok = !common::hasUncontrollableModeInImAxis(A, B);
+    bool ok = !lti_common::hasUncontrollableModeInImAxis(A, B);
 #ifdef HINF_VERBOSE
     std::cout << "[Hinf] Assumption 4 : " << std::boolalpha << ok << std::endl;
 #endif
@@ -389,7 +381,7 @@ template <typename _System,
           std::size_t perturbation_size>
 auto Hinf<_System,
     performance_size,
-    perturbation_size>::solve() -> ::jacl::common::StateSpacePack{
+    perturbation_size>::solve() -> ::jacl::lti_common::StateSpacePack{
 #ifdef HINF_VERBOSE
     std::cout << "[Hinf] Interconnection matrix assumptions : " << std::endl;
 #endif
@@ -469,8 +461,8 @@ auto Hinf<_System,
 
 #ifdef HINF_VERBOSE
     std::cout << "[Hinf] Solution of ARE : " << std::endl;
-    X_inf.print("X_inf : ");
-    Y_inf.print("Y_inf : ");
+    X_inf.print("[Hinf] X_inf : ");
+    Y_inf.print("[Hinf] Y_inf : ");
 #endif
 
     ctemp1 = toCx(D1__t * llft_.C1());

@@ -13,7 +13,8 @@
 namespace jacl{ namespace system{
 
 template <class _StateSpace>
-class BaseSystem:public pattern::Observer, public ::jacl::state_space::detail::NonLinearStateSpaceClient<_StateSpace>{
+class BaseSystem:public pattern::Observer
+                ,public ::jacl::state_space::detail::NonLinearStateSpaceClient<_StateSpace>{
 public:
     static constexpr std::size_t n_states{_StateSpace::n_states};
     static constexpr std::size_t n_inputs{_StateSpace::n_inputs};
@@ -61,6 +62,7 @@ public:
         out_.fill(.0);
     }
     inline auto dt() const{ return dt_; }
+    
 protected:
     virtual void setIn(const input_t& _in) = 0;
     virtual auto dstate() -> state_t = 0;
