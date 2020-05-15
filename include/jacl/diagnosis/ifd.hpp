@@ -78,6 +78,7 @@ public:
         if(plt_.isInitialized())
             plt_.start();
     }
+    
 protected:
     template <typename __System = _System, std::size_t chosen_state=0>
     class DedicatedObserver:public ::jacl::system::BaseSystem<typename __System::state_space_t>{

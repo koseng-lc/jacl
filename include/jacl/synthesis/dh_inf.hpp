@@ -39,46 +39,7 @@ private:
     auto checkAssumption1();
     auto checkAssumption2();
     auto checkAssumption3();
-    auto checkAllAssumption();
-
-    // template <typename _StateSpace>
-    // auto isInfNormLessThan(double _gam, const _StateSpace& _ss){
-    //     arma::mat C_t = arma::trans( _ss.C() );
-    //     arma::mat D_t = arma::trans( _ss.D() );
-    //     arma::mat D_tD = D_t * _ss.D();
-    //     arma::mat R = (_gam*_gam)*arma::eye(_StateSpace::n_inputs,
-    //                                         _StateSpace::n_inputs)
-    //                     - D_tD;
-    //     arma::mat R_inv = arma::inv(R);        
-
-    //     arma::mat temp1, temp2, temp3, temp4;
-
-    //     //-- block 1,1
-    //     temp1 = R_inv*D_t*_ss.C();
-    //     temp2 = _ss.A() + temp1;
-    //     temp3 = _ss.D()*R_inv*D_t;
-    //     temp4 = arma::eye(_StateSpace::n_outputs,
-    //                       _StateSpace::n_outputs)
-    //              - temp3;
-    //     //-- Sympletic matrix
-    //     arma::mat H = arma::join_cols(
-    //         arma::join_rows(temp2, _ss.B()*R_inv*arma::trans(_ss.B())),
-    //         arma::join_rows(-C_t*temp4*_ss.C(), -arma::trans(temp2))
-    //     );
-
-    //     arma::cx_mat eigvec;
-    //     arma::cx_vec eigval;
-    //     arma::eig_gen(eigval, eigvec, H);
-    //     arma::mat eigval_re = arma::real(eigval);
-    //     auto ok(true);
-    //     for(int i(0); i < eigval.n_rows; i++){
-    //         if(std::fabs(eigval_re(i, 0)) < std::numeric_limits<double>::epsilon()){
-    //             ~ok;
-    //             break;
-    //         }
-    //     }
-    //     return ok;
-    // }
+    auto checkAllAssumption();    
 
 private:
     typename _System::state_space_t* ss_;

@@ -1,6 +1,6 @@
 /**
 *   @author : koseng (Lintang)
-*   @brief : Simple implementation of Algebraic Ricatti Equations solver
+*   @brief : Simple implementation of continous algebraic Ricatti equations solver
 */
 
 #pragma once

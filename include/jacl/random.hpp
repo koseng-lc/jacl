@@ -1,3 +1,8 @@
+/**
+*   @author : koseng (Lintang)
+*   @brief : jacl random generator wrapper
+*/
+
 #pragma once
 
 #include <random>

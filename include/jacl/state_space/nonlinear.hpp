@@ -22,26 +22,25 @@ template<typename Scalar,
          std::size_t num_states,
          std::size_t num_inputs,
          std::size_t num_outputs,
-         class PhysicalParam = int,
-         class ...Rest>
+         typename PhysicalParam = int,
+         typename ...Rest>
 class NonLinear:public pattern::Subject{
 public:
-    typedef std::function<double(NonLinear)> Formula;
-    typedef std::vector<Formula> Formulas;
-
     using scalar_t = Scalar;
+    using formula_t = typename std::function<scalar_t(NonLinear)>;
+    using formulas_t = std::vector<formula_t>;
     //-- it's needed in BaseSystem
-    using state_matrix_t = typename arma::Mat<Scalar>::template fixed<num_states,num_states>;
-    using input_matrix_t = typename arma::Mat<Scalar>::template fixed<num_states,num_inputs>;
-    using output_matrix_t = typename arma::Mat<Scalar>::template fixed<num_outputs,num_states>;
-    using feedforward_matrix_t = typename arma::Mat<Scalar>::template fixed<num_outputs,num_inputs>;
+    using state_matrix_t = typename arma::Mat<scalar_t>::template fixed<num_states,num_states>;
+    using input_matrix_t = typename arma::Mat<scalar_t>::template fixed<num_states,num_inputs>;
+    using output_matrix_t = typename arma::Mat<scalar_t>::template fixed<num_outputs,num_states>;
+    using feedforward_matrix_t = typename arma::Mat<scalar_t>::template fixed<num_outputs,num_inputs>;
 
 public:
     template <typename _PhysicalParam = PhysicalParam,
               typename std::enable_if_t<
                   std::is_same<typename std::decay_t<_PhysicalParam>,
-                               PhysicalParameter>::value, int>* = nullptr>
-    NonLinear(_PhysicalParam* _param, Rest*... _rest)
+                               PhysicalParameter<scalar_t>>::value, int>* = nullptr>
+    explicit NonLinear(_PhysicalParam* _param, Rest*... _rest)
         : state_fn_(n_states + n_inputs)
         , output_fn_(n_outputs){
         push(_param, _rest...);
@@ -74,7 +73,7 @@ private:
     auto push(_PhysicalParam* _param)
         -> typename std::enable_if_t<
         std::is_same<typename std::decay_t<_PhysicalParam>,
-                 PhysicalParameter>::value, void>{
+                 PhysicalParameter<scalar_t>>::value, void>{
         params_.push_back(_param);
     }
 
@@ -82,16 +81,16 @@ private:
     auto push(_PhysicalParam* _param, PhysicalParamRest*... _rest)
         -> typename std::enable_if_t<
         std::is_same<typename std::decay_t<_PhysicalParam>,
-                 PhysicalParameter>::value, void>{
+                 PhysicalParameter<scalar_t>>::value, void>{
         push(_param);
         push(_rest...);
     }
 
-    auto param(int _index) const -> decltype(std::declval<PhysicalParameter>().perturbed) const&{
+    auto param(int _index) const -> decltype(std::declval<PhysicalParameter<scalar_t>>().perturbed) const&{
         return params_[_index]->perturbed;
     }
 
-    auto param(int _index) -> decltype(std::declval<PhysicalParameter>().perturbed)&{
+    auto param(int _index) -> decltype(std::declval<PhysicalParameter<scalar_t>>().perturbed)&{
         return params_[_index]->perturbed;
     } 
     
@@ -116,10 +115,10 @@ public:
     static constexpr auto n_outputs{ num_outputs };
 
 private:
-    Formulas state_fn_;
-    Formulas output_fn_;
+    formulas_t state_fn_;
+    formulas_t output_fn_;
     std::vector<double> sig_;
-    std::vector<PhysicalParameter* > params_;
+    std::vector<PhysicalParameter<scalar_t>* > params_;
     
 private:
     friend class ::jacl::state_space::detail::NonLinearStateSpaceClient<NonLinear>;

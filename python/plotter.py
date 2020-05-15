@@ -1,6 +1,6 @@
 '''
     author : koseng (Lintang)
-    brief : JACL Matplotlib.PyPlot Wrapper
+    brief : jacl Matplotlib.PyPlot Wrapper
 '''
 
 import time
@@ -62,7 +62,7 @@ class Plotter:
         signal.signal(signal.SIGINT, self.signalHandler)        
         self.sim_thread.start()
 
-    def pltCloseHandle(self, event):        
+    def pltCloseHandle(self, event):
         self.running.value = False
         print('Plotter {} closed.'.format(self.title))        
 

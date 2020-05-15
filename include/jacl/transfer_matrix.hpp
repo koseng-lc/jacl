@@ -1,6 +1,6 @@
 /**
 *   @author : koseng (Lintang)
-*   @brief : jacl Transfer Matrix module
+*   @brief : jacl transfer matrix module
 */
 
 #pragma once

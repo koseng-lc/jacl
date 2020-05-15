@@ -1,3 +1,8 @@
+/**
+*   @author : koseng (Lintang)
+*   @brief : jacl type traits
+*/
+
 #pragma once
 
 #include <type_traits>

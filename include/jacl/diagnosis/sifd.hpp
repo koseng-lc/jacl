@@ -22,9 +22,6 @@ public:
                     typename _System::scalar_t>::template fixed<_System::n_states-1>> _poles,
               std::string&& _plot_title = "",
               std::initializer_list<std::string> _plot_name = {}) override{
-        // std::cout << "SIFD POLES : " << _poles.size() << std::endl;
-        // assert(("[SIFD] Number of set poles didn't matches", _poles.size() == 1));
-        // static_assert(_poles.size() == 1, "[SIFD] Number of set poles didn't matches");
         std::vector<typename arma::Col<
                         typename _System::scalar_t>::template fixed<_System::n_states-1>> poles(_poles);
         IFD<_System>::template setPoleDOs<CHOSEN_STATE, decltype(this->dos_)>::set(&this->dos_, poles, typename IFD<_System>::sifd_tag());

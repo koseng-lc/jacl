@@ -1,6 +1,6 @@
 /**
 *   @author : koseng (Lintang)
-*   @brief : jacl Plotter
+*   @brief : jacl plotter
 */
 
 #pragma once

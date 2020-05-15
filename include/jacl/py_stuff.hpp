@@ -1,3 +1,8 @@
+/**
+*   @author : koseng (Lintang)
+*   @brief : Such a python embed handler
+*/
+
 #pragma once
 
 #include <mutex>

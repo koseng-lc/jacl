@@ -1,3 +1,8 @@
+/**
+*   @author : koseng (Lintang)
+*   @brief : Prevent circular dependencies
+*/
+
 #pragma once
 
 namespace jacl{

@@ -53,41 +53,41 @@ MainWindow::MainWindow(QWidget *parent)
     //-- DC Motor Open-Loop
     std::cout << "Preparing system ..." << std::endl;
     {
-        LinearStateSpace::Formula A11 = JC(ss_,.0); LinearStateSpace::Formula A12 = JC(ss_,1.0); LinearStateSpace::Formula A13 = JC(ss_,.0);
-        LinearStateSpace::Formula A21 = JC(ss_,.0); LinearStateSpace::Formula A22 = JE(ss_,-_p(iBm)/_p(iJm)); LinearStateSpace::Formula A23 = JE(ss_,_p(iKi)/_p(iJm));
-        LinearStateSpace::Formula A31 = JC(ss_,.0); LinearStateSpace::Formula A32 = JE(ss_,-_p(iKb)/_p(iLa)); LinearStateSpace::Formula A33 = JE(ss_,-_p(iRa)/_p(iLa));
+        LinearStateSpace::formula_t A11 = JC(ss_,.0); LinearStateSpace::formula_t A12 = JC(ss_,1.0); LinearStateSpace::formula_t A13 = JC(ss_,.0);
+        LinearStateSpace::formula_t A21 = JC(ss_,.0); LinearStateSpace::formula_t A22 = JE(ss_,-_p(iBm)/_p(iJm)); LinearStateSpace::formula_t A23 = JE(ss_,_p(iKi)/_p(iJm));
+        LinearStateSpace::formula_t A31 = JC(ss_,.0); LinearStateSpace::formula_t A32 = JE(ss_,-_p(iKb)/_p(iLa)); LinearStateSpace::formula_t A33 = JE(ss_,-_p(iRa)/_p(iLa));
 
-        LinearStateSpace::Formulas fA{
+        LinearStateSpace::formulas_t fA{
             A11,A12,A13,
             A21,A22,A23,
             A31,A32,A33
         };
 
-        LinearStateSpace::Formula B11 = JC(ss_, .0); LinearStateSpace::Formula B12 = JC(ss_, .0);
-        LinearStateSpace::Formula B21 = JC(ss_, .0); LinearStateSpace::Formula B22 = JE(ss_, -1.0/_p(iJm));
-        LinearStateSpace::Formula B31 = JE(ss_, 1.0/_p(iLa)); LinearStateSpace::Formula B32 = JC(ss_, .0);
+        LinearStateSpace::formula_t B11 = JC(ss_, .0); LinearStateSpace::formula_t B12 = JC(ss_, .0);
+        LinearStateSpace::formula_t B21 = JC(ss_, .0); LinearStateSpace::formula_t B22 = JE(ss_, -1.0/_p(iJm));
+        LinearStateSpace::formula_t B31 = JE(ss_, 1.0/_p(iLa)); LinearStateSpace::formula_t B32 = JC(ss_, .0);
 
-        LinearStateSpace::Formulas fB{
+        LinearStateSpace::formulas_t fB{
             B11, B12,
             B21, B22,
             B31, B32
         };
 
-        LinearStateSpace::Formula C11 = JC(ss_, 1.0); LinearStateSpace::Formula C12 = JC(ss_, .0); LinearStateSpace::Formula C13 = JC(ss_, .0);
-        LinearStateSpace::Formula C21 = JC(ss_, .0); LinearStateSpace::Formula C22 = JC(ss_, 1.0); LinearStateSpace::Formula C23 = JC(ss_, .0);
-        LinearStateSpace::Formula C31 = JC(ss_, .0); LinearStateSpace::Formula C32 = JC(ss_, .0); LinearStateSpace::Formula C33 = JC(ss_, 1.0);
+        LinearStateSpace::formula_t C11 = JC(ss_, 1.0); LinearStateSpace::formula_t C12 = JC(ss_, .0); LinearStateSpace::formula_t C13 = JC(ss_, .0);
+        LinearStateSpace::formula_t C21 = JC(ss_, .0); LinearStateSpace::formula_t C22 = JC(ss_, 1.0); LinearStateSpace::formula_t C23 = JC(ss_, .0);
+        LinearStateSpace::formula_t C31 = JC(ss_, .0); LinearStateSpace::formula_t C32 = JC(ss_, .0); LinearStateSpace::formula_t C33 = JC(ss_, 1.0);
 
-        LinearStateSpace::Formulas fC{
+        LinearStateSpace::formulas_t fC{
             C11, C12, C13,
             C21, C22, C23,
             C31, C32, C33
         };
 
-        LinearStateSpace::Formula D11 = JC(ss_, .0); LinearStateSpace::Formula D12 = JC(ss_, .0);
-        LinearStateSpace::Formula D21 = JC(ss_, .0); LinearStateSpace::Formula D22 = JC(ss_, .0);
-        LinearStateSpace::Formula D31 = JC(ss_, .0); LinearStateSpace::Formula D32 = JC(ss_, .0);
+        LinearStateSpace::formula_t D11 = JC(ss_, .0); LinearStateSpace::formula_t D12 = JC(ss_, .0);
+        LinearStateSpace::formula_t D21 = JC(ss_, .0); LinearStateSpace::formula_t D22 = JC(ss_, .0);
+        LinearStateSpace::formula_t D31 = JC(ss_, .0); LinearStateSpace::formula_t D32 = JC(ss_, .0);
 
-        LinearStateSpace::Formulas fD{
+        LinearStateSpace::formulas_t fD{
             D11, D12,
             D21, D22,
             D31, D32,
@@ -115,71 +115,71 @@ MainWindow::MainWindow(QWidget *parent)
 
     //-- G Realization
     {
-        GRealization::Formula A11, A12, A13;
+        GRealization::formula_t A11, A12, A13;
         A11 = JC(G_, .0); A12 = JC(G_, 1.0); A13 = JC(G_, .0);
-        GRealization::Formula A21, A22, A23;
+        GRealization::formula_t A21, A22, A23;
         A21 = JC(G_, .0); A22 = JE(G_, -_p(iBm)/_p(iJm)); A23 = JE(G_, _p(iKi)/_p(iJm));
-        GRealization::Formula A31, A32, A33;
+        GRealization::formula_t A31, A32, A33;
         A31 = JC(G_, .0); A32 = JE(G_, -_p(iKb)/_p(iLa)); A33 = JE(G_, -_p(iRa)/_p(iLa));
 
-        GRealization::Formula B11, B12, B13, B14, B15, B16, B17, B18;
+        GRealization::formula_t B11, B12, B13, B14, B15, B16, B17, B18;
         B11 = B12 = B13 = B14 = B15 = B16 = B17 = B18 = JC(G_, .0);
-        GRealization::Formula B21, B22, B23, B24, B25, B26, B27, B28;
+        GRealization::formula_t B21, B22, B23, B24, B25, B26, B27, B28;
         B21 = B22 = B23 = JE(G_, -1.0/_p(iJm)); B24 = B25 = B26 = B27 = JC(G_, .0); B28 = JE(G_, -1.0/_p(iJm));
-        GRealization::Formula B31, B32, B33, B34, B35, B36, B37, B38;
+        GRealization::formula_t B31, B32, B33, B34, B35, B36, B37, B38;
         B31 = B32 = B33 = JC(G_, .0); B34 = B35 = B36 = B37 = JE(G_, -1.0/_p(iLa)); B38 = JC(G_, .0);
 
-        GRealization::Formula C11, C12, C13;
+        GRealization::formula_t C11, C12, C13;
         C11 = JC(G_, .0); C12 = JC(G_, 1.0); C13 = JC(G_, .0);
-        GRealization::Formula C21, C22, C23;
+        GRealization::formula_t C21, C22, C23;
         C21 = JC(G_, .0); C22 = JE(G_, -_p(iBm)/_p(iJm)); C23 = JE(G_, _p(iKi)/_p(iJm));
-        GRealization::Formula C31, C32, C33;
+        GRealization::formula_t C31, C32, C33;
         C31 = JC(G_, .0); C32 = JC(G_, .0); C33 = JC(G_, 1.0);
-        GRealization::Formula C41, C42, C43;
+        GRealization::formula_t C41, C42, C43;
         C41 = JC(G_, .0); C42 = JE(G_, -_p(iKb)/_p(iLa)); C43 = JE(G_, -_p(iRa)/_p(iLa));
-        GRealization::Formula C51, C52, C53;
+        GRealization::formula_t C51, C52, C53;
         C51 = JC(G_, .0); C52 = JC(G_, 1.0); C53 = JC(G_, .0);
-        GRealization::Formula C61, C62, C63;
+        GRealization::formula_t C61, C62, C63;
         C61 = JC(G_, .0); C62 = JC(G_, .0); C63 = JC(G_, 1.0);
-        GRealization::Formula C71, C72, C73;
+        GRealization::formula_t C71, C72, C73;
         C71 = JC(G_, 1.0); C72 = JC(G_, .0); C73 = JC(G_, .0);
-        GRealization::Formula C81, C82, C83;
+        GRealization::formula_t C81, C82, C83;
         C81 = JC(G_, .0); C82 = JC(G_, 1.0); C83 = JC(G_, .0);
-        GRealization::Formula C91, C92, C93;
+        GRealization::formula_t C91, C92, C93;
         C91 = JC(G_, .0); C92 = JC(G_, .0); C93 = JC(G_, 1.0);
 
-        GRealization::Formula D11, D12, D13, D14, D15, D16, D17, D18;
+        GRealization::formula_t D11, D12, D13, D14, D15, D16, D17, D18;
         D11 = D12 = D13 = D14 = D15 = D16 = D17 = D18 = JC(G_, .0);
-        GRealization::Formula D21, D22, D23, D24, D25, D26, D27, D28;
+        GRealization::formula_t D21, D22, D23, D24, D25, D26, D27, D28;
         D21 = D22 = D23 = JE(G_, -1/_p(iJm)); D24 = D25 = D26 = JC(G_, .0); D27 = JE(G_, -1/_p(iJm)); D28 = JC(G_, .0);
-        GRealization::Formula D31, D32, D33, D34, D35, D36, D37, D38;
+        GRealization::formula_t D31, D32, D33, D34, D35, D36, D37, D38;
         D31 = D32 = D33 = D34 = D35 = D36 = D37 = D38 = JC(G_, .0);
-        GRealization::Formula D41, D42, D43, D44, D45, D46, D47, D48;
+        GRealization::formula_t D41, D42, D43, D44, D45, D46, D47, D48;
         D41 = D42 = D43 = JC(G_, .0); D44 = D45 = D46 = JE(G_, -1/_p(iLa)); D47 = JC(G_, .0); D48 = JE(G_, -1/_p(iLa));
-        GRealization::Formula D51, D52, D53, D54, D55, D56, D57, D58;
+        GRealization::formula_t D51, D52, D53, D54, D55, D56, D57, D58;
         D51 = D52 = D53 = D54 = D55 = D56 = D57 = D58 = JC(G_, .0);
-        GRealization::Formula D61, D62, D63, D64, D65, D66, D67, D68;
+        GRealization::formula_t D61, D62, D63, D64, D65, D66, D67, D68;
         D61 = D62 = D63 = D64 = D65 = D66 = D67 = D68 = JC(G_, .0);
-        GRealization::Formula D71, D72, D73, D74, D75, D76, D77, D78;
+        GRealization::formula_t D71, D72, D73, D74, D75, D76, D77, D78;
         D71 = D72 = D73 = D74 = D75 = D76 = D77 = D78 = JC(G_, .0);
-        GRealization::Formula D81, D82, D83, D84, D85, D86, D87, D88;
+        GRealization::formula_t D81, D82, D83, D84, D85, D86, D87, D88;
         D81 = D82 = D83 = D84 = D85 = D86 = D87 = D88 = JC(G_, .0);
-        GRealization::Formula D91, D92, D93, D94, D95, D96, D97, D98;
+        GRealization::formula_t D91, D92, D93, D94, D95, D96, D97, D98;
         D91 = D92 = D93 = D94 = D95 = D96 = D97 = D98 = JC(G_, .0);
 
-        GRealization::Formulas fA{
+        GRealization::formulas_t fA{
             A11, A12, A13,
             A21, A22, A23,
             A31, A32, A33
         };
 
-        GRealization::Formulas fB{
+        GRealization::formulas_t fB{
             B11, B12, B13, B14, B15, B16, B17, B18,
             B21, B22, B23, B24, B25, B26, B27, B28,
             B31, B32, B33, B34, B35, B36, B37, B38
         };
 
-        GRealization::Formulas fC{
+        GRealization::formulas_t fC{
             C11, C12, C13,
             C21, C22, C23,
             C31, C32, C33,
@@ -191,7 +191,7 @@ MainWindow::MainWindow(QWidget *parent)
             C91, C92, C93,
         };
 
-        GRealization::Formulas fD{
+        GRealization::formulas_t fD{
             D11, D12, D13, D14, D15, D16, D17, D18,
             D21, D22, D23, D24, D25, D26, D27, D28,
             D31, D32, D33, D34, D35, D36, D37, D38,
@@ -216,7 +216,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     //-- P-Delta Realization
     {
-        PRealization::Formulas fA{
+        PRealization::formulas_t fA{
             JC(P_, -1790), JC(P_, 945.2), JC(P_, -0.4491), JC(P_, 9.531), JC(P_, -0.6474), JC(P_, 0.02418), JC(P_, -4.527e-05), JC(P_, 4.543e-08), JC(P_, 8.589e-15),
             JC(P_, 2266), JC(P_, -1537), JC(P_, -0.5102), JC(P_, 10.96), JC(P_, -0.7445), JC(P_, 0.02781), JC(P_, -5.206e-05), JC(P_, 5.225e-08), JC(P_, -1.226e-14),
             JC(P_, -0.238), JC(P_, 0.313), JC(P_, -3136), JC(P_, 80.45), JC(P_, -5.465), JC(P_, 0.2041), JC(P_, -0.0003821), JC(P_, 3.835e-07), JC(P_, -3.118e-14),
@@ -228,7 +228,7 @@ MainWindow::MainWindow(QWidget *parent)
             JC(P_, 1.277e-14), JC(P_, -7.597e-15), JC(P_, -5.757e-16), JC(P_, -0.05278), JC(P_, -0.7943), JC(P_, -0.4598), JC(P_, -0.01586), JC(P_, -0.0002494), JC(P_, -187.4)
         };
 
-        PRealization::Formulas fB{
+        PRealization::formulas_t fB{
             JC(P_, 0.6773), JC(P_, -4.319e-18),
             JC(P_, -0.4418), JC(P_, 2.803e-18),
             JC(P_, 3.676), JC(P_, -1.545e-17),
@@ -240,13 +240,13 @@ MainWindow::MainWindow(QWidget *parent)
             JC(P_, -1.017e-15), JC(P_, -1.313)
         };
 
-        PRealization::Formulas fC{
+        PRealization::formulas_t fC{
             JC(P_, 0.0371), JC(P_, 0.03426), JC(P_, -7.107e-06), JC(P_, 0.05756), JC(P_, 0.8638), JC(P_, 0.5002), JC(P_, 0.01814), JC(P_, 0.002169), JC(P_, -0.004907),
             JC(P_, -2.435e-05), JC(P_, 1.049e-05), JC(P_, 0.6569), JC(P_, 0.03607), JC(P_, -0.0252), JC(P_, 0.02546), JC(P_, 0.3908), JC(P_, 0.8316), JC(P_, 0.3932),
             JC(P_, -0.5196), JC(P_, 0.3392), JC(P_, -2.416), JC(P_, 50.2), JC(P_, -3.427), JC(P_, 0.1587), JC(P_, -0.05068), JC(P_, 0.02228), JC(P_, -1.364e-15)
         };
 
-        PRealization::Formulas fD{
+        PRealization::formulas_t fD{
             JC(P_, .0), JC(P_, .0),
             JC(P_, .0), JC(P_, .0),
             JC(P_, .0), JC(P_, .0)
@@ -703,12 +703,7 @@ void MainWindow::setupActions(){
 }
 
 void MainWindow::perturbAct(){
-
-//    for(int idx(iBm); idx <= iRa; idx++)
-//        ss_.param(idx) = params_dsb_[idx]->value();
-
-//    &bm, &jm, &ki, &la, &kb, &ra
-    for(auto &pair:{std::pair<std::decay<jacl::PhysicalParameter>::type*, QDoubleSpinBox*>
+    for(auto &pair:{std::pair<std::decay<jacl::PhysicalParameter<>>::type*, QDoubleSpinBox*>
                         {&bm,params_dsb_[iBm]},
                         {&jm,params_dsb_[iJm]},
                         {&ki,params_dsb_[iKi]},
@@ -804,25 +799,25 @@ void MainWindow::makeFault(arma::vec* _out){
 void MainWindow::setupSIMODCMotor(){
     //-- SIMO DC motor open-loop
     {
-        SIMO::Formulas fA{
+        SIMO::formulas_t fA{
             JC(simo_,.0),JC(simo_,1.0),JC(simo_,.0),
             JC(simo_,.0),JE(simo_,-_p(iBm)/_p(iJm)),JE(simo_,_p(iKi)/_p(iJm)),
             JC(simo_,.0),JE(simo_,-_p(iKb)/_p(iLa)),JE(simo_,-_p(iRa)/_p(iLa))
         };
 
-        SIMO::Formulas fB{
+        SIMO::formulas_t fB{
             JC(simo_, .0),
             JC(simo_, .0),
             JE(simo_, 1.0/_p(iLa))
         };
 
-        SIMO::Formulas fC{
+        SIMO::formulas_t fC{
             JC(simo_, 1.0), JC(simo_, .0), JC(simo_, .0),
             JC(simo_, .0), JC(simo_, 1.0), JC(simo_, .0),
             JC(simo_, .0), JC(simo_, .0), JC(simo_, 1.0)
         };
 
-        SIMO::Formulas fD{
+        SIMO::formulas_t fD{
             JC(simo_, .0),
             JC(simo_, .0),
             JC(simo_, .0)
@@ -857,7 +852,7 @@ void MainWindow::setupSIMODCMotor(){
     dobserver_simo_plt_.setPlotName({"Est. Position", "Est. Velocity", "Est. Current"});
 
     {
-        MReal::Formulas fA{
+        MReal::formulas_t fA{
             //-- Row-1
             JC(m_real_, .0), JC(m_real_, 1.), JC(m_real_, .0), JC(m_real_, .0), JC(m_real_, .0), JC(m_real_, .0), JC(m_real_, .0), JC(m_real_, .0), JC(m_real_, .0),
             //-- Row-2
@@ -886,7 +881,7 @@ void MainWindow::setupSIMODCMotor(){
             JC(m_real_, .0), JC(m_real_, .0), JC(m_real_, 1.), JC(m_real_, .0), JC(m_real_, .0), JC(m_real_, .0), JC(m_real_, .0), JC(m_real_, .0), JC(m_real_, .0)
         };
 
-        MReal::Formulas fB{
+        MReal::formulas_t fB{
             JC(m_real_, .0),        
             JC(m_real_, .0),
             JE(m_real_, -1./_p(iLa)),
@@ -898,13 +893,13 @@ void MainWindow::setupSIMODCMotor(){
             JC(m_real_, .0)
         };
 
-        MReal::Formulas fC{
+        MReal::formulas_t fC{
             JC(m_real_, 1.), JC(m_real_, .0), JC(m_real_, .0), JC(m_real_, .0), JC(m_real_, .0), JC(m_real_, .0), JC(m_real_, .0), JC(m_real_, .0), JC(m_real_, .0)
             // JC(m_real_, .0), JC(m_real_, 1.), JC(m_real_, .0),
             // JC(m_real_, .0), JC(m_real_, .0), JC(m_real_, 1.)
         };
 
-        MReal::Formulas fD{
+        MReal::formulas_t fD{
             JC(m_real_, .0)
             // JC(m_real_, .0),
             // JC(m_real_, .0)
@@ -1048,7 +1043,7 @@ void MainWindow::setupPositionController(){
     siso_pos_.setC({1.,0.,0.});
     siso_pos_.setD(arma::colvec({0.}));
 
-    InterConnMatPos::Formulas fA = {
+    InterConnMatPos::formulas_t fA = {
         JC(icm_pos_, -1.444e+04), JC(icm_pos_, -7780), JC(icm_pos_, -2912), JC(icm_pos_, -841.9), JC(icm_pos_,-269), JC(icm_pos_, 0),
         JC(icm_pos_, 8192), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0),
         JC(icm_pos_, 0), JC(icm_pos_, 4096), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0),
@@ -1058,7 +1053,7 @@ void MainWindow::setupPositionController(){
     };
 
 
-    InterConnMatPos::Formulas fB = {
+    InterConnMatPos::formulas_t fB = {
         JC(icm_pos_, 64), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 64),
         JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0),
         JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0),
@@ -1067,13 +1062,13 @@ void MainWindow::setupPositionController(){
         JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0)
     };
 
-    InterConnMatPos::Formulas fC = {
+    InterConnMatPos::formulas_t fC = {
         JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 2.276e-06), JC(icm_pos_, 0.04105), JC(icm_pos_, 0.5249), JC(icm_pos_, 77.95),
         JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0),
         JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 2.276e-06), JC(icm_pos_, 0.04105), JC(icm_pos_, 0.5249), JC(icm_pos_, 77.95)
     };
 
-    InterConnMatPos::Formulas fD = {
+    InterConnMatPos::formulas_t fD = {
         JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 1), JC(icm_pos_, 0),
         JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 1),
         JC(icm_pos_, 0), JC(icm_pos_, -1), JC(icm_pos_, 1), JC(icm_pos_, 0)
@@ -1113,7 +1108,7 @@ void MainWindow::setupPositionController(){
 }
 
 void MainWindow::setupSpeedController(){
-    InterConnMatSpd::Formulas fA = {
+    InterConnMatSpd::formulas_t fA = {
         JC(icm_spd_, -1.444e+04), JC(icm_spd_, -7780), JC(icm_spd_, -2912), JC(icm_spd_, -841.9), JC(icm_spd_, -269),
         JC(icm_spd_, 8192), JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 0),
         JC(icm_spd_, 0), JC(icm_spd_, 4096), JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 0),
@@ -1121,7 +1116,7 @@ void MainWindow::setupSpeedController(){
         JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 256), JC(icm_spd_, 0)
     };
 
-    InterConnMatSpd::Formulas fB = {
+    InterConnMatSpd::formulas_t fB = {
         JC(icm_spd_, 128), JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 128),
         JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 0),
         JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 0),
@@ -1129,13 +1124,13 @@ void MainWindow::setupSpeedController(){
         JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 0)
     };
 
-    InterConnMatSpd::Formulas fC = {
+    InterConnMatSpd::formulas_t fC = {
         JC(icm_spd_, 0), JC(icm_spd_, 0.004661), JC(icm_spd_, 24.99), JC(icm_spd_, 80.17), JC(icm_spd_, 48.49),
         JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 0),
         JC(icm_spd_, 0), JC(icm_spd_, 0.004661), JC(icm_spd_, 24.99), JC(icm_spd_, 80.17), JC(icm_spd_, 48.49)
     };
 
-    InterConnMatSpd::Formulas fD = {
+    InterConnMatSpd::formulas_t fD = {
         JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 1), JC(icm_spd_, 0),
         JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 1),
         JC(icm_spd_, 0), JC(icm_spd_, -1), JC(icm_spd_, 1), JC(icm_spd_, 0)
@@ -1168,11 +1163,11 @@ void MainWindow::setupSpeedController(){
 
 void MainWindow::setupNLP(){
     {        
-        NLPendulum::Formulas state = {
+        NLPendulum::formulas_t state = {
             JE(nlp_, _p(ix2)),
             JE(nlp_, -1*(_p(ipg)/_p(ipl))*sin(_p(ix1)) - (_p(ipk)/_p(ipm))*_p(ix1)), 
         };
-        NLPendulum::Formulas output = {
+        NLPendulum::formulas_t output = {
             JE(nlp_, _p(ix1))
         };
     }

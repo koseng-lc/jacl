@@ -125,22 +125,22 @@ private:
         iRa  // Armature Resistance (Ohm)
     };
     //--
-    jacl::PhysicalParameter bm;
-    jacl::PhysicalParameter jm;
-    jacl::PhysicalParameter ki;
-    jacl::PhysicalParameter la;
-    jacl::PhysicalParameter kb;
-    jacl::PhysicalParameter ra;
+    jacl::PhysicalParameter<> bm;
+    jacl::PhysicalParameter<> jm;
+    jacl::PhysicalParameter<> ki;
+    jacl::PhysicalParameter<> la;
+    jacl::PhysicalParameter<> kb;
+    jacl::PhysicalParameter<> ra;
     arma::vec::fixed<6> weight_;
 
     using LinearStateSpace =
         jacl::state_space::Linear<double,3, 2, 3,
-                         jacl::PhysicalParameter,
-                         jacl::PhysicalParameter,
-                         jacl::PhysicalParameter,
-                         jacl::PhysicalParameter,
-                         jacl::PhysicalParameter,
-                         jacl::PhysicalParameter>;
+                         jacl::PhysicalParameter<>,
+                         jacl::PhysicalParameter<>,
+                         jacl::PhysicalParameter<>,
+                         jacl::PhysicalParameter<>,
+                         jacl::PhysicalParameter<>,
+                         jacl::PhysicalParameter<>>;
 
     LinearStateSpace ss_;
     jacl::system::Continuous<LinearStateSpace> csys_;
@@ -150,12 +150,12 @@ private:
 
     //-- Discrete SIMO DC motor
     using SIMO = jacl::state_space::Linear<double,3, 1, 3,
-                                    jacl::PhysicalParameter,
-                                    jacl::PhysicalParameter,
-                                    jacl::PhysicalParameter,
-                                    jacl::PhysicalParameter,
-                                    jacl::PhysicalParameter,
-                                    jacl::PhysicalParameter>;
+                                    jacl::PhysicalParameter<>,
+                                    jacl::PhysicalParameter<>,
+                                    jacl::PhysicalParameter<>,
+                                    jacl::PhysicalParameter<>,
+                                    jacl::PhysicalParameter<>,
+                                    jacl::PhysicalParameter<>>;
     SIMO simo_;
     jacl::state_space::Linear<double,3,1,3> dsimo_;
     jacl::system::Discrete<jacl::state_space::Linear<double,3,1,3>> dsys_simo_;
@@ -170,12 +170,12 @@ private:
     void setupSIMODCMotor();
     //-- Discrete H-infinity controller
     using MReal = jacl::state_space::Linear<double,9,1,1,
-                                         jacl::PhysicalParameter,
-                                         jacl::PhysicalParameter,
-                                         jacl::PhysicalParameter,
-                                         jacl::PhysicalParameter,
-                                         jacl::PhysicalParameter,
-                                         jacl::PhysicalParameter>;    
+                                         jacl::PhysicalParameter<>,
+                                         jacl::PhysicalParameter<>,
+                                         jacl::PhysicalParameter<>,
+                                         jacl::PhysicalParameter<>,
+                                         jacl::PhysicalParameter<>,
+                                         jacl::PhysicalParameter<>>;    
     using MICM = jacl::state_space::Linear<double,MReal::n_states, MReal::n_inputs+3, MReal::n_outputs+2>;
     using MSys = jacl::system::Discrete<MICM>;
     MReal m_real_;
@@ -197,12 +197,12 @@ private:
     //-- Another stuff
     using GRealization =
         jacl::state_space::Linear<double,3, 8, 9,
-                         jacl::PhysicalParameter,
-                         jacl::PhysicalParameter,
-                         jacl::PhysicalParameter,
-                         jacl::PhysicalParameter,
-                         jacl::PhysicalParameter,
-                         jacl::PhysicalParameter>;
+                         jacl::PhysicalParameter<>,
+                         jacl::PhysicalParameter<>,
+                         jacl::PhysicalParameter<>,
+                         jacl::PhysicalParameter<>,
+                         jacl::PhysicalParameter<>,
+                         jacl::PhysicalParameter<>>;
     GRealization G_;
     using PRealization = jacl::state_space::Linear<double,9, 2, 3>;
     PRealization P_;
@@ -245,15 +245,15 @@ private:
         ipk,
         ipm
     };
-    jacl::PhysicalParameter pg_;
-    jacl::PhysicalParameter pl_;
-    jacl::PhysicalParameter pk_;
-    jacl::PhysicalParameter pm_;
+    jacl::PhysicalParameter<> pg_;
+    jacl::PhysicalParameter<> pl_;
+    jacl::PhysicalParameter<> pk_;
+    jacl::PhysicalParameter<> pm_;
     using NLPendulum = jacl::state_space::NonLinear<double,2,1,1,
-                            jacl::PhysicalParameter,
-                            jacl::PhysicalParameter,
-                            jacl::PhysicalParameter,
-                            jacl::PhysicalParameter>;
+                            jacl::PhysicalParameter<>,
+                            jacl::PhysicalParameter<>,
+                            jacl::PhysicalParameter<>,
+                            jacl::PhysicalParameter<>>;
     NLPendulum nlp_;
     using NLPSys = jacl::system::Continuous<NLPendulum>;
     NLPSys nlp_sys_;

@@ -1,7 +1,7 @@
 /**
 *   @author : koseng (Lintang)
-*   @brief : JACL
-*   @details : JACL stands for Just Another Control Library
+*   @brief : jacl
+*   @details : jacl stands for Just Another Control Library
 */
 
 #pragma once

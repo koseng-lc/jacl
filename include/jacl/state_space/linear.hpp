@@ -21,31 +21,30 @@ template<typename Scalar,
          std::size_t num_states,
          std::size_t num_inputs,
          std::size_t num_outputs,
-         class PhysicalParam = int,
-         class ...Rest>
+         typename PhysicalParam = int,
+         typename ...Rest>
 class Linear:public pattern::Subject{
 public:
-    typedef std::function<double(Linear)> Formula;
-    typedef std::vector<Formula> Formulas;
-    
     using scalar_t = Scalar;
-    using state_matrix_t = typename arma::Mat<Scalar>::template fixed<num_states,num_states>;
-    using input_matrix_t = typename arma::Mat<Scalar>::template fixed<num_states,num_inputs>;
-    using output_matrix_t = typename arma::Mat<Scalar>::template fixed<num_outputs,num_states>;
-    using feedforward_matrix_t = typename arma::Mat<Scalar>::template fixed<num_outputs,num_inputs>;
+    using formula_t = typename std::function<scalar_t(Linear)>;
+    using formulas_t = std::vector<formula_t>;        
+    using state_matrix_t = typename arma::Mat<scalar_t>::template fixed<num_states,num_states>;
+    using input_matrix_t = typename arma::Mat<scalar_t>::template fixed<num_states,num_inputs>;
+    using output_matrix_t = typename arma::Mat<scalar_t>::template fixed<num_outputs,num_states>;
+    using feedforward_matrix_t = typename arma::Mat<scalar_t>::template fixed<num_outputs,num_inputs>;
 
 public:    
     template <typename _PhysicalParam = PhysicalParam,
               typename std::enable_if_t<
                   std::is_same<typename std::decay_t<_PhysicalParam>,
-                               PhysicalParameter>::value, int>* = nullptr>
-    Linear(_PhysicalParam* _param, Rest*... _rest){
+                               PhysicalParameter<scalar_t>>::value, int>* = nullptr>
+    explicit Linear(_PhysicalParam* _param, Rest*... _rest){
         push(_param, _rest...);
     }
     Linear(const state_matrix_t& _A,
-                     const input_matrix_t& _B,
-                     const output_matrix_t& _C,
-                     const feedforward_matrix_t& _D)
+           const input_matrix_t& _B,
+           const output_matrix_t& _C,
+           const feedforward_matrix_t& _D)
         : A_(_A)
         , B_(_B)
         , C_(_C)
@@ -68,7 +67,7 @@ public:
         All = 0b00001111,
     };
 
-    auto setA(const Formulas& f){
+    auto setA(const formulas_t& f){
         fA_.clear();
         fA_.insert(fA_.end(), f.begin(), f.end());
         formulaToMat(FormulaToMatMode::A);        
@@ -79,7 +78,7 @@ public:
         this->notify();
     }
 
-    auto setB(const Formulas& f){
+    auto setB(const formulas_t& f){
         fB_.clear();
         fB_.insert(fB_.end(), f.begin(), f.end());
         formulaToMat(FormulaToMatMode::B);
@@ -90,7 +89,7 @@ public:
         this->notify();
     }
 
-    auto setC(const Formulas& f){
+    auto setC(const formulas_t& f){
         fC_.clear();
         fC_.insert(fC_.end(), f.begin(), f.end());
         formulaToMat(FormulaToMatMode::C);
@@ -101,7 +100,7 @@ public:
         this->notify();
     }
 
-    auto setD(const Formulas& f){
+    auto setD(const formulas_t& f){
         fD_.clear();
         fD_.insert(fD_.end(), f.begin(), f.end());
         formulaToMat(FormulaToMatMode::D);
@@ -119,24 +118,26 @@ protected:
     auto push(_PhysicalParam* _param)
     -> typename std::enable_if_t<
     std::is_same<typename std::decay_t<_PhysicalParam>,
-                 PhysicalParameter>::value, void>{
+                 PhysicalParameter<scalar_t>>::value, void>{
         params_.push_back(_param);
     }
 
-    template <typename _PhysicalParam = PhysicalParam, class ...PhysicalParamRest>
+    template <typename _PhysicalParam = PhysicalParam, typename ...PhysicalParamRest>
     auto push(_PhysicalParam* _param, PhysicalParamRest*... _rest)
     -> typename std::enable_if_t<
     std::is_same<typename std::decay_t<_PhysicalParam>,
-                 PhysicalParameter>::value, void>{
+                 PhysicalParameter<scalar_t>>::value, void>{
         push(_param);
         push(_rest...);
     }
 
-    auto param(int _index) const -> decltype(std::declval<PhysicalParameter>().perturbed) const&{
+    auto param(int _index) const
+        -> decltype(std::declval<PhysicalParameter<scalar_t>>().perturbed) const&{
         return params_[_index]->perturbed;
     }
 
-    auto param(int _index) -> decltype(std::declval<PhysicalParameter>().perturbed)&{
+    auto param(int _index)
+        -> decltype(std::declval<PhysicalParameter<scalar_t>>().perturbed)&{
         return params_[_index]->perturbed;
     }
 
@@ -159,26 +160,17 @@ public:
     static constexpr auto n_outputs{ num_outputs };
 
 protected:
-    Formulas fA_;
-    Formulas fB_;
-    Formulas fC_;
-    Formulas fD_;
+    formulas_t fA_;
+    formulas_t fB_;
+    formulas_t fC_;
+    formulas_t fD_;
 
-    std::vector<PhysicalParameter* > params_;
+    std::vector<PhysicalParameter<scalar_t>* > params_;
 
     state_matrix_t A_;
     input_matrix_t B_;
     output_matrix_t C_;
     feedforward_matrix_t D_;
-
-private:
-    class ReturnGuard{
-    public:
-        ReturnGuard(Linear* _ss):ss_(_ss){}
-        ~ReturnGuard(){ ss_->formulaToMat(); ss_ = nullptr;}
-    private:
-        Linear* ss_;
-    };
 
 };
 
@@ -186,8 +178,8 @@ template<typename Scalar,
          std::size_t num_states,
          std::size_t num_inputs,
          std::size_t num_outputs,
-         class PhysicalParam,
-         class ...Rest>
+         typename PhysicalParam,
+         typename ...Rest>
 auto Linear<Scalar,
                       num_states,
                       num_inputs,

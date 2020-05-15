@@ -1,3 +1,7 @@
+/**
+*   @author : koseng (Lintang)
+*   @brief : Observer design pattern
+*/
 #pragma once
 
 #include <vector>

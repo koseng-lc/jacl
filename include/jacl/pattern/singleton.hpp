@@ -1,3 +1,8 @@
+/**
+*   @author : koseng (Lintang)
+*   @brief : Singleton design pattern
+*/
+
 #pragma once
 
 #include <boost/thread.hpp>

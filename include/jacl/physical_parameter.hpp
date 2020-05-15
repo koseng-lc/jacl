@@ -1,22 +1,25 @@
 /**
 *   @author : koseng (Lintang)
-*   @brief : jacl Physical Parameter abstract
+*   @brief : jacl physical parameter abstract
 */
 
 #pragma once
 
 namespace jacl{
 
+template <typename Scalar=double>
 class PhysicalParameter{
 public:
-    PhysicalParameter(double _nominal)
+    using scalar_t = Scalar;
+
+    PhysicalParameter(Scalar _nominal)
         : nominal(_nominal)
         , perturbed(nominal){}
 
     ~PhysicalParameter(){}
 
-    double nominal;
-    double perturbed;
+    Scalar nominal;
+    Scalar perturbed;
 };
 
 }

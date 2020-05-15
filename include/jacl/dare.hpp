@@ -1,6 +1,6 @@
 /**
 *   @author : koseng (Lintang)
-*   @brief : Simple implementation of discrete Algebraic Riccati Equations solver
+*   @brief : Simple implementation of discrete algebraic Riccati equations solver
 */
 
 #pragma once
