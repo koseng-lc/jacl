@@ -6,10 +6,20 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
-MainWindow::MainWindow(QWidget *parent)
+MainWindow::MainWindow(double _bias,
+                       double _scale,
+                       double _dead_zone,
+                       double _gamma_pos,
+                       double _gamma_spd,
+                       QWidget *parent)
     : QMainWindow(parent)
+    , bias_(_bias), scale_(_scale), dead_zone_(_dead_zone)
+    , gamma_pos_(_gamma_pos), gamma_spd_(_gamma_spd)
     , ui(new Ui::MainWindow)
     //-- DC motor parameters - Maxon 2322.983-11.225-200
+    //-- Max speed : 994.8376724999999 rad/s (9500 rpm)
+    //-- Nominal voltage : 24 V
+    //-- No load speed : 881.7403371 (8420 rpm)
     , bm(0.0436e-3), jm(5.71e-7), ki(30.7e-3), la(1.97e-3), kb(30.7e-3), ra(21.6)
     , weight_({0.1, 0.1, 0.1, 0.1, 0.1, 0.1})
     //-- MIMO DC motor
@@ -20,19 +30,22 @@ MainWindow::MainWindow(QWidget *parent)
     , cobserver_plt_(&cobserver_, {1,2,3,6,7,8})
     //-- SIMO DC motor
     , simo_(&bm, &jm, &ki, &la, &kb, &ra)
-    , dsys_simo_(&dsimo_)
-    , dobserver_simo_(&dsimo_, arma::zeros<arma::mat>(3,3))
+    , dsys_simo_(&dsimo_, SAMPLING_PERIOD)
+    , dobserver_simo_(&dsimo_, arma::zeros<arma::mat>(3,3), SAMPLING_PERIOD)
     , dsys_simo_plt_(&dsys_simo_, {1,2,3,4}, SAMPLING_PERIOD)
     , dobserver_simo_plt_(&dobserver_simo_, {1,2,3}, SAMPLING_PERIOD)
     , ifd_(&dsys_simo_, {10.,9.,8.})
     , sifd_(&dsys_simo_, {10., .05, .07})
     , m_real_(&bm,&jm,&ki,&la,&kb,&ra)
     , m_sys_(&m_icm_, SAMPLING_PERIOD)
+    //-- discrete position controller
     , pos_sys_(&pos_icm_, SAMPLING_PERIOD)
     , pos_dctrl_sys_(&pos_dctrl_, SAMPLING_PERIOD)
     , pos_dctrl_plt_(&pos_dctrl_sys_, {4,5}, SAMPLING_PERIOD)
-    //--
-    , G_(&bm, &jm, &ki, &la, &kb, &ra)
+    //-- discrete speed controller
+    , spd_sys_(&spd_icm_, SAMPLING_PERIOD)
+    , spd_dctrl_sys_(&spd_dctrl_, SAMPLING_PERIOD)
+    , spd_dctrl_plt_(&spd_dctrl_sys_, {4,5}, SAMPLING_PERIOD)
     , ref_(3, 1, arma::fill::zeros)
     , cl_status_(true)
     , posctrl_sys_(&k_pos_)
@@ -113,206 +126,12 @@ MainWindow::MainWindow(QWidget *parent)
     jacl::pole_placement::KautskyNichols(&ss_, cpoles, &observer_K, jacl::pole_placement::PolePlacementType::Observer);
     cobserver_.setGain(observer_K.t());
 
-    //-- G Realization
-    {
-        GRealization::formula_t A11, A12, A13;
-        A11 = JC(G_, .0); A12 = JC(G_, 1.0); A13 = JC(G_, .0);
-        GRealization::formula_t A21, A22, A23;
-        A21 = JC(G_, .0); A22 = JE(G_, -_p(iBm)/_p(iJm)); A23 = JE(G_, _p(iKi)/_p(iJm));
-        GRealization::formula_t A31, A32, A33;
-        A31 = JC(G_, .0); A32 = JE(G_, -_p(iKb)/_p(iLa)); A33 = JE(G_, -_p(iRa)/_p(iLa));
-
-        GRealization::formula_t B11, B12, B13, B14, B15, B16, B17, B18;
-        B11 = B12 = B13 = B14 = B15 = B16 = B17 = B18 = JC(G_, .0);
-        GRealization::formula_t B21, B22, B23, B24, B25, B26, B27, B28;
-        B21 = B22 = B23 = JE(G_, -1.0/_p(iJm)); B24 = B25 = B26 = B27 = JC(G_, .0); B28 = JE(G_, -1.0/_p(iJm));
-        GRealization::formula_t B31, B32, B33, B34, B35, B36, B37, B38;
-        B31 = B32 = B33 = JC(G_, .0); B34 = B35 = B36 = B37 = JE(G_, -1.0/_p(iLa)); B38 = JC(G_, .0);
-
-        GRealization::formula_t C11, C12, C13;
-        C11 = JC(G_, .0); C12 = JC(G_, 1.0); C13 = JC(G_, .0);
-        GRealization::formula_t C21, C22, C23;
-        C21 = JC(G_, .0); C22 = JE(G_, -_p(iBm)/_p(iJm)); C23 = JE(G_, _p(iKi)/_p(iJm));
-        GRealization::formula_t C31, C32, C33;
-        C31 = JC(G_, .0); C32 = JC(G_, .0); C33 = JC(G_, 1.0);
-        GRealization::formula_t C41, C42, C43;
-        C41 = JC(G_, .0); C42 = JE(G_, -_p(iKb)/_p(iLa)); C43 = JE(G_, -_p(iRa)/_p(iLa));
-        GRealization::formula_t C51, C52, C53;
-        C51 = JC(G_, .0); C52 = JC(G_, 1.0); C53 = JC(G_, .0);
-        GRealization::formula_t C61, C62, C63;
-        C61 = JC(G_, .0); C62 = JC(G_, .0); C63 = JC(G_, 1.0);
-        GRealization::formula_t C71, C72, C73;
-        C71 = JC(G_, 1.0); C72 = JC(G_, .0); C73 = JC(G_, .0);
-        GRealization::formula_t C81, C82, C83;
-        C81 = JC(G_, .0); C82 = JC(G_, 1.0); C83 = JC(G_, .0);
-        GRealization::formula_t C91, C92, C93;
-        C91 = JC(G_, .0); C92 = JC(G_, .0); C93 = JC(G_, 1.0);
-
-        GRealization::formula_t D11, D12, D13, D14, D15, D16, D17, D18;
-        D11 = D12 = D13 = D14 = D15 = D16 = D17 = D18 = JC(G_, .0);
-        GRealization::formula_t D21, D22, D23, D24, D25, D26, D27, D28;
-        D21 = D22 = D23 = JE(G_, -1/_p(iJm)); D24 = D25 = D26 = JC(G_, .0); D27 = JE(G_, -1/_p(iJm)); D28 = JC(G_, .0);
-        GRealization::formula_t D31, D32, D33, D34, D35, D36, D37, D38;
-        D31 = D32 = D33 = D34 = D35 = D36 = D37 = D38 = JC(G_, .0);
-        GRealization::formula_t D41, D42, D43, D44, D45, D46, D47, D48;
-        D41 = D42 = D43 = JC(G_, .0); D44 = D45 = D46 = JE(G_, -1/_p(iLa)); D47 = JC(G_, .0); D48 = JE(G_, -1/_p(iLa));
-        GRealization::formula_t D51, D52, D53, D54, D55, D56, D57, D58;
-        D51 = D52 = D53 = D54 = D55 = D56 = D57 = D58 = JC(G_, .0);
-        GRealization::formula_t D61, D62, D63, D64, D65, D66, D67, D68;
-        D61 = D62 = D63 = D64 = D65 = D66 = D67 = D68 = JC(G_, .0);
-        GRealization::formula_t D71, D72, D73, D74, D75, D76, D77, D78;
-        D71 = D72 = D73 = D74 = D75 = D76 = D77 = D78 = JC(G_, .0);
-        GRealization::formula_t D81, D82, D83, D84, D85, D86, D87, D88;
-        D81 = D82 = D83 = D84 = D85 = D86 = D87 = D88 = JC(G_, .0);
-        GRealization::formula_t D91, D92, D93, D94, D95, D96, D97, D98;
-        D91 = D92 = D93 = D94 = D95 = D96 = D97 = D98 = JC(G_, .0);
-
-        GRealization::formulas_t fA{
-            A11, A12, A13,
-            A21, A22, A23,
-            A31, A32, A33
-        };
-
-        GRealization::formulas_t fB{
-            B11, B12, B13, B14, B15, B16, B17, B18,
-            B21, B22, B23, B24, B25, B26, B27, B28,
-            B31, B32, B33, B34, B35, B36, B37, B38
-        };
-
-        GRealization::formulas_t fC{
-            C11, C12, C13,
-            C21, C22, C23,
-            C31, C32, C33,
-            C41, C42, C43,
-            C51, C52, C53,
-            C61, C62, C63,
-            C71, C72, C73,
-            C81, C82, C83,
-            C91, C92, C93,
-        };
-
-        GRealization::formulas_t fD{
-            D11, D12, D13, D14, D15, D16, D17, D18,
-            D21, D22, D23, D24, D25, D26, D27, D28,
-            D31, D32, D33, D34, D35, D36, D37, D38,
-            D41, D42, D43, D44, D45, D46, D47, D48,
-            D51, D52, D53, D54, D55, D56, D57, D58,
-            D61, D62, D63, D64, D65, D66, D67, D68,
-            D71, D72, D73, D74, D75, D76, D77, D78,
-            D81, D82, D83, D84, D85, D86, D87, D88,
-            D91, D92, D93, D94, D95, D96, D97, D98,
-        };
-
-        G_.setA(fA); // use A from Plant
-        G_.setB(fB);
-        G_.setC(fC);
-        G_.setD(fD);
-    }
-
-//    G_.A().print("\nGA : ");
-//    G_.B().print("GB : ");
-//    G_.C().print("GC : ");
-//    G_.D().print("GD : ");
-
-    //-- P-Delta Realization
-    {
-        PRealization::formulas_t fA{
-            JC(P_, -1790), JC(P_, 945.2), JC(P_, -0.4491), JC(P_, 9.531), JC(P_, -0.6474), JC(P_, 0.02418), JC(P_, -4.527e-05), JC(P_, 4.543e-08), JC(P_, 8.589e-15),
-            JC(P_, 2266), JC(P_, -1537), JC(P_, -0.5102), JC(P_, 10.96), JC(P_, -0.7445), JC(P_, 0.02781), JC(P_, -5.206e-05), JC(P_, 5.225e-08), JC(P_, -1.226e-14),
-            JC(P_, -0.238), JC(P_, 0.313), JC(P_, -3136), JC(P_, 80.45), JC(P_, -5.465), JC(P_, 0.2041), JC(P_, -0.0003821), JC(P_, 3.835e-07), JC(P_, -3.118e-14),
-            JC(P_, -1.281), JC(P_, -1.065), JC(P_, 0.4703), JC(P_, -3128), JC(P_, 207.8), JC(P_, 0.009844), JC(P_, -1.843e-05), JC(P_, 1.85e-08), JC(P_, -5.121e-14),
-            JC(P_, 0.08699), JC(P_, 0.07231), JC(P_, -0.03195), JC(P_, 207.8), JC(P_, -77.96), JC(P_, 110.8), JC(P_, 1.252e-06), JC(P_, -1.256e-09), JC(P_, -1.43e-14),
-            JC(P_, -0.003249), JC(P_, -0.002701), JC(P_, 0.001193), JC(P_, -0.4271), JC(P_, 104.3), JC(P_, -180.3), JC(P_, 5.586), JC(P_, 4.693e-11), JC(P_, -1.897e-14),
-            JC(P_, 6.083e-06), JC(P_, 5.057e-06), JC(P_, -2.234e-06), JC(P_, 13.67), JC(P_, 189), JC(P_, -322.2), JC(P_, -161.8), JC(P_, 2.968), JC(P_, -7.243e-14),
-            JC(P_, -6.105e-09), JC(P_, -5.075e-09), JC(P_, 2.242e-09), JC(P_, -6.387), JC(P_, -88.26), JC(P_, 154.4), JC(P_, -12.19), JC(P_, -188.8), JC(P_, 3.215e-15),
-            JC(P_, 1.277e-14), JC(P_, -7.597e-15), JC(P_, -5.757e-16), JC(P_, -0.05278), JC(P_, -0.7943), JC(P_, -0.4598), JC(P_, -0.01586), JC(P_, -0.0002494), JC(P_, -187.4)
-        };
-
-        PRealization::formulas_t fB{
-            JC(P_, 0.6773), JC(P_, -4.319e-18),
-            JC(P_, -0.4418), JC(P_, 2.803e-18),
-            JC(P_, 3.676), JC(P_, -1.545e-17),
-            JC(P_, -63.75), JC(P_, -0.001311),
-            JC(P_, 4.33), JC(P_, -0.01824),
-            JC(P_, -0.1617), JC(P_, 0.02794),
-            JC(P_, 0.0003028), JC(P_, -0.1938),
-            JC(P_, -3.039e-07), JC(P_, -0.4921),
-            JC(P_, -1.017e-15), JC(P_, -1.313)
-        };
-
-        PRealization::formulas_t fC{
-            JC(P_, 0.0371), JC(P_, 0.03426), JC(P_, -7.107e-06), JC(P_, 0.05756), JC(P_, 0.8638), JC(P_, 0.5002), JC(P_, 0.01814), JC(P_, 0.002169), JC(P_, -0.004907),
-            JC(P_, -2.435e-05), JC(P_, 1.049e-05), JC(P_, 0.6569), JC(P_, 0.03607), JC(P_, -0.0252), JC(P_, 0.02546), JC(P_, 0.3908), JC(P_, 0.8316), JC(P_, 0.3932),
-            JC(P_, -0.5196), JC(P_, 0.3392), JC(P_, -2.416), JC(P_, 50.2), JC(P_, -3.427), JC(P_, 0.1587), JC(P_, -0.05068), JC(P_, 0.02228), JC(P_, -1.364e-15)
-        };
-
-        PRealization::formulas_t fD{
-            JC(P_, .0), JC(P_, .0),
-            JC(P_, .0), JC(P_, .0),
-            JC(P_, .0), JC(P_, .0)
-        };
-
-        P_.setA(fA);
-        P_.setB(fB);
-        P_.setC(fC);
-        P_.setD(fD);
-    }
-
-    //-- Realization of Inter-connection Matrix    
-    {
-        arma::mat temp1, temp2, temp3;
-        arma::mat zeros9x3(9,3,arma::fill::zeros);
-        arma::mat zeros2x9(2,9,arma::fill::zeros);
-        arma::mat zeros3x3(3,3,arma::fill::zeros);
-        arma::mat zeros3x2(3,2,arma::fill::zeros);
-        arma::mat zeros2x3(2,3,arma::fill::zeros);
-        arma::mat zeros2x2(2,2,arma::fill::zeros);
-        arma::mat eye3x3(3,3,arma::fill::eye);
-        arma::mat eye2x2(2,2,arma::fill::eye);
-
-        temp1 = arma::join_horiz(zeros9x3, P_.B());
-        temp2 = arma::join_horiz(zeros9x3, temp1);
-        arma::mat B = arma::join_horiz(P_.B(), temp2);
-
-        temp1 = arma::join_vert(zeros2x9, -1.*P_.C());
-        arma::mat C = arma::join_vert(-1.*P_.C(), temp1);
-
-        temp1 = arma::join_horiz(zeros3x3, eye3x3);
-        temp2 = arma::join_horiz(zeros3x2, temp1);
-        temp3 = arma::join_horiz(zeros2x2, arma::join_horiz(zeros2x3, zeros2x3));
-        arma::mat D11 = arma::join_vert(temp2, temp3);
-
-        arma::mat D12 = arma::join_vert(zeros3x2, eye2x2);
-
-        temp1 = arma::join_horiz(-1.*eye3x3,eye3x3);
-        arma::mat D21 = arma::join_horiz(zeros3x2,temp1);
-        
-        arma::mat D22 = zeros3x2;
-
-        temp1 = arma::join_horiz(D11, D12);
-        temp2 = arma::join_horiz(D21, D22);
-        arma::mat D = arma::join_vert(temp1, temp2);
-
-        ICM_.setA(P_.A());
-        ICM_.setB(B);
-        ICM_.setC(C);
-        ICM_.setD(D);
-
-    }    
-
-//    ICM_.A().print("ICM A : ");
-//    ICM_.B().print("ICM B : ");
-//    ICM_.C().print("ICM C : ");
-//    ICM_.D().print("ICM D : ");
-
-    // hinf_ = new HInf(&ICM_, 1.6204);
-    // jacl::lti_common::StateSpacePack K( hinf_->solve() );
-
     setupSIMODCMotor();
+    setupDiscreteController();
     setupPositionController();
     setupSpeedController();    
 
-    //-- Simulator
+    //-- plotter
     csys_plt_.init();
     csys_plt_.setTitle("DC Motor");
     csys_plt_.setDelay() = SAMPLING_PERIOD;
@@ -369,10 +188,10 @@ MainWindow::MainWindow(QWidget *parent)
             // out(1) += noise(1);
             // out(2) += noise(2);
 
-            out(control_mode_) += .0;
-            if(std::fabs(out(control_mode_)) < .0)
+            out(control_mode_) += bias_;
+            if(std::fabs(out(control_mode_)) < dead_zone_)
                 out(control_mode_) = .0;
-            out(control_mode_) *= 1.2;
+            out(control_mode_) *= scale_;
 
             SIFD::diag_pack_t diag_pack = sifd_.detect(din_, out);            
             resp_err1[i] = std::get<1>(diag_pack[0])(0);            
@@ -419,11 +238,8 @@ MainWindow::~MainWindow(){
 void MainWindow::setupWidgets(){
 
     //-- Params
-
     params_gb_ = new QGroupBox;
-
     params_gl_ = new QGridLayout;
-
     params_label_[iBm] = new QLabel;
     params_label_[iBm]->setText(tr("Viscous Friction : "));
     params_dsb_[iBm] = new QDoubleSpinBox;
@@ -739,6 +555,7 @@ void MainWindow::simulateAct(){
     //-- Discrete
     dsys_simo_plt_.start();
     pos_dctrl_plt_.start();
+    // spd_dctrl_plt_.start();
     // dobserver_simo_plt_.start();
     sifd_.viewSignals();
 }
@@ -944,8 +761,12 @@ void MainWindow::setupSIMODCMotor(){
         m_icm_.setB(B);
         m_icm_.setC(C);
         m_icm_.setD(D);
-    }
+    }    
+}
 
+void MainWindow::setupDiscreteController(){
+
+    //-- position controller
     {
         pos_real_.setA(dsimo_.A());
         pos_real_.setB(dsimo_.B());
@@ -985,51 +806,147 @@ void MainWindow::setupSIMODCMotor(){
         pos_icm_.setB(B);
         pos_icm_.setC(C);
         pos_icm_.setD(D);
-    }
-    pos_icm_.A().print("Aicm : ");
-    pos_icm_.B().print("Bicm : ");
-    pos_icm_.C().print("Cicm : ");
-    pos_icm_.D().print("Dicm : ");
-    pos_dhinf_ = new PosDHinf(&pos_sys_, 1.7);
-    auto K( pos_dhinf_->solve() );
-    pos_dctrl_.setA(std::get<0>(K)); pos_dctrl_.setB(std::get<1>(K));
-    pos_dctrl_.setC(std::get<2>(K)); pos_dctrl_.setD(std::get<3>(K));
 
-    //-- Closed-loop
-    jacl::state_space::Linear<double, 6,1,1> cl_ss;
-    jacl::system::Discrete<jacl::state_space::Linear<double, 6,1,1>> cl_sys(&cl_ss);
+        pos_icm_.A().print("[Pos] A_icm : ");
+        pos_icm_.B().print("[Pos] B_icm : ");
+        pos_icm_.C().print("[Pos] C_icm : ");
+        pos_icm_.D().print("[Pos] D_icm : ");
+        pos_dhinf_ = new PosDHinf(&pos_sys_, gamma_pos_, {.0,.0,.00001}, {.0,.0,.00001});
+        auto K( pos_dhinf_->solve() );
+        pos_dctrl_.setA(std::get<0>(K)); pos_dctrl_.setB(std::get<1>(K));
+        pos_dctrl_.setC(std::get<2>(K)); pos_dctrl_.setD(std::get<3>(K));
+
+        //-- closed-loop
+        jacl::state_space::Linear<double, 6,1,1> cl_ss;
+        jacl::system::Discrete<jacl::state_space::Linear<double, 6,1,1>> cl_sys(&cl_ss, SAMPLING_PERIOD);
+        {
+            arma::mat temp1;
+
+            temp1 = pos_real_.B()*pos_dctrl_.D()*pos_real_.C();
+            arma::mat A = arma::join_cols(
+                arma::join_rows(pos_real_.A() - temp1, pos_real_.B()*pos_dctrl_.C()),
+                arma::join_rows(-pos_dctrl_.B()*pos_real_.C(), pos_dctrl_.A())
+            );
+            
+            arma::mat B = arma::join_cols(
+                pos_real_.B()*pos_dctrl_.D(),
+                pos_dctrl_.B()
+            );
+
+            cl_ss.setA(A);
+            cl_ss.setB(B);
+            cl_ss.setC(arma::join_rows(pos_real_.C(), arma::zeros(1,3)));
+            cl_ss.setD(pos_real_.D());
+        }
+        cl_ss.A().print("[Pos] A_cl : ");
+        cl_ss.B().print("[Pos] B_cl : ");
+        cl_ss.C().print("[Pos] C_cl : ");
+        cl_ss.D().print("[Pos] D_cl : ");
+        jacl::analysis::transient_data_t transient_data =
+            jacl::analysis::transient<jacl::system::Discrete<jacl::state_space::Linear<double, 6,1,1>>,1000>(cl_sys, {1.0},
+                "Transient Response - Position");
+        std::cout << "[Pos] Rise time : " << jacl::analysis::getRiseTime(transient_data) << std::endl;
+        std::cout << "[Pos] Peak time : " << jacl::analysis::getPeakTime(transient_data) << std::endl;
+        std::cout << "[Pos] Overshoot : " << jacl::analysis::getOvershoot(transient_data) << std::endl;
+        std::cout << "[Pos] Settling time : " << jacl::analysis::getSettlingTime(transient_data) << std::endl;
+
+        pos_dctrl_plt_.init();
+        pos_dctrl_plt_.setTitle("Discrete Position Controller");
+        pos_dctrl_plt_.setPlotName({"Error","Input"});
+    }
+
+    //-- speed controller
     {
-        arma::mat temp1, temp2;
+        spd_real_.setA(dsimo_.A());
+        spd_real_.setB(dsimo_.B());
+        spd_real_.setC({0.,1.,0.});
+        spd_real_.setD(arma::zeros(1,1));
 
-        temp1 = pos_real_.B()*pos_dctrl_.D()*pos_real_.C();
-        arma::mat A = arma::join_cols(
-            arma::join_rows(pos_real_.A() - temp1, pos_real_.B()*pos_dctrl_.C()),
-            arma::join_rows(-pos_dctrl_.B()*pos_real_.C(), pos_dctrl_.A())
-        );
+        arma::mat temp1, temp2, temp3;
+        arma::mat zeros3x1(3,1,arma::fill::zeros);
+        arma::mat zeros1x3(1,3,arma::fill::zeros);
+        arma::mat zeros1x1(1,1,arma::fill::zeros);
+        arma::mat eye1x1(1,1,arma::fill::eye);
+
+        temp1 = arma::join_horiz(zeros3x1, spd_real_.B());
+        temp2 = arma::join_horiz(zeros3x1, temp1);
+        arma::mat B = arma::join_horiz(spd_real_.B(), temp2);
+
+        temp1 = arma::join_vert(zeros1x3, -spd_real_.C());
+        arma::mat C = arma::join_vert(-spd_real_.C(), temp1);
+
+        temp1 = arma::join_horiz(zeros1x1, eye1x1);
+        temp2 = arma::join_horiz(zeros1x1, temp1);
+        temp3 = arma::join_horiz(zeros1x1, arma::join_horiz(zeros1x1, zeros1x1));
+        arma::mat D11 = arma::join_vert(temp2, temp3);
+
+        arma::mat D12 = arma::join_vert(zeros1x1, eye1x1);
+
+        temp1 = arma::join_horiz(-eye1x1,eye1x1);
+        arma::mat D21 = arma::join_horiz(zeros1x1,temp1);
         
-        arma::mat B = arma::join_cols(
-            pos_real_.B()*pos_dctrl_.D(),
-            pos_dctrl_.B()
-        );
+        arma::mat D22 = zeros1x1;
 
-        cl_ss.setA(A);
-        cl_ss.setB(B);
-        cl_ss.setC(arma::join_rows(pos_real_.C(), arma::zeros(1,3)));
-        cl_ss.setD(pos_real_.D());
+        temp1 = arma::join_horiz(D11, D12);
+        temp2 = arma::join_horiz(D21, D22);
+        arma::mat D = arma::join_vert(temp1, temp2);
+
+        spd_icm_.setA(spd_real_.A());
+        spd_icm_.setB(B);
+        spd_icm_.setC(C);
+        spd_icm_.setD(D);
+
+        spd_icm_.A().print("[Spd] A_icm : ");
+        spd_icm_.B().print("[Spd] B_icm : ");
+        spd_icm_.C().print("[Spd] C_icm : ");
+        spd_icm_.D().print("[Spd] D_icm : ");
+        spd_dhinf_ = new SpdDHinf(&spd_sys_, gamma_spd_, {.00001,.0,.00001}, {.00001,.0,.000001});
+        auto K( spd_dhinf_->solve() );
+        spd_dctrl_.setA(std::get<0>(K)); spd_dctrl_.setB(std::get<1>(K));
+        spd_dctrl_.setC(std::get<2>(K)); spd_dctrl_.setD(std::get<3>(K));
+
+        //-- closed-loop
+        jacl::state_space::Linear<double, 6,1,1> cl_ss;
+        jacl::system::Discrete<jacl::state_space::Linear<double, 6,1,1>> cl_sys(&cl_ss, SAMPLING_PERIOD);
+        {
+            arma::mat temp1;
+
+            temp1 = spd_real_.B()*spd_dctrl_.D()*spd_real_.C();
+            arma::mat A = arma::join_cols(
+                arma::join_rows(spd_real_.A() - temp1, spd_real_.B()*spd_dctrl_.C()),
+                arma::join_rows(-spd_dctrl_.B()*spd_real_.C(), spd_dctrl_.A())
+            );
+            
+            arma::mat B = arma::join_cols(
+                spd_real_.B()*spd_dctrl_.D(),
+                spd_dctrl_.B()
+            );
+
+            cl_ss.setA(A);
+            cl_ss.setB(B);
+            cl_ss.setC(arma::join_rows(spd_real_.C(), arma::zeros(1,3)));
+            cl_ss.setD(spd_real_.D());
+        }
+        cl_ss.A().print("[Spd] A_cl : ");
+        cl_ss.B().print("[Spd] B_cl : ");
+        cl_ss.C().print("[Spd] C_cl : ");
+        cl_ss.D().print("[Spd] D_cl : ");
+        // jacl::analysis::transient_data_t transient_data =
+        //     jacl::analysis::transient<jacl::system::Discrete<jacl::state_space::Linear<double, 6,1,1>>,25>(cl_sys, {1.0},
+        //         "Transient Response - Speed");
+        jacl::system::Discrete<jacl::state_space::Linear<double, 3,1,1>> ol_sys(&spd_real_, SAMPLING_PERIOD);
+        jacl::analysis::transient_data_t transient_data =
+            jacl::analysis::transient<jacl::system::Discrete<jacl::state_space::Linear<double, 3,1,1>>,500>(ol_sys, {24.0},
+                "Open-loop transient response - Speed");
+        std::cout << "[Spd] Rise time : " << jacl::analysis::getRiseTime(transient_data) << std::endl;
+        std::cout << "[Spd] Peak time : " << jacl::analysis::getPeakTime(transient_data) << std::endl;
+        std::cout << "[Spd] Overshoot : " << jacl::analysis::getOvershoot(transient_data) << std::endl;
+        std::cout << "[Spd] Settling time : " << jacl::analysis::getSettlingTime(transient_data) << std::endl;
+
+        spd_dctrl_plt_.init();
+        spd_dctrl_plt_.setTitle("Discrete Speed Controller");
+        spd_dctrl_plt_.setPlotName({"Error","Input"});
     }
-    cl_ss.A().print("Acl : ");
-    cl_ss.B().print("Bcl : ");
-    cl_ss.C().print("Ccl : ");
-    cl_ss.D().print("Dcl : ");
-    jacl::analysis::transient_data_t transient_data = jacl::analysis::transient(cl_sys);
-    std::cout << "Rise time : " << jacl::analysis::getRiseTime(transient_data) << std::endl;
-    std::cout << "Peak time : " << jacl::analysis::getPeakTime(transient_data) << std::endl;
-    std::cout << "Overshoot : " << jacl::analysis::getOvershoot(transient_data) << std::endl;
-    std::cout << "Settling time : " << jacl::analysis::getSettlingTime(transient_data) << std::endl;
-
-    pos_dctrl_plt_.init();
-    pos_dctrl_plt_.setTitle("Discrete Position Controller");
-    pos_dctrl_plt_.setPlotName({"Error","Input"});
 }
 
 void MainWindow::setupPositionController(){

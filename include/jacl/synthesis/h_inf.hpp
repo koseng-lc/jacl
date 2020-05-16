@@ -15,7 +15,7 @@
 #include <jacl/numerical_methods.hpp>
 #include <jacl/medium.hpp>
 
-#define HINF_VERBOSE
+// #define HINF_VERBOSE
 
 namespace jacl{ namespace synthesis{
 

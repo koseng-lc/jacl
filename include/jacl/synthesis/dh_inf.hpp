@@ -26,10 +26,14 @@ class DHinf:public ::jacl::system::detail::BaseSystemClient<typename _System::ba
 public:
     template<typename __System = _System,
              typename std::enable_if_t<traits::is_discrete_system<__System>::value, int>* = nullptr>
-    DHinf(__System* _sys, double _gam)
+    DHinf(__System* _sys, double _gam,
+          typename _System::state_t _reg1,
+          typename _System::state_t _reg2)
         : ss_(::jacl::system::detail::BaseSystemClient<typename _System::base_t>::ss(_sys))
         , llft_(ss_)
-        , gam_(_gam){}
+        , gam_(_gam)
+        , reg1_(_reg1)
+        , reg2_(_reg2){}
 
     ~DHinf();
 
@@ -51,7 +55,9 @@ private:
              OUTPUT_SIZE,
              INPUT_SIZE> llft_;
 
-    double gam_;    
+    double gam_;   
+    typename _System::state_t reg1_;
+    typename _System::state_t reg2_;
 };
 
 template <typename _System,
@@ -220,15 +226,16 @@ auto DHinf<_System,
  
         temp1 = B2_B1*S_inv*D12_D11_t;
         arma::mat A_tilde = A - (temp1*C1);
+        arma::mat reg_A_tilde = A_tilde;
         if(arma::cond(A_tilde) > 1e6){
             //-- regularize the ill-conditioned matrix
-            A_tilde = A_tilde + .001*arma::eye(arma::size(A));
+            reg_A_tilde = A_tilde + arma::diagmat(reg1_)*arma::eye(arma::size(A));
             #ifdef DHINF_VERBOSE
             std::cout << "[DHinf] Regularization triggered" << std::endl;
             #endif
         }
         //-- more stable with solve() than with inv()
-        arma::mat A_tilde_tinv = arma::solve(A_tilde.t(), arma::eye(arma::size(A)),
+        arma::mat A_tilde_tinv = arma::solve(reg_A_tilde.t(), arma::eye(arma::size(A)),
             arma::solve_opts::refine);
     
         temp1 = D12_D11*S_inv*D12_D11_t;
@@ -358,16 +365,17 @@ auto DHinf<_System,
 
         ctemp1 = C1_C2*S_inv*D12_D22_t;
         arma::cx_mat A_tilde = Ap_t - (ctemp1*Ep_t);
+        arma::cx_mat reg_A_tilde;
         if(arma::cond(A_tilde) > 1e6){
             //-- regularize the ill-conditioned matrix
-            A_tilde = A_tilde + .001*arma::eye(arma::size(Ap_t));
+            reg_A_tilde = A_tilde + arma::diagmat(reg2_)*arma::eye(arma::size(Ap_t));
             #ifdef DHINF_VERBOSE
             std::cout << "[DHinf] Regularization triggered" << std::endl;
             #endif
         }
         //-- more stable with solve() than with inv()
         arma::cx_mat A_tilde_t = arma::trans(A_tilde);
-        arma::cx_mat A_tilde_tinv = arma::solve(A_tilde_t, arma::eye<arma::cx_mat>(arma::size(A)),
+        arma::cx_mat A_tilde_tinv = arma::solve(reg_A_tilde.t(), arma::eye<arma::cx_mat>(arma::size(A)),
             arma::solve_opts::refine);
 
         ctemp1 = D12_D22*S_inv*D12_D22_t;

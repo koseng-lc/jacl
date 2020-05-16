@@ -12,7 +12,7 @@ namespace jacl{ namespace system{
 template <class _StateSpace>
 class Discrete:public BaseSystem<_StateSpace>{
 public:
-    Discrete(_StateSpace* _ss, double _time_step = 1e-4)
+    Discrete(_StateSpace* _ss, double _time_step)
         : BaseSystem<_StateSpace>(_ss, _time_step){}
     ~Discrete(){}
     auto samplingPeriod(){

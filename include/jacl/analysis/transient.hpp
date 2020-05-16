@@ -29,13 +29,15 @@ static auto getSettlingTime(const transient_data_t& _data){
 }
 
 //-- we copy it because we call reset()
-template <typename _System>
-static auto transient(_System _sys, double _ts_threshold=.02)
+template <typename _System, std::size_t num_sample>
+static auto transient(_System _sys, typename _System::input_t _input,
+                      std::string&& _plot_name,
+                      double _ts_threshold=.02)
     -> typename std::enable_if_t<
         ::jacl::traits::is_siso<typename _System::state_space_t>::value,transient_data_t>{
     _sys.reset();
-    constexpr auto NUM_SAMPLE_DATA(1000);
-    const typename _System::input_t in(arma::fill::ones);
+    constexpr auto NUM_SAMPLE_DATA(num_sample);
+    const typename _System::input_t in(_input);
     typename _System::output_t out(arma::fill::zeros);
     std::array<typename _System::scalar_t, NUM_SAMPLE_DATA> response;
 
@@ -57,9 +59,9 @@ static auto transient(_System _sys, double _ts_threshold=.02)
     for(auto i(0); i < NUM_SAMPLE_DATA; i++){
         out = _sys.convolve(in);                   
                 
-        if(out(0) >= 0.1 && tr_start < 0)
+        if(out(0) >= 0.1*in(0) && tr_start < 0)
             tr_start = i;
-        if(out(0) >= 0.9 && tr_end < 0)
+        if(out(0) >= 0.9*in(0) && tr_end < 0)
             tr_end = i;
 
         if(out(0) > peak_val){
@@ -82,7 +84,7 @@ static auto transient(_System _sys, double _ts_threshold=.02)
         }
     }
     std::vector<double> resp(response.begin(), response.end());
-    jacl::plot(resp, _sys.dt(), "Transient Response", {"Transient Response"});
+    jacl::plot(resp, _sys.dt(), "Transient Response", {_plot_name});
     return std::make_tuple(tr,tp,overshoot,ts);
 }
 

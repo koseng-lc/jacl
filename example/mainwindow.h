@@ -34,7 +34,10 @@ class MainWindow : public QMainWindow {
     Q_OBJECT
     jacl::py_stuff::PyEmbedHandler py_handler_;
 public:
-    explicit MainWindow(QWidget *parent = 0);
+    explicit MainWindow(double _bias, double _scale, double _dead_zone,
+                        double _gamma_pos, double _gamma_spd, QWidget *parent = 0);
+    double bias_, scale_, dead_zone_;
+    double gamma_pos_, gamma_spd_;
     ~MainWindow();
 private:
     void setupWidgets();
@@ -141,7 +144,6 @@ private:
                          jacl::PhysicalParameter<>,
                          jacl::PhysicalParameter<>,
                          jacl::PhysicalParameter<>>;
-
     LinearStateSpace ss_;
     jacl::system::Continuous<LinearStateSpace> csys_;
     jacl::Plotter<jacl::system::Continuous<LinearStateSpace> > csys_plt_;    
@@ -168,6 +170,7 @@ private:
     SIFD sifd_;
     void makeFault(arma::vec* _out);
     void setupSIMODCMotor();
+
     //-- Discrete H-infinity controller
     using MReal = jacl::state_space::Linear<double,9,1,1,
                                          jacl::PhysicalParameter<>,
@@ -181,6 +184,7 @@ private:
     MReal m_real_;
     MICM m_icm_;
     MSys m_sys_;
+    //-- Position controller
     using PosReal = jacl::state_space::Linear<double,3, 1, 1>;
     using PosICM = jacl::state_space::Linear<double,PosReal::n_states, PosReal::n_inputs+3, PosReal::n_outputs+2>;
     using PosSys = jacl::system::Discrete<PosICM>;
@@ -192,24 +196,21 @@ private:
     PosDHinf* pos_dhinf_;
     PosDCtrl pos_dctrl_;
     jacl::system::Discrete<PosDCtrl> pos_dctrl_sys_;
-    jacl::Plotter<jacl::system::Discrete<PosDCtrl>> pos_dctrl_plt_;
-
-    //-- Another stuff
-    using GRealization =
-        jacl::state_space::Linear<double,3, 8, 9,
-                         jacl::PhysicalParameter<>,
-                         jacl::PhysicalParameter<>,
-                         jacl::PhysicalParameter<>,
-                         jacl::PhysicalParameter<>,
-                         jacl::PhysicalParameter<>,
-                         jacl::PhysicalParameter<>>;
-    GRealization G_;
-    using PRealization = jacl::state_space::Linear<double,9, 2, 3>;
-    PRealization P_;
-    using InterConnMat = jacl::state_space::Linear<double,9, 10, 8>;
-    InterConnMat ICM_;
-    // using HInf = jacl::synthesis::Hinf<InterConnMat, 5, 8>;
-    // HInf* hinf_;
+    jacl::Plotter<jacl::system::Discrete<PosDCtrl>> pos_dctrl_plt_;    
+    //-- Speed controller
+    using SpdReal = jacl::state_space::Linear<double,3, 1, 1>;
+    using SpdICM = jacl::state_space::Linear<double,SpdReal::n_states, SpdReal::n_inputs+3, SpdReal::n_outputs+2>;
+    using SpdSys = jacl::system::Discrete<SpdICM>;
+    using SpdDHinf = jacl::synthesis::DHinf<SpdSys,2,3>;
+    using SpdDCtrl = jacl::state_space::Linear<double,SpdReal::n_states, SpdReal::n_outputs, SpdReal::n_inputs>;
+    SpdReal spd_real_;
+    SpdICM spd_icm_;
+    SpdSys spd_sys_;
+    SpdDHinf* spd_dhinf_;
+    SpdDCtrl spd_dctrl_;
+    jacl::system::Discrete<SpdDCtrl> spd_dctrl_sys_;
+    jacl::Plotter<jacl::system::Discrete<SpdDCtrl>> spd_dctrl_plt_;
+    void setupDiscreteController();
 
     //-- Continuous H-infinity position control of dc motor
     using SISOPos = jacl::state_space::Linear<double,3,1,1>;
