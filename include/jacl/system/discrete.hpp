@@ -23,13 +23,13 @@ protected:
         this->in_ = _in;
     }
     auto dstate() -> typename BaseSystem<_StateSpace>::state_t override{
-        static arma::mat term1, term2;
+        arma::mat term1, term2;
         term1 = this->ss_->A() * this->prev_state_;
         term2 = this->ss_->B() * this->in_;
         return term1 + term2;
     }
     auto output() -> typename BaseSystem<_StateSpace>::output_t override{
-        static arma::mat term1;
+        arma::mat term1;
         term1 = this->ss_->C() * this->prev_state_;
         return term1 + (this->ss_->D() * this->in_);
     }

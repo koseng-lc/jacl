@@ -78,8 +78,8 @@ class Plotter:
         plot = []
 
         # change it to black when try to save the fig
-        # edge_col = 'black'
-        edge_col = 'white'
+        edge_col = 'black'
+        # edge_col = 'white'
         for i in range(0, self.n_signals):
             sp.append(fig.add_subplot(n_sp_rows, n_sp_cols, i+1))
             sp[i].set_title(self.plot_name['signal{}'.format(i)], color=edge_col)            

@@ -43,9 +43,9 @@ MainWindow::MainWindow(double _bias,
     , pos_dctrl_sys_(&pos_dctrl_, SAMPLING_PERIOD)
     , pos_dctrl_plt_(&pos_dctrl_sys_, {4,5}, SAMPLING_PERIOD)
     //-- discrete speed controller
-    , spd_sys_(&spd_icm_, SAMPLING_PERIOD)
-    , spd_dctrl_sys_(&spd_dctrl_, SAMPLING_PERIOD)
-    , spd_dctrl_plt_(&spd_dctrl_sys_, {4,5}, SAMPLING_PERIOD)
+    , spd_sys_(&spd_icm_, SPD_SP)
+    , spd_dctrl_sys_(&spd_dctrl_, SPD_SP)
+    , spd_dctrl_plt_(&spd_dctrl_sys_, {4,5}, SPD_SP)
     , ref_(3, 1, arma::fill::zeros)
     , cl_status_(true)
     , posctrl_sys_(&k_pos_)
@@ -323,7 +323,6 @@ void MainWindow::setupWidgets(){
     //-- Command
 
     command_gb_ = new QGroupBox;
-
     command_gl_ = new QGridLayout;
 
     perturb_pb_ = new QPushButton;
@@ -811,7 +810,7 @@ void MainWindow::setupDiscreteController(){
         pos_icm_.B().print("[Pos] B_icm : ");
         pos_icm_.C().print("[Pos] C_icm : ");
         pos_icm_.D().print("[Pos] D_icm : ");
-        pos_dhinf_ = new PosDHinf(&pos_sys_, gamma_pos_, {.0,.0,.00001}, {.0,.0,.00001});
+        pos_dhinf_ = new PosDHinf(&pos_sys_, gamma_pos_, {1e-4,1e-4,1e-4}, {1e-4,1e-4,1e-4});
         auto K( pos_dhinf_->solve() );
         pos_dctrl_.setA(std::get<0>(K)); pos_dctrl_.setB(std::get<1>(K));
         pos_dctrl_.setC(std::get<2>(K)); pos_dctrl_.setD(std::get<3>(K));
@@ -845,6 +844,10 @@ void MainWindow::setupDiscreteController(){
         jacl::analysis::transient_data_t transient_data =
             jacl::analysis::transient<jacl::system::Discrete<jacl::state_space::Linear<double, 6,1,1>>,1000>(cl_sys, {1.0},
                 "Transient Response - Position");
+        jacl::system::Discrete<jacl::state_space::Linear<double, 3,1,1>> pos_dctrl_sys_(&pos_dctrl_, SAMPLING_PERIOD);
+        jacl::analysis::transient_data_t transient_data2 =
+            jacl::analysis::transient<jacl::system::Discrete<jacl::state_space::Linear<double, 3,1,1>>,1000>(pos_dctrl_sys_, {1.0},
+                "Controller transient response - Position");
         std::cout << "[Pos] Rise time : " << jacl::analysis::getRiseTime(transient_data) << std::endl;
         std::cout << "[Pos] Peak time : " << jacl::analysis::getPeakTime(transient_data) << std::endl;
         std::cout << "[Pos] Overshoot : " << jacl::analysis::getOvershoot(transient_data) << std::endl;
@@ -857,22 +860,30 @@ void MainWindow::setupDiscreteController(){
 
     //-- speed controller
     {
-        spd_real_.setA(dsimo_.A());
-        spd_real_.setB(dsimo_.B());
-        spd_real_.setC({0.,1.,0.});
-        spd_real_.setD(arma::zeros(1,1));
+        jacl::state_space::Linear<double,2,1,1> spd;
+        spd.setA(simo_.A().submat(1,1,2,2));
+        spd.setB(simo_.B().tail_rows(2));
+        spd.setC({1.,0.});
+        spd.setD(arma::zeros(1,1));
+
+        jacl::lti_common::StateSpacePack dspd = jacl::lti_common::discretize(spd, SPD_SP);
+
+        spd_real_.setA(std::get<0>(dspd));
+        spd_real_.setB(std::get<1>(dspd));
+        spd_real_.setC(std::get<2>(dspd));
+        spd_real_.setD(std::get<3>(dspd));
 
         arma::mat temp1, temp2, temp3;
-        arma::mat zeros3x1(3,1,arma::fill::zeros);
-        arma::mat zeros1x3(1,3,arma::fill::zeros);
+        arma::mat zeros2x1(2,1,arma::fill::zeros);
+        arma::mat zeros1x2(1,2,arma::fill::zeros);
         arma::mat zeros1x1(1,1,arma::fill::zeros);
         arma::mat eye1x1(1,1,arma::fill::eye);
 
-        temp1 = arma::join_horiz(zeros3x1, spd_real_.B());
-        temp2 = arma::join_horiz(zeros3x1, temp1);
+        temp1 = arma::join_horiz(zeros2x1, spd_real_.B());
+        temp2 = arma::join_horiz(zeros2x1, temp1);
         arma::mat B = arma::join_horiz(spd_real_.B(), temp2);
 
-        temp1 = arma::join_vert(zeros1x3, -spd_real_.C());
+        temp1 = arma::join_vert(zeros1x2, -spd_real_.C());
         arma::mat C = arma::join_vert(-spd_real_.C(), temp1);
 
         temp1 = arma::join_horiz(zeros1x1, eye1x1);
@@ -900,14 +911,14 @@ void MainWindow::setupDiscreteController(){
         spd_icm_.B().print("[Spd] B_icm : ");
         spd_icm_.C().print("[Spd] C_icm : ");
         spd_icm_.D().print("[Spd] D_icm : ");
-        spd_dhinf_ = new SpdDHinf(&spd_sys_, gamma_spd_, {.00001,.0,.00001}, {.00001,.0,.000001});
+        spd_dhinf_ = new SpdDHinf(&spd_sys_, gamma_spd_, {1e-4,1e-4}, {1e-4,1e-4});
         auto K( spd_dhinf_->solve() );
         spd_dctrl_.setA(std::get<0>(K)); spd_dctrl_.setB(std::get<1>(K));
         spd_dctrl_.setC(std::get<2>(K)); spd_dctrl_.setD(std::get<3>(K));
 
         //-- closed-loop
-        jacl::state_space::Linear<double, 6,1,1> cl_ss;
-        jacl::system::Discrete<jacl::state_space::Linear<double, 6,1,1>> cl_sys(&cl_ss, SAMPLING_PERIOD);
+        jacl::state_space::Linear<double, 4,1,1> cl_ss;
+        jacl::system::Discrete<jacl::state_space::Linear<double, 4,1,1>> cl_sys(&cl_ss, SPD_SP);
         {
             arma::mat temp1;
 
@@ -924,20 +935,27 @@ void MainWindow::setupDiscreteController(){
 
             cl_ss.setA(A);
             cl_ss.setB(B);
-            cl_ss.setC(arma::join_rows(spd_real_.C(), arma::zeros(1,3)));
+            cl_ss.setC(arma::join_rows(spd_real_.C(), arma::zeros(1,2)));
             cl_ss.setD(spd_real_.D());
         }
         cl_ss.A().print("[Spd] A_cl : ");
         cl_ss.B().print("[Spd] B_cl : ");
         cl_ss.C().print("[Spd] C_cl : ");
         cl_ss.D().print("[Spd] D_cl : ");
-        // jacl::analysis::transient_data_t transient_data =
-        //     jacl::analysis::transient<jacl::system::Discrete<jacl::state_space::Linear<double, 6,1,1>>,25>(cl_sys, {1.0},
-        //         "Transient Response - Speed");
-        jacl::system::Discrete<jacl::state_space::Linear<double, 3,1,1>> ol_sys(&spd_real_, SAMPLING_PERIOD);
         jacl::analysis::transient_data_t transient_data =
-            jacl::analysis::transient<jacl::system::Discrete<jacl::state_space::Linear<double, 3,1,1>>,500>(ol_sys, {24.0},
+            jacl::analysis::transient<jacl::system::Discrete<jacl::state_space::Linear<double, 4,1,1>>,25>(cl_sys, {1.0},
+                "Transient Response - Speed");
+
+        jacl::system::Discrete<jacl::state_space::Linear<double, 2,1,1>> ol_sys(&spd_real_, SAMPLING_PERIOD);
+        jacl::analysis::transient_data_t transient_data2 =
+            jacl::analysis::transient<jacl::system::Discrete<jacl::state_space::Linear<double, 2,1,1>>,100>(ol_sys, {24.0},
                 "Open-loop transient response - Speed");
+
+        jacl::system::Discrete<jacl::state_space::Linear<double, 2,1,1>> spd_dctrl_sys_(&spd_dctrl_, SPD_SP);
+        jacl::analysis::transient_data_t transient_data3 =
+            jacl::analysis::transient<jacl::system::Discrete<jacl::state_space::Linear<double, 2,1,1>>,100>(spd_dctrl_sys_, {1.},
+                "Controller transient response - Speed");
+
         std::cout << "[Spd] Rise time : " << jacl::analysis::getRiseTime(transient_data) << std::endl;
         std::cout << "[Spd] Peak time : " << jacl::analysis::getPeakTime(transient_data) << std::endl;
         std::cout << "[Spd] Overshoot : " << jacl::analysis::getOvershoot(transient_data) << std::endl;

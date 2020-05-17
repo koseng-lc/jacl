@@ -198,7 +198,8 @@ private:
     jacl::system::Discrete<PosDCtrl> pos_dctrl_sys_;
     jacl::Plotter<jacl::system::Discrete<PosDCtrl>> pos_dctrl_plt_;    
     //-- Speed controller
-    using SpdReal = jacl::state_space::Linear<double,3, 1, 1>;
+    static constexpr double SPD_SP{0.01};
+    using SpdReal = jacl::state_space::Linear<double,2, 1, 1>;
     using SpdICM = jacl::state_space::Linear<double,SpdReal::n_states, SpdReal::n_inputs+3, SpdReal::n_outputs+2>;
     using SpdSys = jacl::system::Discrete<SpdICM>;
     using SpdDHinf = jacl::synthesis::DHinf<SpdSys,2,3>;

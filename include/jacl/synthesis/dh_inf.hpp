@@ -236,7 +236,7 @@ auto DHinf<_System,
         }
         //-- more stable with solve() than with inv()
         arma::mat A_tilde_tinv = arma::solve(reg_A_tilde.t(), arma::eye(arma::size(A)),
-            arma::solve_opts::refine);
+            arma::solve_opts::refine + arma::solve_opts::equilibrate + arma::solve_opts::allow_ugly);
     
         temp1 = D12_D11*S_inv*D12_D11_t;
         temp2 = C1_t*temp1*C1;
@@ -376,7 +376,7 @@ auto DHinf<_System,
         //-- more stable with solve() than with inv()
         arma::cx_mat A_tilde_t = arma::trans(A_tilde);
         arma::cx_mat A_tilde_tinv = arma::solve(reg_A_tilde.t(), arma::eye<arma::cx_mat>(arma::size(A)),
-            arma::solve_opts::refine);
+            arma::solve_opts::refine + arma::solve_opts::equilibrate + arma::solve_opts::allow_ugly);
 
         ctemp1 = D12_D22*S_inv*D12_D22_t;
         ctemp2 = Ep*ctemp1*Ep_t;
