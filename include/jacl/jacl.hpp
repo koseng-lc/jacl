@@ -23,6 +23,7 @@
 #include <jacl/diagnosis/ifd.hpp>
 #include <jacl/diagnosis/sifd.hpp>
 #include <jacl/pole_placement.hpp>
+#include <jacl/analysis/analysis.hpp>
 #include <jacl/analysis/transient.hpp>
 #include <jacl/synthesis/h_inf.hpp>
 #include <jacl/synthesis/dh_inf.hpp>

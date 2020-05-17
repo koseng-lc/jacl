@@ -77,12 +77,11 @@ protected:
             this->s_ = ss_;
             this->s_->attach(this);
         }
-    }
+    }    
     auto A() -> typename state_space_t::state_matrix_t { return this->ss_->A(); }
     auto B() -> typename state_space_t::input_matrix_t { return this->ss_->B(); }
     auto C() -> typename state_space_t::output_matrix_t { return this->ss_->C(); }
     auto D() -> typename state_space_t::feedforward_matrix_t { return this->ss_->D(); }
-
 protected:
     state_t state_;
     state_t prev_state_;

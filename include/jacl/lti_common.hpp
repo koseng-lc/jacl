@@ -9,6 +9,8 @@
 
 #include <armadillo>
 
+#include <jacl/traits.hpp>
+
 namespace jacl{ namespace lti_common{
 
 namespace detail{
@@ -105,6 +107,36 @@ namespace detail{
                 temp = _A - eigval(i)*eye;
                 if(arma::rank( arma::join_vert(temp, cx_C) ) < _A.n_cols){
                     ~ok;
+                    break;
+                }
+            }
+        }
+        return ok;
+    }
+    template <typename StateMatrix>
+    static auto poles(const StateMatrix& _A){
+        arma::cx_vec p;
+        arma::cx_mat eigvec;
+        arma::eig_gen(p, eigvec, _A);
+        return p;
+    }
+
+    template <typename StateMatrix>
+    static auto isStable(const StateMatrix& _A, bool _continuous){
+        arma::cx_vec p( poles(_A) );
+        p.print("Poles : ");
+        bool ok(true);
+        if(_continuous){
+            for(const auto& _p:p){
+                if(std::real(_p) > .0){
+                    ok = false;
+                    break;
+                }
+            }
+        }else{
+            for(const auto& _p:p){                
+                if(std::abs(_p) >= 1.0){
+                    ok = false;
                     break;
                 }
             }
@@ -260,7 +292,7 @@ static auto hasUnobservableModeInUnitCircle(const StateMatrix& _A, const OutputM
     cx_C.set_real(_C);
     bool ok(false);
     for(int i(0); i < eigval.n_rows; i++){
-        if(std::abs(eigval(i)) == .0){
+        if(std::abs(eigval(i)) == 1.){
             temp = _A - eigval(i)*eye;
             if(arma::rank( arma::join_vert(temp, cx_C) ) < _A.n_cols){
                 ~ok;
@@ -271,12 +303,26 @@ static auto hasUnobservableModeInUnitCircle(const StateMatrix& _A, const OutputM
     return ok;
 }
 
+template <typename Scalar, std::size_t n_states>
+static auto poles(const typename arma::Mat<Scalar>::template fixed<n_states,n_states>& _A){
+    return detail::poles(_A);
+}
+
 template <typename _StateSpace>
-static auto poles(const _StateSpace& _ss){
-    arma::cx_vec p;
-    arma::cx_mat eigvec;
-    arma::eig_gen(p, eigvec, _ss.A());
-    return p;
+static auto poles(const _StateSpace& _ss)
+    -> typename std::enable_if_t<
+        jacl::traits::is_state_space<_StateSpace>::value, decltype(detail::poles(_ss.A()))>{
+    return detail::poles(_ss.A());
+}
+
+// template <typename Scalar, std::size_t n_states>
+// static auto isStable(const typename arma::Mat<Scalar>::template fixed<n_states,n_states>& _A, bool _continuous){
+//     return detail::isStable(_A, _continuous);
+// }
+
+template <typename _StateMatrix>
+static auto isStable(const _StateMatrix& _A, bool _continuous){
+    return detail::isStable(_A, _continuous);
 }
 
 template <typename _StateSpace>

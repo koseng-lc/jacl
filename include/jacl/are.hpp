@@ -53,7 +53,6 @@ public:
 private:
     auto genHamiltonianMatrix();
 
-    //-- change to pointer arg for TZ
     auto auxSchur(const arma::mat& _H, std::tuple<arma::cx_mat, arma::cx_mat>* _TZ){
         ::jacl::py_stuff::AcquireGIL lk;
         try{

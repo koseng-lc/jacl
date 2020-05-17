@@ -844,14 +844,15 @@ void MainWindow::setupDiscreteController(){
         jacl::analysis::transient_data_t transient_data =
             jacl::analysis::transient<jacl::system::Discrete<jacl::state_space::Linear<double, 6,1,1>>,1000>(cl_sys, {1.0},
                 "Transient Response - Position");
-        jacl::system::Discrete<jacl::state_space::Linear<double, 3,1,1>> pos_dctrl_sys_(&pos_dctrl_, SAMPLING_PERIOD);
-        jacl::analysis::transient_data_t transient_data2 =
-            jacl::analysis::transient<jacl::system::Discrete<jacl::state_space::Linear<double, 3,1,1>>,1000>(pos_dctrl_sys_, {1.0},
-                "Controller transient response - Position");
+
         std::cout << "[Pos] Rise time : " << jacl::analysis::getRiseTime(transient_data) << std::endl;
         std::cout << "[Pos] Peak time : " << jacl::analysis::getPeakTime(transient_data) << std::endl;
         std::cout << "[Pos] Overshoot : " << jacl::analysis::getOvershoot(transient_data) << std::endl;
         std::cout << "[Pos] Settling time : " << jacl::analysis::getSettlingTime(transient_data) << std::endl;
+
+        //-- Nominal analysis
+        std::cout << "[Pos] Nominal stability : " << std::boolalpha << (bool)jacl::analysis::nominalStability(pos_real_, pos_dctrl_) << std::endl;
+        std::cout << "[Pos] Nominal performance : " << std::boolalpha << true << std::endl;
 
         pos_dctrl_plt_.init();
         pos_dctrl_plt_.setTitle("Discrete Position Controller");
@@ -859,8 +860,9 @@ void MainWindow::setupDiscreteController(){
     }
 
     //-- speed controller
-    {
-        jacl::state_space::Linear<double,2,1,1> spd;
+    jacl::system::Discrete<jacl::state_space::Linear<double,2,1,1>> spd_sys(&spd_real_, SPD_SP);
+    jacl::state_space::Linear<double,2,1,1> spd;
+    {        
         spd.setA(simo_.A().submat(1,1,2,2));
         spd.setB(simo_.B().tail_rows(2));
         spd.setC({1.,0.});
@@ -914,7 +916,7 @@ void MainWindow::setupDiscreteController(){
         spd_dhinf_ = new SpdDHinf(&spd_sys_, gamma_spd_, {1e-4,1e-4}, {1e-4,1e-4});
         auto K( spd_dhinf_->solve() );
         spd_dctrl_.setA(std::get<0>(K)); spd_dctrl_.setB(std::get<1>(K));
-        spd_dctrl_.setC(std::get<2>(K)); spd_dctrl_.setD(std::get<3>(K));
+        spd_dctrl_.setC(std::get<2>(K)); spd_dctrl_.setD(std::get<3>(K));        
 
         //-- closed-loop
         jacl::state_space::Linear<double, 4,1,1> cl_ss;
@@ -946,25 +948,20 @@ void MainWindow::setupDiscreteController(){
             jacl::analysis::transient<jacl::system::Discrete<jacl::state_space::Linear<double, 4,1,1>>,25>(cl_sys, {1.0},
                 "Transient Response - Speed");
 
-        jacl::system::Discrete<jacl::state_space::Linear<double, 2,1,1>> ol_sys(&spd_real_, SAMPLING_PERIOD);
-        jacl::analysis::transient_data_t transient_data2 =
-            jacl::analysis::transient<jacl::system::Discrete<jacl::state_space::Linear<double, 2,1,1>>,100>(ol_sys, {24.0},
-                "Open-loop transient response - Speed");
-
-        jacl::system::Discrete<jacl::state_space::Linear<double, 2,1,1>> spd_dctrl_sys_(&spd_dctrl_, SPD_SP);
-        jacl::analysis::transient_data_t transient_data3 =
-            jacl::analysis::transient<jacl::system::Discrete<jacl::state_space::Linear<double, 2,1,1>>,100>(spd_dctrl_sys_, {1.},
-                "Controller transient response - Speed");
-
         std::cout << "[Spd] Rise time : " << jacl::analysis::getRiseTime(transient_data) << std::endl;
         std::cout << "[Spd] Peak time : " << jacl::analysis::getPeakTime(transient_data) << std::endl;
         std::cout << "[Spd] Overshoot : " << jacl::analysis::getOvershoot(transient_data) << std::endl;
         std::cout << "[Spd] Settling time : " << jacl::analysis::getSettlingTime(transient_data) << std::endl;
 
+        //-- Nominal analysis
+        std::cout << "[Spd] Nominal stability : " << std::boolalpha << (bool)jacl::analysis::nominalStability(spd_real_, spd_dctrl_) << std::endl;
+        std::cout << "[Spd] Nominal performance : " << std::boolalpha << true << std::endl;
+
         spd_dctrl_plt_.init();
         spd_dctrl_plt_.setTitle("Discrete Speed Controller");
         spd_dctrl_plt_.setPlotName({"Error","Input"});
     }
+
 }
 
 void MainWindow::setupPositionController(){

@@ -53,8 +53,7 @@ public:
 private:
     auto genSympleticMatrix();
 
-    //-- change to pointer arg for TZ
-    auto auxSchur(const arma::mat& _S, std::tuple<arma::cx_mat, arma::cx_mat>* _TZ) -> int{
+    auto auxSchur(const arma::mat& _S, std::tuple<arma::cx_mat, arma::cx_mat>* _TZ){
         ::jacl::py_stuff::AcquireGIL lk;
         try{
             py::object sys = py::import("sys");
