@@ -123,4 +123,20 @@ static auto readGain(arma::Mat<Type>* _G, std::string _file_path){
     return 0;
 }
 
+template <typename Type>
+static auto readArray(std::vector<Type>* _data, std::string _file_path){
+    std::ifstream array_file(_file_path);
+    if(array_file.is_open()){        
+        while(1){
+            std::string s;
+            std::getline(array_file,s);
+            if(s == "")
+                break;
+            _data->emplace_back(boost::lexical_cast<double>(s));            
+        }
+        array_file.close();
+    }
+    return 0;
+}
+
 } }

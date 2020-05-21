@@ -69,7 +69,8 @@ class Plotter:
     def simulate(self):
         # Plotter setup
         plt.rcParams['savefig.facecolor'] = 'white'
-        fig = plt.figure(facecolor='black', edgecolor='white')
+        # white facecolor for temporary
+        fig = plt.figure(facecolor='white', edgecolor='white')
         fig.canvas.set_window_title(self.title)
         fig.canvas.mpl_connect('close_event', self.pltCloseHandle)
 
@@ -78,8 +79,8 @@ class Plotter:
         plot = []
 
         # change it to black when try to save the fig
-        # edge_col = 'black'
-        edge_col = 'white'
+        edge_col = 'black'
+        # edge_col = 'white'
         for i in range(0, self.n_signals):
             sp.append(fig.add_subplot(n_sp_rows, n_sp_cols, i+1))
             sp[i].set_title(self.plot_name['signal{}'.format(i)], color=edge_col)            

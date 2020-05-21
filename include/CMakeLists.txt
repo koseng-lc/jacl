@@ -35,17 +35,17 @@ set_target_properties(physical_parameter PROPERTIES LINKER_LANGUAGE CXX)
 #-- State Space
 add_library(linear_state_space ${JACL_HEADER_PREFIX}/state_space/linear.hpp)
 set_target_properties(linear_state_space PROPERTIES LINKER_LANGUAGE CXX)
-target_link_libraries(linear_state_space PRIVATE armadillo physical_parameter observer_pattern)
+target_link_libraries(linear_state_space PRIVATE lapack blas armadillo physical_parameter observer_pattern)
 
 add_library(nonlinear_state_space ${JACL_HEADER_PREFIX}/state_space/nonlinear.hpp)
 set_target_properties(nonlinear_state_space PROPERTIES LINKER_LANGUAGE CXX)
-target_link_libraries(nonlinear_state_space PRIVATE armadillo medium physical_parameter observer_pattern)
+target_link_libraries(nonlinear_state_space PRIVATE lapack blas armadillo medium physical_parameter observer_pattern)
 
 #-- System
 add_library(base_system ${JACL_HEADER_PREFIX}/system/base_system.hpp)
 set_target_properties(base_system PROPERTIES LINKER_LANGUAGE CXX)
 #target_include_directories(base_system PUBLIC ${PROJECT_SOURCE_DIR})
-target_link_libraries(base_system PRIVATE armadillo medium physical_parameter)
+target_link_libraries(base_system PRIVATE lapack blas armadillo medium physical_parameter)
 
 #-- Continuous System
 add_library(continuous_system ${JACL_HEADER_PREFIX}/system/continuous.hpp)
@@ -86,7 +86,7 @@ set_target_properties(random PROPERTIES LINKER_LANGUAGE CXX)
 
 #-- Linear Algebra
 add_library(linear_algebra ${JACL_HEADER_PREFIX}/linear_algebra.hpp)
-target_link_libraries(linear_algebra PRIVATE armadillo)
+target_link_libraries(linear_algebra PRIVATE lapack armadillo)
 set_target_properties(linear_algebra PROPERTIES LINKER_LANGUAGE CXX)
 
 #-- Numerical Methods
@@ -95,7 +95,7 @@ set_target_properties(numerical_methods PROPERTIES LINKER_LANGUAGE CXX)
 
 #-- LTI Common
 add_library(lti_common ${JACL_HEADER_PREFIX}/lti_common.hpp)
-target_link_libraries(lti_common PRIVATE armadillo)
+target_link_libraries(lti_common PRIVATE lapack blas armadillo)
 set_target_properties(lti_common PROPERTIES LINKER_LANGUAGE CXX)
 
 #-- Py Stuff
@@ -158,7 +158,7 @@ target_link_libraries(analysis PRIVATE lower_lft are lti_common numerical_method
 set_target_properties(analysis PROPERTIES LINKER_LANGUAGE CXX)
 
 add_library(transient ${JACL_HEADER_PREFIX}/analysis/transient.hpp)
-target_link_libraries(transient PRIVATE armadillo)
+target_link_libraries(transient PRIVATE lapack blas armadillo)
 set_target_properties(transient PROPERTIES LINKER_LANGUAGE CXX)
 
 #-- Diagnosis

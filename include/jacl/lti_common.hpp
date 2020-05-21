@@ -6,7 +6,7 @@
 #pragma once
 
 #include <cassert>
-
+#define ARMA_DONT_USE_WRAPPER
 #include <armadillo>
 
 #include <jacl/traits.hpp>
@@ -124,7 +124,6 @@ namespace detail{
     template <typename StateMatrix>
     static auto isStable(const StateMatrix& _A, bool _continuous){
         arma::cx_vec p( poles(_A) );
-        p.print("Poles : ");
         bool ok(true);
         if(_continuous){
             for(const auto& _p:p){
@@ -134,8 +133,8 @@ namespace detail{
                 }
             }
         }else{
-            for(const auto& _p:p){                
-                if(std::abs(_p) >= 1.0){
+            for(const auto& _p:p){                 
+                if(std::fabs(std::abs(_p) - 1.0) < 1e-4){
                     ok = false;
                     break;
                 }
@@ -329,7 +328,7 @@ template <typename _StateSpace>
 static auto discretize(const _StateSpace& _ss, double _sampling_time) -> StateSpacePack{
     arma::mat aug = arma::join_cols(arma::join_rows(_ss.A(), _ss.B()),
                                     arma::zeros(_StateSpace::n_inputs, _StateSpace::n_states + _StateSpace::n_inputs));
-    arma::mat expmAB = arma::expmat(aug * _sampling_time);
+    arma::mat expmAB = arma::expmat(aug*_sampling_time);
     arma::mat Ad = expmAB.submat(0, 0, _StateSpace::n_states - 1, _StateSpace::n_states - 1);
     arma::mat Bd = expmAB.submat(0, _StateSpace::n_states,
                                  _StateSpace::n_states-1, (_StateSpace::n_states + _StateSpace::n_inputs) - 1);

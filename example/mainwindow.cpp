@@ -158,8 +158,7 @@ MainWindow::MainWindow(double _bias,
         control_mode_ = jacl::traits::toUType(jacl::ControllerDialog::ControlMode::Position);
         sifd_.init({{-.11,-.15}}, "SIFD", {"Est. Curr.","Est. Spd.","Est. Pos."});
         constexpr std::size_t ND(500);
-        std::vector<double> resp_err1(ND,.0), resp_err2(ND,.0), resp_err3(ND,.0);
-        ref_(control_mode_) = 1.;
+        std::vector<double> resp_err1(ND,.0), resp_err2(ND,.0), resp_err3(ND,.0);        
         auto min = std::numeric_limits<double>::min();
         auto max = std::numeric_limits<double>::max();
         std::pair<double, double> peak1(min,max), peak2(min,max), peak3(min,max);
@@ -170,7 +169,13 @@ MainWindow::MainWindow(double _bias,
              {0,0,5.}}
         );
         arma::vec::fixed<3> noise;
+
         for(std::size_t i(0); i < ND; i++){
+
+            if(i > ND/4){
+                ref_(control_mode_) = 1.;
+            }
+
             //-- Error between reference and output
             err(control_mode_) = ref_(control_mode_) - out(control_mode_);
 
@@ -185,13 +190,16 @@ MainWindow::MainWindow(double _bias,
             
             out = dsys_simo_.convolve(din_);            
             noise = noise_gen();
-            // out(1) += noise(1);
-            // out(2) += noise(2);
+            out(1) += noise(1);
+            out(2) += noise(2);
 
-            out(control_mode_) += bias_;
-            if(std::fabs(out(control_mode_)) < dead_zone_)
-                out(control_mode_) = .0;
-            out(control_mode_) *= scale_;
+            if(i > ND/4){
+                
+                out(control_mode_) += bias_;
+                if(std::fabs(out(control_mode_)) < dead_zone_)
+                    out(control_mode_) = .0;
+                out(control_mode_) *= scale_;
+            }           
 
             SIFD::diag_pack_t diag_pack = sifd_.detect(din_, out);            
             resp_err1[i] = std::get<1>(diag_pack[0])(0);            
@@ -213,16 +221,29 @@ MainWindow::MainWindow(double _bias,
             if(resp_err3[i] < std::get<1>(peak3))
                 std::get<1>(peak3) = resp_err3[i];
         }
-        std::cout << "Position error max : " << std::get<0>(peak1)
-                  << " ; min : " << std::get<1>(peak1) << std::endl;
-        jacl::plot(resp_err1, SAMPLING_PERIOD, "Position error", {"Position sensor error"});
+        // std::cout << "Position error max : " << std::get<0>(peak1)
+                //   << " ; min : " << std::get<1>(peak1) << std::endl;
+        // jacl::plot(resp_err1, SAMPLING_PERIOD, "Position error", {"Position sensor error"});
         std::cout << "Velocity error max : " << std::get<0>(peak2)
                   << " ; min : " << std::get<1>(peak2) << std::endl;
-        jacl::plot(resp_err2, SAMPLING_PERIOD, "Velocity error", {"Velocity sensor error"});
+        // jacl::plot(resp_err2, SAMPLING_PERIOD, "Velocity error", {"Velocity sensor error"});
         std::cout << "Current error max : " << std::get<0>(peak3)
                   << " ; min : " << std::get<1>(peak3) << std::endl;
-        jacl::plot(resp_err3, SAMPLING_PERIOD, "Current error", {"Current sensor error"});
+        // jacl::plot(resp_err3, SAMPLING_PERIOD, "Current error", {"Current sensor error"});
     }
+    std::vector<double> position_response,speed_response,current_response;    
+    jacl::parser::readArray(&position_response, "../sample/position_sample.txt");
+    jacl::plot(position_response, SAMPLING_PERIOD, "Position response real - r = 149(deg)", {"Position response real (deg)"});
+    jacl::parser::readArray(&speed_response, "../sample/speed_sample.txt");
+    jacl::plot(speed_response, SAMPLING_PERIOD, "Speed response real - r = 149(deg)", {"Speed response real (rpm)"});
+    jacl::parser::readArray(&current_response, "../sample/current_sample.txt");
+    jacl::plot(current_response, SAMPLING_PERIOD, "Current response real - r = 149(deg)", {"Current response real (mA)"});
+
+    std::vector<double> err_speed_response,err_current_response;
+    jacl::parser::readArray(&err_speed_response, "../sample/error_speed_sample.txt");
+    jacl::plot(err_speed_response, SAMPLING_PERIOD, "Error speed response real - r = 149(deg)", {"Error speed response real (rpm)"});
+    jacl::parser::readArray(&err_current_response, "../sample/error_current_sample.txt");
+    jacl::plot(err_current_response, SAMPLING_PERIOD, "Error current response real - r = 149(deg)", {"Error current response real (mA)"});
 
     cl_thread_ = boost::thread{boost::bind(&MainWindow::closedLoopProcess, this)};
 
@@ -642,13 +663,13 @@ void MainWindow::setupSIMODCMotor(){
         simo_.setB(fB);
         simo_.setC(fC);
         simo_.setD(fD);
-    }
-    jacl::parser::saveStateSpace(simo_, "motor_dc_simo.jacl");
-    jacl::lti_common::StateSpacePack dsimo = jacl::lti_common::discretize(simo_, SAMPLING_PERIOD);
+    }    
+    jacl::lti_common::StateSpacePack dsimo = jacl::lti_common::discretize(simo_, SAMPLING_PERIOD);    
     dsimo_.setA(std::get<0>(dsimo)); dsimo_.setB(std::get<1>(dsimo));
     dsimo_.setC(std::get<2>(dsimo)); dsimo_.setD(std::get<3>(dsimo));
     dsimo_.A().print("Ad : "); dsimo_.B().print("Bd : ");
     dsimo_.C().print("Cd : "); dsimo_.D().print("Dd : ");
+    jacl::parser::saveStateSpace(dsimo_, "motor_dc_dsimo.jacl");
 
     arma::mat dobsv_gain;
     arma::mat dpoles{-0.8,-0.85,0.83};
@@ -767,6 +788,8 @@ void MainWindow::setupDiscreteController(){
 
     //-- position controller
     {
+        auto weight1(.35);
+        auto weight2(1.);
         pos_real_.setA(dsimo_.A());
         pos_real_.setB(dsimo_.B());
         pos_real_.setC({1.,0.,0.});
@@ -782,7 +805,7 @@ void MainWindow::setupDiscreteController(){
         temp2 = arma::join_horiz(zeros3x1, temp1);
         arma::mat B = arma::join_horiz(pos_real_.B(), temp2);
 
-        temp1 = arma::join_vert(zeros1x3, -pos_real_.C());
+        temp1 = arma::join_vert(zeros1x3, -pos_real_.C() * weight1);
         arma::mat C = arma::join_vert(-pos_real_.C(), temp1);
 
         temp1 = arma::join_horiz(zeros1x1, eye1x1);
@@ -790,9 +813,9 @@ void MainWindow::setupDiscreteController(){
         temp3 = arma::join_horiz(zeros1x1, arma::join_horiz(zeros1x1, zeros1x1));
         arma::mat D11 = arma::join_vert(temp2, temp3);
 
-        arma::mat D12 = arma::join_vert(zeros1x1, eye1x1);
+        arma::mat D12 = arma::join_vert(zeros1x1, eye1x1 * weight2);
 
-        temp1 = arma::join_horiz(-eye1x1,eye1x1);
+        temp1 = arma::join_horiz(-eye1x1 * weight1, eye1x1 * weight1);
         arma::mat D21 = arma::join_horiz(zeros1x1,temp1);
         
         arma::mat D22 = zeros1x1;
@@ -814,6 +837,7 @@ void MainWindow::setupDiscreteController(){
         auto K( pos_dhinf_->solve() );
         pos_dctrl_.setA(std::get<0>(K)); pos_dctrl_.setB(std::get<1>(K));
         pos_dctrl_.setC(std::get<2>(K)); pos_dctrl_.setD(std::get<3>(K));
+        jacl::parser::saveStateSpace(pos_dctrl_, "position_controller.jacl");
 
         //-- closed-loop
         jacl::state_space::Linear<double, 6,1,1> cl_ss;
@@ -843,7 +867,7 @@ void MainWindow::setupDiscreteController(){
         cl_ss.D().print("[Pos] D_cl : ");
         jacl::analysis::transient_data_t transient_data =
             jacl::analysis::transient<jacl::system::Discrete<jacl::state_space::Linear<double, 6,1,1>>,1000>(cl_sys, {1.0},
-                "Transient Response - Position");
+                "Closed-loop position control simulation - r = 57.296 (deg)");
 
         std::cout << "[Pos] Rise time : " << jacl::analysis::getRiseTime(transient_data) << std::endl;
         std::cout << "[Pos] Peak time : " << jacl::analysis::getPeakTime(transient_data) << std::endl;
@@ -880,7 +904,7 @@ void MainWindow::setupDiscreteController(){
         arma::mat zeros1x2(1,2,arma::fill::zeros);
         arma::mat zeros1x1(1,1,arma::fill::zeros);
         arma::mat eye1x1(1,1,arma::fill::eye);
-
+        
         temp1 = arma::join_horiz(zeros2x1, spd_real_.B());
         temp2 = arma::join_horiz(zeros2x1, temp1);
         arma::mat B = arma::join_horiz(spd_real_.B(), temp2);
@@ -916,7 +940,8 @@ void MainWindow::setupDiscreteController(){
         spd_dhinf_ = new SpdDHinf(&spd_sys_, gamma_spd_, {1e-4,1e-4}, {1e-4,1e-4});
         auto K( spd_dhinf_->solve() );
         spd_dctrl_.setA(std::get<0>(K)); spd_dctrl_.setB(std::get<1>(K));
-        spd_dctrl_.setC(std::get<2>(K)); spd_dctrl_.setD(std::get<3>(K));        
+        spd_dctrl_.setC(std::get<2>(K)); spd_dctrl_.setD(std::get<3>(K));
+        jacl::parser::saveStateSpace(spd_dctrl_, "speed_controller.jacl");
 
         //-- closed-loop
         jacl::state_space::Linear<double, 4,1,1> cl_ss;
@@ -946,7 +971,7 @@ void MainWindow::setupDiscreteController(){
         cl_ss.D().print("[Spd] D_cl : ");
         jacl::analysis::transient_data_t transient_data =
             jacl::analysis::transient<jacl::system::Discrete<jacl::state_space::Linear<double, 4,1,1>>,25>(cl_sys, {1.0},
-                "Transient Response - Speed");
+                "Closed-loop speed control simulation - r = 60 (rpm)");
 
         std::cout << "[Spd] Rise time : " << jacl::analysis::getRiseTime(transient_data) << std::endl;
         std::cout << "[Spd] Peak time : " << jacl::analysis::getPeakTime(transient_data) << std::endl;
@@ -1023,7 +1048,7 @@ void MainWindow::setupPositionController(){
     k_pos_.C().print("C : ");
     k_pos_.D().print("D : ");
 
-    jacl::parser::saveStateSpace(k_pos_, "position_controller.jacl");
+    
 
     //-- Example read
     /*PosCtrl controller;
@@ -1078,9 +1103,7 @@ void MainWindow::setupSpeedController(){
     k_spd_.setA(std::get<0>(K));
     k_spd_.setB(std::get<1>(K));
     k_spd_.setC(std::get<2>(K));
-    k_spd_.setD(std::get<3>(K));
-
-    jacl::parser::saveStateSpace(k_spd_, "speed_controller.jacl");
+    k_spd_.setD(std::get<3>(K));    
 
     k_spd_.A().print("Kspd_A : ");
     k_spd_.B().print("Kspd_B : ");
@@ -1178,6 +1201,6 @@ void MainWindow::closedLoopProcess(){
         );
         arma::Col<uint8_t> status{std::get<2>(diag_pack[0]), std::get<2>(diag_pack[1]), std::get<2>(diag_pack[2])};
         Q_EMIT setSensorStatus(status);
-        boost::this_thread::sleep_for(boost::chrono::milliseconds((int)(SAMPLING_PERIOD*1000.)));
+        boost::this_thread::sleep_for(boost::chrono::milliseconds(20));
     }
 }

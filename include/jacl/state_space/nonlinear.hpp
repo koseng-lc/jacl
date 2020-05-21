@@ -8,7 +8,7 @@
 #include <functional>
 #include <vector>
 #include <type_traits>
-
+#define ARMA_DONT_USE_WRAPPER
 #include <armadillo>
 
 #include <jacl/pattern/observer.hpp>

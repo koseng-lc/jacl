@@ -365,7 +365,7 @@ auto DHinf<_System,
 
         ctemp1 = C1_C2*S_inv*D12_D22_t;
         arma::cx_mat A_tilde = Ap_t - (ctemp1*Ep_t);
-        arma::cx_mat reg_A_tilde;
+        arma::cx_mat reg_A_tilde = A_tilde;
         if(arma::cond(A_tilde) > 1e6){
             //-- regularize the ill-conditioned matrix
             reg_A_tilde = A_tilde + arma::diagmat(reg2_)*arma::eye(arma::size(Ap_t));
@@ -374,6 +374,7 @@ auto DHinf<_System,
             #endif
         }
         //-- more stable with solve() than with inv()
+        reg_A_tilde.t().print("A_tilde_t : ");
         arma::cx_mat A_tilde_t = arma::trans(A_tilde);
         arma::cx_mat A_tilde_tinv = arma::solve(reg_A_tilde.t(), arma::eye<arma::cx_mat>(arma::size(A)),
             arma::solve_opts::refine + arma::solve_opts::equilibrate + arma::solve_opts::allow_ugly);

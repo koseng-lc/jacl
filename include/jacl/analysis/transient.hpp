@@ -84,7 +84,7 @@ static auto transient(_System _sys, typename _System::input_t _input,
         }
     }
     std::vector<double> resp(response.begin(), response.end());
-    jacl::plot(resp, _sys.dt(), "Transient Response", {_plot_name});
+    jacl::plot(resp, _sys.dt(), std::move(_plot_name), {_plot_name});
     return std::make_tuple(tr,tp,overshoot,ts);
 }
 

@@ -7,6 +7,7 @@
 
 #include <vector>
 
+#define ARMA_DONT_USE_WRAPPER
 #include <armadillo>
 
 namespace jacl{ namespace linear_algebra{

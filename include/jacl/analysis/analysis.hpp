@@ -37,13 +37,7 @@ auto nominalStability(const _Plant& _p, const _Controller& _k){
     typename arma::Mat<typename _Plant::scalar_t>::template
         fixed<_Plant::n_states + _Controller::n_states,
          _Plant::n_states + _Controller::n_states> A_bar = temp1 + temp2*temp4*temp3;
-
-    bool check1 = lti_common::isStable(A_bar,false);
-    bool check2 = lti_common::stabilizable(temp1, temp2);
-    bool check3 = lti_common::detectability(temp1, temp3);
-
-    std::cout << "[Analysis] Check : " << check1 << " ; " << check2 << " ; " << check3 << std::endl;
-
+         
     return lti_common::isStable(A_bar,false)
             & lti_common::stabilizable(temp1, temp2)
             & lti_common::detectability(temp1, temp3);

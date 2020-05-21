@@ -6,7 +6,7 @@
 #pragma once
 
 #include <random>
-
+#define ARMA_DONT_USE_WRAPPER
 #include <armadillo>
 
 namespace jacl{

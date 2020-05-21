@@ -117,9 +117,9 @@ private:
     boost::thread cl_thread_;
     boost::mutex cl_mtx_;
     std::atomic<bool> cl_status_;
-    const double SAMPLING_PERIOD{.001};
+    const double SAMPLING_PERIOD{.0001};
     //-- speed controller sampling period
-    static constexpr double SPD_SP{.001};
+    static constexpr double SPD_SP{.0001};
 
     enum ParamIndex{
         iBm, // Viscous Friction (N m s / rad)
@@ -199,7 +199,7 @@ private:
     PosDCtrl pos_dctrl_;
     jacl::system::Discrete<PosDCtrl> pos_dctrl_sys_;
     jacl::Plotter<jacl::system::Discrete<PosDCtrl>> pos_dctrl_plt_;    
-    //-- Speed controller    
+    //-- Speed controller
     using SpdReal = jacl::state_space::Linear<double,2, 1, 1>;
     using SpdICM = jacl::state_space::Linear<double,SpdReal::n_states, SpdReal::n_inputs+3, SpdReal::n_outputs+2>;
     using SpdSys = jacl::system::Discrete<SpdICM>;

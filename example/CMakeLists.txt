@@ -40,4 +40,5 @@ target_link_libraries(control_sim
     Qt5::Widgets
     # JACL
     jacl_lib
+    lapack
 )
