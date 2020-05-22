@@ -193,8 +193,7 @@ MainWindow::MainWindow(double _bias,
             out(1) += noise(1);
             out(2) += noise(2);
 
-            if(i > ND/4){
-                
+            if(i > ND/4){                
                 out(control_mode_) += bias_;
                 if(std::fabs(out(control_mode_)) < dead_zone_)
                     out(control_mode_) = .0;
