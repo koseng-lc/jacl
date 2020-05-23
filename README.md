@@ -1,5 +1,5 @@
 # Just Another Control Library
-![Logo](logo_JACL.png)
+![Logo](logo_JACL_resized.png)
 
 Nothing to be described, JACL only an ordinary control library as in general. At first this library was made for personal use only, hence continuous development must exist due to only several methods available that related to author work in capstone project called MICRON.
 
