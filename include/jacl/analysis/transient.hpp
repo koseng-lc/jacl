@@ -74,7 +74,7 @@ static auto transient(_System _sys, typename _System::input_t _input,
 
     tr = (tr_end - tr_start)*_sys.samplingPeriod();
     tp *= _sys.samplingPeriod();
-    overshoot = std::fabs(1. - peak_val) * 100.;
+    overshoot = std::fabs(1. - peak_val/in(0)) * 100.;
 
     //-- wayback to find when the response reach 2% of error
     for(auto i(NUM_SAMPLE_DATA - 1); i >= 0; i--){
@@ -85,6 +85,57 @@ static auto transient(_System _sys, typename _System::input_t _input,
     }
     std::vector<double> resp(response.begin(), response.end());
     jacl::plot(resp, _sys.dt(), std::move(_plot_name), {_plot_name});
+    return std::make_tuple(tr,tp,overshoot,ts);
+}
+
+template <typename Scalar>
+static auto transient(std::vector<Scalar>& _response,
+                      const arma::Col<Scalar>& _in,
+                      double _sampling_period,
+                      std::string&& _plot_name,
+                      double _ts_threshold=.02)
+    -> transient_data_t{
+     //-- rise time stuff
+    auto tr_start(-1.);
+    auto tr_end(-1.);
+    auto tr(.0);
+
+    //-- peak time stuff
+    auto tp(.0);
+
+    //-- settling time
+    auto ts(.0);
+
+    //-- overshoot
+    auto overshoot(.0);
+    auto peak_val(.0);
+
+    for(auto i(0); i < _response.size(); i++){                  
+                
+        if(_response[i] >= 0.1*_in(0) && tr_start < 0)
+            tr_start = i;
+        if(_response[i] >= 0.9*_in(0) && tr_end < 0)
+            tr_end = i;
+
+        if(_response[i] > peak_val){
+            peak_val = _response[i];
+            tp = i;
+        }
+    }
+
+    tr = (tr_end - tr_start)*_sampling_period;
+    tp *= _sampling_period;
+    overshoot = std::fabs(1. - peak_val/_in(0)) * 100.;
+
+    //-- wayback to find when the response reach 2% of error
+    for(auto i(_response.size() - 1); i >= 0; i--){
+        if(std::fabs(1. - _response[i]) >= _ts_threshold){
+            ts = (decltype(ts))i*_sampling_period;
+            break;
+        }
+    }
+
+    jacl::plot(_response, _sampling_period, std::move(_plot_name), {_plot_name});
     return std::make_tuple(tr,tp,overshoot,ts);
 }
 
