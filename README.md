@@ -10,12 +10,12 @@ $ git clone https://github.com/koseng-lc/jacl.git
 ```
 Create the build environment.
 ```console
-cd jacl
-mkdir build
-cd build
-cmake ..
-make -j(number_of_cores)
-sudo make install
+$ cd jacl
+$ mkdir build
+$ cd build
+$ cmake ..
+$ make -j(number_of_cores)
+$ sudo make install
 ```
 ## Linking
 You can easily set the JACL CMake config directory then use ```find_package``` features.
