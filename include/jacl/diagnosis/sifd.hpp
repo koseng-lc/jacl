@@ -46,7 +46,7 @@ public:
             if(delta_y(i) <= 1e-6)
                 std::get<2>(res[i]) = false;
             else    
-                std::get<2>(res[i]) = std::fabs(delta_y(i)/_out(i)) > this->threshold_[i];
+                std::get<2>(res[i]) = std::fabs(delta_y(i)) > this->threshold_[i];
             chosen_state_status &= std::get<2>(res[i]);
         }
         std::get<0>(res[CHOSEN_STATE]) = y_hat(CHOSEN_STATE);

@@ -156,8 +156,8 @@ MainWindow::MainWindow(double _bias,
         arma::vec err(in),est(out);
         din_ = in;
         control_mode_ = jacl::traits::toUType(jacl::ControllerDialog::ControlMode::Position);
-        sifd_.init({{-.11,-.15}}, "SIFD", {"Est. Curr.","Est. Spd.","Est. Pos."});
-        constexpr std::size_t ND(500);
+        sifd_.init({{.8,.5}}, "SIFD", {"Est. Curr.","Est. Spd.","Est. Pos."});
+        constexpr std::size_t ND(10000);
         std::vector<double> resp_err1(ND,.0), resp_err2(ND,.0), resp_err3(ND,.0);        
         auto min = std::numeric_limits<double>::min();
         auto max = std::numeric_limits<double>::max();
@@ -173,7 +173,7 @@ MainWindow::MainWindow(double _bias,
         for(std::size_t i(0); i < ND; i++){
 
             if(i > ND/4){
-                ref_(control_mode_) = 1.;
+                ref_(control_mode_) = 1.693;
             }
 
             //-- Error between reference and output
@@ -190,10 +190,10 @@ MainWindow::MainWindow(double _bias,
             
             out = dsys_simo_.convolve(din_);            
             noise = noise_gen();
-            out(1) += noise(1);
-            out(2) += noise(2);
+            // out(1) += noise(1);
+            // out(2) += noise(2);
 
-            if(i > ND/4){                
+            if(i > ND/4){
                 out(control_mode_) += bias_;
                 if(std::fabs(out(control_mode_)) < dead_zone_)
                     out(control_mode_) = .0;
@@ -225,32 +225,33 @@ MainWindow::MainWindow(double _bias,
         // jacl::plot(resp_err1, SAMPLING_PERIOD, "Position error", {"Position sensor error"});
         std::cout << "Velocity error max : " << std::get<0>(peak2)
                   << " ; min : " << std::get<1>(peak2) << std::endl;
-        // jacl::plot(resp_err2, SAMPLING_PERIOD, "Velocity error", {"Velocity sensor error"});
+        jacl::plot(resp_err2, SAMPLING_PERIOD, "Error speed response sim - r = 97(deg)", {"Error speed response real (rad/s)"});
         std::cout << "Current error max : " << std::get<0>(peak3)
                   << " ; min : " << std::get<1>(peak3) << std::endl;
-        // jacl::plot(resp_err3, SAMPLING_PERIOD, "Current error", {"Current sensor error"});
+        jacl::plot(resp_err3, SAMPLING_PERIOD, "Error current response sim - r = 97(deg)", {"Error current response real (A)"});
     }
-    std::vector<double> position_response,speed_response,current_response;    
-    jacl::parser::readArray(&position_response, "../sample/position_sample.txt");
-    jacl::analysis::transient_data_t transient_data1 = jacl::analysis::transient(position_response, {90}, SAMPLING_PERIOD, "Position response real - r = 90(deg)");
-    std::cout << "[Real Pos] Rise time : " << jacl::analysis::getRiseTime(transient_data1) << std::endl;
-    std::cout << "[Real Pos] Peak time : " << jacl::analysis::getPeakTime(transient_data1) << std::endl;
-    std::cout << "[Real Pos] Overshoot : " << jacl::analysis::getOvershoot(transient_data1) << std::endl;
-    std::cout << "[Real Pos] Settling time : " << jacl::analysis::getSettlingTime(transient_data1) << std::endl;
-    jacl::parser::readArray(&speed_response, "../sample/speed_sample.txt");
-    jacl::analysis::transient_data_t transient_data2 = jacl::analysis::transient(speed_response, {6600}, SAMPLING_PERIOD, "Speed response real - r = 6600(rpm)");
-    std::cout << "[Real Spd] Rise time : " << jacl::analysis::getRiseTime(transient_data2) << std::endl;
-    std::cout << "[Real Spd] Peak time : " << jacl::analysis::getPeakTime(transient_data2) << std::endl;
-    std::cout << "[Real Spd] Overshoot : " << jacl::analysis::getOvershoot(transient_data2) << std::endl;
-    std::cout << "[Real Spd] Settling time : " << jacl::analysis::getSettlingTime(transient_data2) << std::endl;
-    jacl::parser::readArray(&current_response, "../sample/current_sample.txt");
-    jacl::plot(current_response, SAMPLING_PERIOD, "Current response real - r = 149(deg)", {"Current response real (mA)"});
 
-    std::vector<double> err_speed_response,err_current_response;
-    jacl::parser::readArray(&err_speed_response, "../sample/error_speed_sample.txt");
-    jacl::plot(err_speed_response, SAMPLING_PERIOD, "Error speed response real - r = 149(deg)", {"Error speed response real (rpm)"});
-    jacl::parser::readArray(&err_current_response, "../sample/error_current_sample.txt");
-    jacl::plot(err_current_response, SAMPLING_PERIOD, "Error current response real - r = 149(deg)", {"Error current response real (mA)"});
+    // std::vector<double> position_response,speed_response,current_response;    
+    // jacl::parser::readArray(&position_response, "../sample/position_sample.txt");
+    // jacl::analysis::transient_data_t transient_data1 = jacl::analysis::transient(position_response, {90}, SAMPLING_PERIOD, "Position response real - r = 90(deg)");
+    // std::cout << "[Real Pos] Rise time : " << jacl::analysis::getRiseTime(transient_data1) << std::endl;
+    // std::cout << "[Real Pos] Peak time : " << jacl::analysis::getPeakTime(transient_data1) << std::endl;
+    // std::cout << "[Real Pos] Overshoot : " << jacl::analysis::getOvershoot(transient_data1) << std::endl;
+    // std::cout << "[Real Pos] Settling time : " << jacl::analysis::getSettlingTime(transient_data1) << std::endl;
+    // jacl::parser::readArray(&speed_response, "../sample/speed_sample.txt");
+    // jacl::analysis::transient_data_t transient_data2 = jacl::analysis::transient(speed_response, {6600}, SAMPLING_PERIOD, "Speed response real - r = 6600(rpm)");
+    // std::cout << "[Real Spd] Rise time : " << jacl::analysis::getRiseTime(transient_data2) << std::endl;
+    // std::cout << "[Real Spd] Peak time : " << jacl::analysis::getPeakTime(transient_data2) << std::endl;
+    // std::cout << "[Real Spd] Overshoot : " << jacl::analysis::getOvershoot(transient_data2) << std::endl;
+    // std::cout << "[Real Spd] Settling time : " << jacl::analysis::getSettlingTime(transient_data2) << std::endl;
+    // jacl::parser::readArray(&current_response, "../sample/current_sample.txt");
+    // jacl::plot(current_response, SAMPLING_PERIOD, "Current response real - r = 149(deg)", {"Current response real (mA)"});
+
+    // std::vector<double> err_speed_response,err_current_response;
+    // jacl::parser::readArray(&err_speed_response, "../sample/error_speed_sample.txt");
+    // jacl::plot(err_speed_response, SAMPLING_PERIOD, "Error speed response real - r = 97(deg)", {"Error speed response real (rpm)"});
+    // jacl::parser::readArray(&err_current_response, "../sample/error_current_sample.txt");
+    // jacl::plot(err_current_response, SAMPLING_PERIOD, "Error current response real - r = 97(deg)", {"Error current response real (mA)"});
 
     cl_thread_ = boost::thread{boost::bind(&MainWindow::closedLoopProcess, this)};
 
@@ -873,8 +874,8 @@ void MainWindow::setupDiscreteController(){
         cl_ss.C().print("[Pos] C_cl : ");
         cl_ss.D().print("[Pos] D_cl : ");
         jacl::analysis::transient_data_t transient_data =
-            jacl::analysis::transient<jacl::system::Discrete<jacl::state_space::Linear<double, 6,1,1>>,5000>(cl_sys, {1.57},
-                "Closed-loop position control simulation - r = 90 (deg)");
+            jacl::analysis::transient<jacl::system::Discrete<jacl::state_space::Linear<double,6,1,1>>,5000>(cl_sys, {1.57},
+                "Closed-loop position control simulation - r = 1.57 (rad or 90 degree)");
 
         std::cout << "[Pos] Rise time : " << jacl::analysis::getRiseTime(transient_data) << std::endl;
         std::cout << "[Pos] Peak time : " << jacl::analysis::getPeakTime(transient_data) << std::endl;
@@ -1148,6 +1149,7 @@ void MainWindow::closedLoopProcess(){
 //    arma::mat diff(err);
 //    auto Kp(10.), Kd(1.);
     // ifd_.init({{-.76,-.65}, {-.63,-.51}, {-.86,-.72}});
+    // sifd_.init({{-.11,-.15}}, "SIFD", {"Est. Curr.","Est. Spd.","Est. Pos."});
     arma::cx_vec p = jacl::lti_common::poles(dsimo_);    
     p.print("Discrete DC motor poles : ");
     p = jacl::lti_common::poles(simo_);

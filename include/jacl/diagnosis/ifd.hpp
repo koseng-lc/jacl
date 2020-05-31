@@ -115,19 +115,22 @@ protected:
             -> typename __System::output_t override{
             setIn(_in);
             this->state_ = dstate();
-            //-- it must be not here, just adapt with the reality
+
+            // this->state_.print("State : ");
+            // this->prev_state_.print("Prev. State : ");
+
             this->prev_state_ = this->state_;
-            //--
-            this->out_ = output();            
+            this->out_ = output();                 
+            this->prev_in_ = this->in_;
             return this->out_;
         }
         void setIn(const typename __System::input_t& _in){
             this->in_ = _in;
         }
         template <typename T = __System>
-        auto dstate(const arma::mat& term1,
-                    const arma::mat& term2,
-                    const arma::mat& term3,
+        auto dstate(const arma::mat& _term1,
+                    const arma::mat& _term2,
+                    const arma::mat& _term3,
                     const arma::vec& _yI)
             -> typename std::enable_if_t<
                 ::jacl::traits::is_continuous_system<T>::value, typename __System::state_t>{
@@ -138,25 +141,27 @@ protected:
         auto dstate(const arma::mat& _term1,
                     const arma::mat& _term2,
                     const arma::mat& _term3,
-                    const arma::vec& _yI)
+                    const arma::vec& _yI,
+                    const arma::vec& _prev_yI)
             -> typename std::enable_if_t<
                 ::jacl::traits::is_discrete_system<T>::value,
                 typename arma::Col<typename __System::scalar_t>::template fixed<__System::n_states-1>>{
-            return _term1*prev_z_ + _term1*L_*_yI
-                    + _term2*_yI + _term3*this->in_; 
+            return _term1*prev_z_ + _term2*_prev_yI + _term3*this->prev_in_ + L_*_yI; 
         }
         auto dstate() -> typename __System::state_t override{
             arma::mat term1( A22_ - L_*A12_ );
             arma::mat term2( A21_ - L_*A11_ );
             arma::mat term3( B2_ - L_*B1_ );
-            arma::vec yI( meas_(CHOSEN_STATE) - this->ss_->D().row(CHOSEN_STATE) * this->in_ );
-            z_ = dstate(term1, term2, term3, yI);
-            q_hat_ = arma::join_vert(yI, prev_z_ + L_*yI);
+            arma::vec yI( meas_(CHOSEN_STATE) - this->ss_->D().row(CHOSEN_STATE) * this->prev_in_ );
+            static arma::vec prev_yI(arma::size(yI), arma::fill::zeros);            
+            z_ = dstate(term1, term2, term3, yI, prev_yI);
+            q_hat_ = arma::join_vert(yI, z_);
             prev_z_ = z_;
+            prev_yI = yI;
             return  arma::inv(M_) * q_hat_;
         }
         auto output() -> typename __System::output_t override{
-            return this->ss_->C() * this->prev_state_ + this->ss_->D() * this->in_;
+            return this->ss_->C() * this->prev_state_ + this->ss_->D() * this->prev_in_;
         }
         void updateVar() override{
             transform();
@@ -171,11 +176,17 @@ protected:
                                                                     A12_, arma::zeros(1,1));
                 jacl::pole_placement::KautskyNichols(&ss, poles_, &L_, jacl::pole_placement::PolePlacementType::Observer);
                 L_.print("DOS GAIN : ");
+                ss.A().print("A22 : ");
+                A21_.print("A21 : ");
+                ss.C().print("A12 : ");
+                A11_.print("A11 : ");
+                B1_.print("B1 : ");
+                B2_.print("B2 : ");
                 // if(jacl::lti_common::observable(ss.A(), ss.C()))
                 //     std::cout << "SS Observable !" << std::endl;
                 // arma::cx_mat eigvec;
                 // arma::cx_vec eigval;
-                // arma::eig_gen(eigval, eigvec, ss.A() - gain*ss.C());
+                // arma::eig_gen(eigval, eigvec, ss.A() - L_*ss.C());
                 // eigval.print("EigVal : ");
             }
         }
@@ -197,6 +208,7 @@ protected:
                     }
                 }
                 M_ = arma::trans(M_t);
+                M_.print("M : ");
                 An_ = M_ * this->ss_->A() * arma::inv(M_);
                 Bn_ = M_ * this->ss_->B(); 
             }                         
