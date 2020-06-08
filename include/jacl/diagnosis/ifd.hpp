@@ -176,12 +176,12 @@ protected:
                                                                     A12_, arma::zeros(1,1));
                 jacl::pole_placement::KautskyNichols(&ss, poles_, &L_, jacl::pole_placement::PolePlacementType::Observer);
                 L_.print("DOS GAIN : ");
-                ss.A().print("A22 : ");
-                A21_.print("A21 : ");
-                ss.C().print("A12 : ");
-                A11_.print("A11 : ");
-                B1_.print("B1 : ");
-                B2_.print("B2 : ");
+                // ss.A().print("A22 : ");
+                // A21_.print("A21 : ");
+                // ss.C().print("A12 : ");
+                // A11_.print("A11 : ");
+                // B1_.print("B1 : ");
+                // B2_.print("B2 : ");
                 // if(jacl::lti_common::observable(ss.A(), ss.C()))
                 //     std::cout << "SS Observable !" << std::endl;
                 // arma::cx_mat eigvec;
@@ -208,7 +208,7 @@ protected:
                     }
                 }
                 M_ = arma::trans(M_t);
-                M_.print("M : ");
+                // M_.print("M : ");
                 An_ = M_ * this->ss_->A() * arma::inv(M_);
                 Bn_ = M_ * this->ss_->B(); 
             }                         
