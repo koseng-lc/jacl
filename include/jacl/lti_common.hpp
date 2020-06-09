@@ -10,6 +10,7 @@
 #include <armadillo>
 
 #include <jacl/traits.hpp>
+#include <jacl/numerical_methods.hpp>
 
 namespace jacl{ namespace lti_common{
 
@@ -333,6 +334,43 @@ static auto discretize(const _StateSpace& _ss, double _sampling_time) -> StateSp
     arma::mat Bd = expmAB.submat(0, _StateSpace::n_states,
                                  _StateSpace::n_states-1, (_StateSpace::n_states + _StateSpace::n_inputs) - 1);
     return std::make_tuple(Ad,Bd, _ss.C(), _ss.D());
+}
+
+template <typename _StateSpace>
+bool isInfNormLessThan(double _gam, const _StateSpace& _ss){
+    arma::mat A_t = arma::trans( _ss.A() );
+    arma::mat A_t_inv = arma::solve(A_t, arma::eye(arma::size(A_t)),
+            arma::solve_opts::refine + arma::solve_opts::equilibrate + arma::solve_opts::allow_ugly);
+    arma::mat BB_t = _ss.B() * arma::trans( _ss.B() );
+    arma::mat C_tC = arma::trans( _ss.C() ) * _ss.C();    
+
+    arma::mat S11 = _ss.A() - BB_t*A_t_inv*C_tC;
+    arma::mat S12 = BB_t*A_t_inv;
+    arma::mat S21 = -A_t_inv*C_tC;
+    arma::mat S22 = A_t_inv;
+
+    //-- Symplectic matrix
+    arma::mat S = arma::join_cols(
+        arma::join_rows(S11, S12),
+        arma::join_rows(S21, S22)
+    );
+    arma::mat I(arma::size(_ss.A()), arma::fill::eye);
+    arma::mat temp = arma::inv((_gam*_gam)*I - _ss.A());
+    arma::cx_vec p( detail::poles(S) );
+    bool ok(true);
+    for(const auto& _p:p){
+        if(std::fabs(std::abs(_p) - 1.0) < 1e-6){
+            ok = false;
+            break;
+        }
+    }
+    return ok;
+}
+
+template <typename _StateSpace>
+auto approxInfNorm(const _StateSpace& _ss, double _ubound, double _lbound){
+    // auto metric = std::function<bool(double,_StateSpace)>(isInfNormLessThan<_StateSpace>);
+    return numerical_methods::bisection(_ss, isInfNormLessThan<_StateSpace>, _ubound, _lbound);
 }
 
 } }

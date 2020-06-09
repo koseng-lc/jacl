@@ -3,6 +3,8 @@
 #include <numeric>
 #include <cassert>
 
+// #define NUMERICAL_METHODS_VERBOSE
+
 namespace jacl{
 
 namespace numerical_methods{
@@ -17,13 +19,20 @@ static auto bisection(const TargetFunction& target,
                       Scalar lbound,
                       Scalar tol = std::numeric_limits<Scalar>::epsilon()){
     Scalar est;
-    assert(!mval(lbound, target) && mval(ubound, target) && ubound >= lbound && "Bounding Error !");
-    while((ubound - lbound)/lbound < tol){
+    // assert(!mval(lbound, target) && mval(ubound, target) && ubound >= lbound && "Bounding Error !");
+    std::size_t num_iter(0);
+    while(!((ubound - lbound)/lbound < tol)){
         est = (ubound + lbound) * .5;
         if(mf(est, target))
             ubound = est;
         else
             lbound = est;
+
+        #ifdef NUMERICAL_METHODS_VERBOSE
+        ++num_iter;
+        std::cout << "Iter : " << num_iter << std::endl;
+        std::cout << "Est : " << est << std::endl;
+        #endif
     }
 
     return est;

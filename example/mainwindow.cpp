@@ -812,11 +812,15 @@ void MainWindow::setupDiscreteController(){
         arma::mat eye1x1(1,1,arma::fill::eye);
 
         temp1 = arma::join_horiz(zeros3x1, pos_real_.B());
-        temp2 = arma::join_horiz(zeros3x1, temp1);
+        temp2 = arma::join_horiz(zeros3x1, temp1);        
         arma::mat B = arma::join_horiz(pos_real_.B(), temp2);
+        arma::mat B1 = B.head_cols(3);
+        arma::mat B2 = B.tail_cols(1);
 
         temp1 = arma::join_vert(zeros1x3, -pos_real_.C() * weight1);
         arma::mat C = arma::join_vert(-pos_real_.C(), temp1);
+        arma::mat C1 = C.head_rows(2);
+        arma::mat C2 = C.tail_rows(1);
 
         temp1 = arma::join_horiz(zeros1x1, eye1x1);
         temp2 = arma::join_horiz(zeros1x1, temp1);
@@ -885,8 +889,31 @@ void MainWindow::setupDiscreteController(){
         std::cout << "[Pos] Settling time : " << jacl::analysis::getSettlingTime(transient_data) << std::endl;
 
         //-- Nominal analysis
+        jacl::state_space::Linear<double,6,3,2> llft;
+        arma::mat temp;
+        temp = arma::inv(pos_dctrl_.D() - D22);
+        llft.setA(
+            arma::join_cols(
+                arma::join_rows(pos_icm_.A()+B2*temp*C2, -B2*temp*pos_dctrl_.C()),
+                arma::join_rows(pos_dctrl_.B()*temp*C2, pos_dctrl_.A() - pos_dctrl_.B()*temp*pos_dctrl_.C())
+            )
+        );
+        llft.setB(
+            arma::join_cols(
+                B2*temp*D21,
+                pos_dctrl_.B()*temp*D21
+            )
+        );
+        llft.setC(
+            arma::join_rows(C1 + D12*temp*C2, -D12*temp*pos_dctrl_.C())
+        );
+        llft.setD(D11+D12*temp*D21);
+        llft.A().print("[Pos] LLFT A : ");
+        llft.B().print("[Pos] LLFT B : ");
+        llft.C().print("[Pos] LLFT C : ");
+        llft.D().print("[Pos] LLFT D : ");
         std::cout << "[Pos] Nominal stability : " << std::boolalpha << (bool)jacl::analysis::nominalStability(pos_real_, pos_dctrl_) << std::endl;
-        std::cout << "[Pos] Nominal performance : " << std::boolalpha << true << std::endl;
+        std::cout << "[Pos] Nominal performance : " << std::boolalpha << (bool)jacl::analysis::nominalPerformance(llft, 2.7) << std::endl;
 
         pos_dctrl_plt_.init();
         pos_dctrl_plt_.setTitle("Discrete Position Controller");
@@ -918,9 +945,13 @@ void MainWindow::setupDiscreteController(){
         temp1 = arma::join_horiz(zeros2x1, spd_real_.B());
         temp2 = arma::join_horiz(zeros2x1, temp1);
         arma::mat B = arma::join_horiz(spd_real_.B(), temp2);
+        arma::mat B1 = B.head_cols(3);
+        arma::mat B2 = B.tail_cols(1);
 
         temp1 = arma::join_vert(zeros1x2, -spd_real_.C());
         arma::mat C = arma::join_vert(-spd_real_.C(), temp1);
+        arma::mat C1 = C.head_rows(2);
+        arma::mat C2 = C.tail_rows(1);
 
         temp1 = arma::join_horiz(zeros1x1, eye1x1);
         temp2 = arma::join_horiz(zeros1x1, temp1);
@@ -989,8 +1020,31 @@ void MainWindow::setupDiscreteController(){
         std::cout << "[Spd] Settling time : " << jacl::analysis::getSettlingTime(transient_data) << std::endl;
 
         //-- Nominal analysis
+        jacl::state_space::Linear<double,4,3,2> llft;
+        arma::mat temp;
+        temp = arma::inv(spd_dctrl_.D() - D22);
+        llft.setA(
+            arma::join_cols(
+                arma::join_rows(spd_icm_.A()+B2*temp*C2, -B2*temp*spd_dctrl_.C()),
+                arma::join_rows(spd_dctrl_.B()*temp*C2, spd_dctrl_.A() - spd_dctrl_.B()*temp*spd_dctrl_.C())
+            )
+        );
+        llft.setB(
+            arma::join_cols(
+                B2*temp*D21,
+                spd_dctrl_.B()*temp*D21
+            )
+        );
+        llft.setC(
+            arma::join_rows(C1 + D12*temp*C2, -D12*temp*spd_dctrl_.C())
+        );
+        llft.setD(D11+D12*temp*D21);
+        llft.A().print("[Spd] LLFT A : ");
+        llft.B().print("[Spd] LLFT B : ");
+        llft.C().print("[Spd] LLFT C : ");
+        llft.D().print("[Spd] LLFT D : ");
         std::cout << "[Spd] Nominal stability : " << std::boolalpha << (bool)jacl::analysis::nominalStability(spd_real_, spd_dctrl_) << std::endl;
-        std::cout << "[Spd] Nominal performance : " << std::boolalpha << true << std::endl;
+        std::cout << "[Spd] Nominal performance : " << std::boolalpha << (bool)jacl::analysis::nominalPerformance(llft, 2.9) << std::endl;
 
         spd_dctrl_plt_.init();
         spd_dctrl_plt_.setTitle("Discrete Speed Controller");
