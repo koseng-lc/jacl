@@ -8,6 +8,7 @@ before_install:
   - sudo apt update
 
 install:
+  - sudo apt install mesa-common-dev libglu1-mesa-dev
   - sudo apt install qt512base
   - source /opt/qt512/bin/qt512-env.sh
 
