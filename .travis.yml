@@ -14,6 +14,16 @@ install:
   - sudo ./bootstrap.sh --prefix=/usr/local --with-libraries=system,thread,chrono,python
   - sudo ./b2 -d0
   - sudo ./b2 install -d0
+  - cd ..
+  - sudo wget https://svwh.dl.sourceforge.net/project/arma/armadillo-9.900.1.tar.xz
+  - sudo tar xf armadillo-9.900.1.tar.xz
+  - cd armadillo-9.900.1/
+  - sudo mkdir build
+  - cd build
+  - cmake ..
+  - make
+  - sudo make install
+  - cd ../../
   - sudo apt install mesa-common-dev libglu1-mesa-dev
   - sudo apt install qt512base
   - source /opt/qt512/bin/qt512-env.sh
