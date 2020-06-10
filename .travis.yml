@@ -9,11 +9,11 @@ before_install:
 
 install:
   - sudo wget https://dl.bintray.com/boostorg/release/1.65.0/source/boost_1_65_0.tar.gz
-  - sudo tar xzvf boost_1_65_0.tar.gz
+  - sudo tar zxf boost_1_65_0.tar.gz
   - cd boost_1_65_0/
   - sudo ./bootstrap.sh --prefix=/usr/local --with-libraries=system,thread,chrono,python
-  - sudo ./b2
-  - sudo ./b2 install
+  - sudo ./b2 -d0
+  - sudo ./b2 install -d0
   - sudo apt install mesa-common-dev libglu1-mesa-dev
   - sudo apt install qt512base
   - source /opt/qt512/bin/qt512-env.sh
