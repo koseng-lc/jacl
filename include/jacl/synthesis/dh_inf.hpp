@@ -174,7 +174,7 @@ auto DHinf<_System,
 
     arma::mat temp1, temp2, temp3, temp4, temp5;
     arma::cx_mat ctemp1, ctemp2, ctemp3, ctemp4, ctemp5, ctemp6;
-    //-- Setup several frequently matrix operation
+    //-- Setup several frequently used matrix in calculations
     const arma::mat& A = llft_.A();
     arma::mat A_t = arma::trans(A);
     arma::cx_mat cxA = toCx(A);
@@ -249,17 +249,17 @@ auto DHinf<_System,
         );
 
         #ifdef DHINF_VERBOSE
-        //-- check whether sympletic or not
+        //-- check whether symplectic or not
         arma::mat J = arma::join_cols(
             arma::join_rows(arma::zeros(arma::size(A)), -arma::eye(arma::size(A))),
             arma::join_rows(arma::eye(arma::size(A)), arma::zeros(arma::size(A)))
         );      
         arma::mat check = H.t()*J*H;
-        check.print("[DHinf] Check sympletic 1 : ");
+        check.print("[DHinf] Check symplectic 1 : ");
         #endif
 
         DARE<typename _System::state_space_t> solver(ss_);
-        solver.setSympleticMatrix(H);
+        solver.setSymplecticMatrix(H);
         arma::cx_mat P = solver.solve();
         arma::cx_mat P_t = arma::trans(P);
         
@@ -390,17 +390,17 @@ auto DHinf<_System,
         );
 
         #ifdef DHINF_VERBOSE
-        //-- check whether sympletic or not
+        //-- check whether symplectic or not
         arma::cx_mat J = arma::join_cols(
             arma::join_rows(arma::zeros<arma::cx_mat>(arma::size(A)), -arma::eye<arma::cx_mat>(arma::size(A))),
             arma::join_rows(arma::eye<arma::cx_mat>(arma::size(A)), arma::zeros<arma::cx_mat>(arma::size(A)))
         );        
         arma::cx_mat check = H.t()*J*H;
-        check.print("[DHihf] Check sympletic 2 : ");
+        check.print("[DHihf] Check symplectic 2 : ");
         #endif
 
         DARE<typename _System::state_space_t> solver(ss_);
-        solver.setSympleticMatrix(toReal(H));
+        solver.setSymplecticMatrix(toReal(H));
         arma::cx_mat Y = solver.solve();
         arma::cx_mat Y_t = arma::trans(Y);
         

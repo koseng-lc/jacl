@@ -64,7 +64,7 @@ Discrete Observer Gain :
 [DHinf] Assumption 1 : true ; true
 [DHinf] Assumption 2 : true
 [DHinf] Assumption 3 : true
-[DHinf] Check sympletic 1 : 
+[DHinf] Check symplectic 1 : 
   -1.2335e-17  -5.8234e-21  -2.7105e-20  -1.0000e+00  -4.2352e-22   2.1176e-22
    5.8234e-21            0            0  -2.6999e-21  -1.0000e+00            0
    2.7105e-20            0            0            0            0  -1.0000e+00
@@ -79,7 +79,7 @@ A_tilde_t :
     (+1.000e+00,+0.000e+00)    (+9.951e-05,+0.000e+00)    (+1.919e-04,+0.000e+00)
     (+1.548e-02,+0.000e+00)    (+9.895e-01,+0.000e+00)    (+3.247e+00,+0.000e+00)
     (+4.892e-03,+0.000e+00)    (-9.104e-04,+0.000e+00)    (+3.321e-01,+0.000e+00)
-[DHihf] Check sympletic 2 : 
+[DHihf] Check symplectic 2 : 
                       (0,0)    (+2.647e-23,+0.000e+00)    (-1.323e-23,+0.000e+00)    (-1.000e+00,+0.000e+00)    (+1.165e-20,+0.000e+00)    (-1.084e-19,+0.000e+00)
     (-2.647e-23,+0.000e+00)                      (0,0)    (-4.337e-19,+0.000e+00)                      (0,0)    (-1.000e+00,+0.000e+00)    (+3.553e-15,+0.000e+00)
     (+9.926e-24,+0.000e+00)    (+4.337e-19,+0.000e+00)                      (0,0)    (+1.735e-18,+0.000e+00)    (-1.084e-19,+0.000e+00)    (-1.000e+00,+0.000e+00)
@@ -166,7 +166,7 @@ Starting Closed-loop position control simulation - r = 1.57 (rad or 90 degree) s
 [DHinf] Assumption 1 : true ; true
 [DHinf] Assumption 2 : true
 [DHinf] Assumption 3 : true
-[DHinf] Check sympletic 1 : 
+[DHinf] Check symplectic 1 : 
   -1.3878e-17            0  -1.0000e+00  -3.4694e-18
             0            0            0  -1.0000e+00
    1.0000e+00            0            0            0
@@ -177,7 +177,7 @@ Starting Closed-loop position control simulation - r = 1.57 (rad or 90 degree) s
 A_tilde_t : 
     (+1.001e+00,+0.000e+00)    (+3.299e+00,+0.000e+00)
     (+2.641e-03,+0.000e+00)    (+3.487e-01,+0.000e+00)
-[DHihf] Check sympletic 2 : 
+[DHihf] Check symplectic 2 : 
                       (0,0)    (-2.168e-19,+0.000e+00)    (-1.000e+00,+0.000e+00)    (-1.776e-15,+0.000e+00)
     (+2.711e-19,+0.000e+00)                      (0,0)                      (0,0)    (-1.000e+00,+0.000e+00)
     (+1.000e+00,+0.000e+00)    (-2.711e-20,+0.000e+00)    (-1.978e-16,+0.000e+00)    (-1.332e-15,+0.000e+00)

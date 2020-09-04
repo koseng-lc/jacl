@@ -3,7 +3,7 @@
 #include <numeric>
 #include <cassert>
 
-// #define NUMERICAL_METHODS_VERBOSE
+#define NUMERICAL_METHODS_VERBOSE
 
 namespace jacl{
 
@@ -27,14 +27,12 @@ static auto bisection(const TargetFunction& target,
             ubound = est;
         else
             lbound = est;
-
-        #ifdef NUMERICAL_METHODS_VERBOSE
         ++num_iter;
-        std::cout << "Iter : " << num_iter << std::endl;
-        std::cout << "Est : " << est << std::endl;
-        #endif
     }
-
+    #ifdef NUMERICAL_METHODS_VERBOSE    
+    std::cout << "Iter : " << num_iter << std::endl;
+    std::cout << "Est : " << est << std::endl;
+    #endif
     return est;
 }
 

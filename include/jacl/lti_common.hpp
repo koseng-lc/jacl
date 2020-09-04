@@ -338,16 +338,24 @@ static auto discretize(const _StateSpace& _ss, double _sampling_time) -> StateSp
 
 template <typename _StateSpace>
 bool isInfNormLessThan(double _gam, const _StateSpace& _ss){
-    arma::mat A_t = arma::trans( _ss.A() );
-    arma::mat A_t_inv = arma::solve(A_t, arma::eye(arma::size(A_t)),
-            arma::solve_opts::refine + arma::solve_opts::equilibrate + arma::solve_opts::allow_ugly);
-    arma::mat BB_t = _ss.B() * arma::trans( _ss.B() );
-    arma::mat C_tC = arma::trans( _ss.C() ) * _ss.C();    
+    arma::mat temp;
+    arma::mat B = (1./_gam)*_ss.B();
+    arma::mat D = (1./_gam)*_ss.D();
 
-    arma::mat S11 = _ss.A() - BB_t*A_t_inv*C_tC;
-    arma::mat S12 = BB_t*A_t_inv;
-    arma::mat S21 = -A_t_inv*C_tC;
-    arma::mat S22 = A_t_inv;
+    arma::mat R = arma::eye(_StateSpace::n_inputs,_StateSpace::n_inputs) - arma::trans(D)*D;
+    arma::mat R_inv = arma::inv(R);
+    arma::mat T = arma::eye(_StateSpace::n_outputs,_StateSpace::n_outputs) - D*arma::trans(D);
+    arma::mat T_inv = arma::inv(T);
+    temp = B*R_inv*arma::trans(D)*_ss.C();
+    arma::mat E = _ss.A() + temp;
+    arma::mat E_t_inv = arma::inv(arma::trans(E));
+    arma::mat G = -B*R_inv*arma::trans(B);
+    arma::mat Q = arma::trans(_ss.C())*T_inv*_ss.C();
+
+    arma::mat S11 = E + G*E_t_inv*Q;
+    arma::mat S12 = -G*E_t_inv;
+    arma::mat S21 = -E_t_inv*Q;
+    arma::mat S22 = E_t_inv;
 
     //-- Symplectic matrix
     arma::mat S = arma::join_cols(
@@ -355,7 +363,9 @@ bool isInfNormLessThan(double _gam, const _StateSpace& _ss){
         arma::join_rows(S21, S22)
     );
     arma::mat I(arma::size(_ss.A()), arma::fill::eye);
-    arma::mat temp = arma::inv((_gam*_gam)*I - _ss.A());
+    temp = arma::inv(I - _ss.A());
+    if(arma::norm(_ss.C()*temp*B+D,2) >= 1)
+        return false;  
     arma::cx_vec p( detail::poles(S) );
     bool ok(true);
     for(const auto& _p:p){

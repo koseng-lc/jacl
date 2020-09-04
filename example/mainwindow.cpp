@@ -157,7 +157,7 @@ MainWindow::MainWindow(double _bias,
         din_ = in;
         control_mode_ = jacl::traits::toUType(jacl::ControllerDialog::ControlMode::Position);
         sifd_.init({{.8,.5}}, "SIFD", {"Est. Curr.","Est. Spd.","Est. Pos."});
-        constexpr std::size_t ND(10000);
+        constexpr std::size_t ND(1000);
         std::vector<double> resp_err1(ND,.0), resp_err2(ND,.0), resp_err3(ND,.0);        
         auto min = std::numeric_limits<double>::min();
         auto max = std::numeric_limits<double>::max();
@@ -172,7 +172,7 @@ MainWindow::MainWindow(double _bias,
 
         for(std::size_t i(0); i < ND; i++){
 
-            if(i > ND/4){
+            if(i > ND/64){
                 ref_(control_mode_) = 1.693;
             }
 
@@ -193,7 +193,7 @@ MainWindow::MainWindow(double _bias,
             // out(1) += noise(1);
             // out(2) += noise(2);
 
-            if(i > ND/4){
+            if(i > ND/64){
                 out(control_mode_) += bias_;
                 if(std::fabs(out(control_mode_)) < dead_zone_)
                     out(control_mode_) = .0;
@@ -225,10 +225,14 @@ MainWindow::MainWindow(double _bias,
         // jacl::plot(resp_err1, SAMPLING_PERIOD, "Position error", {"Position sensor error"});
         std::cout << "Velocity error max : " << std::get<0>(peak2)
                   << " ; min : " << std::get<1>(peak2) << std::endl;
-        jacl::plot(resp_err2, SAMPLING_PERIOD, "Error speed response sim - r = 97(deg)", {"Error speed response real (rad/s)"});
+        std::transform(resp_err2.begin(), resp_err2.end(),
+                    resp_err2.begin(), std::bind(std::multiplies<double>(), std::placeholders::_1, 60./(2.*M_PI)));
+        jacl::plot(resp_err2, SAMPLING_PERIOD, "Error speed response sim - r = 97(deg)", {"Error speed response sim (rpm)"});
         std::cout << "Current error max : " << std::get<0>(peak3)
                   << " ; min : " << std::get<1>(peak3) << std::endl;
-        jacl::plot(resp_err3, SAMPLING_PERIOD, "Error current response sim - r = 97(deg)", {"Error current response real (A)"});
+        std::transform(resp_err3.begin(), resp_err3.end(),
+                    resp_err3.begin(), std::bind(std::multiplies<double>(), std::placeholders::_1, 1000));          
+        jacl::plot(resp_err3, SAMPLING_PERIOD, "Error current response sim - r = 97(deg)", {"Error current response sim (mA)"});
     }
 
     std::vector<double> position_response,speed_response,current_response;    
@@ -251,12 +255,9 @@ MainWindow::MainWindow(double _bias,
     jacl::parser::readArray(&err_speed_response, "../sample/error_speed_sample.txt");
     jacl::plot(err_speed_response, SAMPLING_PERIOD, "Error speed response real - r = 97(deg)", {"Error speed response real (rpm)"});
     jacl::parser::readArray(&err_current_response, "../sample/error_current_sample.txt");
-    std::transform(err_current_response.begin(), err_current_response.end(),
-                    err_current_response.begin(), std::bind(std::multiplies<double>(), std::placeholders::_1, 0.001));
-    jacl::plot(err_current_response, SAMPLING_PERIOD, "Error current response real - r = 97(deg)", {"Error current response real (A)"});
+    jacl::plot(err_current_response, SAMPLING_PERIOD, "Error current response real - r = 97(deg)", {"Error current response real (mA)"});
 
     cl_thread_ = boost::thread{boost::bind(&MainWindow::closedLoopProcess, this)};
-
 }
 
 MainWindow::~MainWindow(){
@@ -913,7 +914,7 @@ void MainWindow::setupDiscreteController(){
         llft.C().print("[Pos] LLFT C : ");
         llft.D().print("[Pos] LLFT D : ");
         std::cout << "[Pos] Nominal stability : " << std::boolalpha << (bool)jacl::analysis::nominalStability(pos_real_, pos_dctrl_) << std::endl;
-        std::cout << "[Pos] Nominal performance : " << std::boolalpha << (bool)jacl::analysis::nominalPerformance(llft, 2.7) << std::endl;
+        std::cout << "[Pos] Nominal performance : " << std::boolalpha << (bool)jacl::analysis::nominalPerformance(llft, gamma_pos_) << std::endl;
 
         pos_dctrl_plt_.init();
         pos_dctrl_plt_.setTitle("Discrete Position Controller");
@@ -1044,7 +1045,7 @@ void MainWindow::setupDiscreteController(){
         llft.C().print("[Spd] LLFT C : ");
         llft.D().print("[Spd] LLFT D : ");
         std::cout << "[Spd] Nominal stability : " << std::boolalpha << (bool)jacl::analysis::nominalStability(spd_real_, spd_dctrl_) << std::endl;
-        std::cout << "[Spd] Nominal performance : " << std::boolalpha << (bool)jacl::analysis::nominalPerformance(llft, 2.9) << std::endl;
+        std::cout << "[Spd] Nominal performance : " << std::boolalpha << (bool)jacl::analysis::nominalPerformance(llft, gamma_spd_) << std::endl;
 
         spd_dctrl_plt_.init();
         spd_dctrl_plt_.setTitle("Discrete Speed Controller");

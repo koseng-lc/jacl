@@ -34,24 +34,24 @@ public:
         assert(arma::size(_R) == arma::size(ss_->A()));
         R_ = _R;
         if(update_hamiltonian)
-            genSympleticMatrix();
+            genSymplecticMatrix();
     }
 
     auto setQ(const arma::mat& _Q, bool update_hamiltonian = false){
         assert(arma::size(_Q) == arma::size(ss_->A()));
         Q_ = _Q;
         if(update_hamiltonian)
-            genSympleticMatrix();
+            genSymplecticMatrix();
     }
 
-    auto setSympleticMatrix(const arma::mat& _S){
+    auto setSymplecticMatrix(const arma::mat& _S){
         S_ = _S;
     }
 
     auto solve();
 
 private:
-    auto genSympleticMatrix();
+    auto genSymplecticMatrix();
 
     auto auxSchur(const arma::mat& _S, std::tuple<arma::cx_mat, arma::cx_mat>* _TZ){
         ::jacl::py_stuff::AcquireGIL lk;
@@ -95,7 +95,7 @@ private:
 
 private:
     _StateSpace* ss_;
-    //-- Sympletic matrix
+    //-- Symplectic matrix
     arma::mat S_;
     //-- Symmetric matrix
     arma::mat R_;
@@ -132,7 +132,7 @@ DARE<_StateSpace>::~DARE(){
 }
 
 template <class _StateSpace>
-auto DARE<_StateSpace>::genSympleticMatrix(){
+auto DARE<_StateSpace>::genSymplecticMatrix(){
     /*
     Not code yet
     */
