@@ -327,7 +327,7 @@ auto DHinf<_System,
         ctemp1 = B2_B1*G_inv*cterm5;
         Aclp = cxA - ctemp1;
 
-        arma::cx_mat R_mhp = arma::powmat(R, -.5);
+        arma::cx_mat R_mhp = arma::powmat((1/(gam_*gam_))*R, -.5);
         arma::cx_mat V_mhp = arma::powmat(V, -.5);
         Z = cterm2 - cterm3*V_inv*cterm1;
         Ap = cxA + cxB1*R_inv*Z;
