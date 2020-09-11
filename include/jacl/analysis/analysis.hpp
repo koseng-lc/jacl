@@ -45,7 +45,7 @@ auto nominalStability(const _Plant& _p, const _Controller& _k){
 
 template <typename _StateSpace>
 auto nominalPerformance(const _StateSpace& _ss, double _obj){
-    return lti_common::approxInfNorm(_ss, _obj*10., _obj*0.1) < _obj;
+    return lti_common::approxInfNorm(_ss, _obj*100., _obj*0.1) < _obj;
 }
 
 template <typename _StateSpace>

@@ -168,7 +168,7 @@ auto DHinf<_System,
     std::cout << "[DHinf] Interconnection matrix assumptions : " << std::endl;
 #endif
     bool check_assumption = checkAllAssumption();
-    assert(check_assumption && "[DHinf] The assumption made for interconnection matrix is not fulfill !");
+    assert(check_assumption && "[DHinf] The assumption made for interconnection matrix is not satisfied !");
 
     using namespace ::jacl::linear_algebra;
 
@@ -326,7 +326,8 @@ auto DHinf<_System,
         //-- TODO : check whether is Acl asymptotically stable or not
         ctemp1 = B2_B1*G_inv*cterm5;
         Aclp = cxA - ctemp1;
-
+        assert(lti_common::isStable(Aclp, false) && "Aclp is not asymptotically stable !");
+        
         arma::cx_mat R_mhp = arma::powmat((1/(gam_*gam_))*R, -.5);
         arma::cx_mat V_mhp = arma::powmat(V, -.5);
         Z = cterm2 - cterm3*V_inv*cterm1;
@@ -336,7 +337,7 @@ auto DHinf<_System,
         ctemp1 = V_mhp*cterm4*R_inv*Z;
         C2p = V_mhp*cterm1 + ctemp1;
         D12p = cxD21*R_mhp;
-        D21p = arma::powmat(V, .5);
+        D21p = arma::powmat(V, .5); //-- another way to solve Cholesky factorization
         D22p = V_mhp*cterm4*R_mhp;
     }
 
@@ -374,7 +375,6 @@ auto DHinf<_System,
             #endif
         }
         //-- more stable with solve() than with inv()
-        reg_A_tilde.t().print("A_tilde_t : ");
         arma::cx_mat A_tilde_t = arma::trans(A_tilde);
         arma::cx_mat A_tilde_tinv = arma::solve(reg_A_tilde.t(), arma::eye<arma::cx_mat>(arma::size(A)),
             arma::solve_opts::refine + arma::solve_opts::equilibrate + arma::solve_opts::allow_ugly);
@@ -439,6 +439,7 @@ auto DHinf<_System,
 
         //-- TODO : check whether is Acl asymptotically stable or not
         arma::cx_mat Acl = Ap - arma::trans(cterm5)*G_inv*arma::trans(C1_C2);
+        assert(lti_common::isStable(Aclp, false) && "Aclp is not asymptotically stable !");
 
         N = -arma::inv(D21p)*cterm4*V_inv;
         M = -(arma::inv(D21p)*C2p + N*C1p);
