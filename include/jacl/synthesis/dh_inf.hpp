@@ -326,7 +326,7 @@ auto DHinf<_System,
         //-- TODO : check whether is Acl asymptotically stable or not
         ctemp1 = B2_B1*G_inv*cterm5;
         Aclp = cxA - ctemp1;
-        assert(lti_common::isStable(Aclp, false) && "Aclp is not asymptotically stable !");
+        assert(lti_common::isStable(Aclp, false) && "[DHinf] Aclp is not asymptotically stable !");
         
         arma::cx_mat R_mhp = arma::powmat((1/(gam_*gam_))*R, -.5);
         arma::cx_mat V_mhp = arma::powmat(V, -.5);
@@ -439,7 +439,7 @@ auto DHinf<_System,
 
         //-- TODO : check whether is Acl asymptotically stable or not
         arma::cx_mat Acl = Ap - arma::trans(cterm5)*G_inv*arma::trans(C1_C2);
-        assert(lti_common::isStable(Aclp, false) && "Aclp is not asymptotically stable !");
+        assert(lti_common::isStable(Aclp, false) && "[DHinf] Acl is not asymptotically stable !");
 
         N = -arma::inv(D21p)*cterm4*V_inv;
         M = -(arma::inv(D21p)*C2p + N*C1p);

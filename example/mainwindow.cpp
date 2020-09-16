@@ -876,6 +876,7 @@ void MainWindow::setupDiscreteController(){
             cl_ss.setC(arma::join_rows(pos_real_.C(), arma::zeros(1,3)));
             cl_ss.setD(pos_real_.D());
         }
+
         cl_ss.A().print("[Pos] A_cl : ");
         cl_ss.B().print("[Pos] B_cl : ");
         cl_ss.C().print("[Pos] C_cl : ");
@@ -890,25 +891,34 @@ void MainWindow::setupDiscreteController(){
         std::cout << "[Pos] Settling time : " << jacl::analysis::getSettlingTime(transient_data) << std::endl;
 
         //-- Nominal analysis
-        jacl::state_space::Linear<double,6,3,2> llft;
-        arma::mat temp;
-        temp = arma::inv(pos_dctrl_.D() - D22);
+
+        jacl::state_space::Linear<double, 6, 3, 2> llft;
+        arma::mat R = eye1x1 - D22*pos_dctrl_.D();
+        arma::mat R_inv = arma::inv(R);
+        arma::mat S = eye1x1 - pos_dctrl_.D()*D22;
+        arma::mat S_inv = arma::inv(S);
+        temp1 = B2*S_inv*pos_dctrl_.D()*C2;
+        temp2 = pos_dctrl_.B()*R_inv*D22*pos_dctrl_.C();
         llft.setA(
             arma::join_cols(
-                arma::join_rows(pos_icm_.A()+B2*temp*C2, -B2*temp*pos_dctrl_.C()),
-                arma::join_rows(pos_dctrl_.B()*temp*C2, pos_dctrl_.A() - pos_dctrl_.B()*temp*pos_dctrl_.C())
+                arma::join_rows(pos_icm_.A() + temp1, B2*S_inv*pos_dctrl_.C()),
+                arma::join_rows(pos_dctrl_.B()*R_inv*C2, pos_dctrl_.A() + temp2)
             )
         );
+
         llft.setB(
             arma::join_cols(
-                B2*temp*D21,
-                pos_dctrl_.B()*temp*D21
+                B1 + B2*pos_dctrl_.D()*D21,
+                pos_dctrl_.B()*R_inv*D21
             )
         );
-        llft.setC(
-            arma::join_rows(C1 + D12*temp*C2, -D12*temp*pos_dctrl_.C())
-        );
-        llft.setD(D11+D12*temp*D21);
+
+        temp1 = D12*S_inv*pos_dctrl_.D()*C2;
+        llft.setC(arma::join_rows(C1 + temp1, D12*S_inv*pos_dctrl_.C()));
+
+        temp1 = D12*S_inv*pos_dctrl_.D()*D21;
+        llft.setD(D11 + temp1);
+
         llft.A().print("[Pos] LLFT A : ");
         llft.B().print("[Pos] LLFT B : ");
         llft.C().print("[Pos] LLFT C : ");
@@ -1022,24 +1032,32 @@ void MainWindow::setupDiscreteController(){
 
         //-- Nominal analysis
         jacl::state_space::Linear<double,4,3,2> llft;
-        arma::mat temp;
-        temp = arma::inv(spd_dctrl_.D() - D22);
+        arma::mat R = eye1x1 - D22*spd_dctrl_.D();
+        arma::mat R_inv = arma::inv(R);
+        arma::mat S = eye1x1 - spd_dctrl_.D()*D22;
+        arma::mat S_inv = arma::inv(S);
+        temp1 = B2*S_inv*spd_dctrl_.D()*C2;
+        temp2 = spd_dctrl_.B()*R_inv*D22*spd_dctrl_.C();
         llft.setA(
             arma::join_cols(
-                arma::join_rows(spd_icm_.A()+B2*temp*C2, -B2*temp*spd_dctrl_.C()),
-                arma::join_rows(spd_dctrl_.B()*temp*C2, spd_dctrl_.A() - spd_dctrl_.B()*temp*spd_dctrl_.C())
+                arma::join_rows(spd_icm_.A() + temp1, B2*S_inv*spd_dctrl_.C()),
+                arma::join_rows(spd_dctrl_.B()*R_inv*C2, spd_dctrl_.A() + temp2)
             )
         );
+
         llft.setB(
             arma::join_cols(
-                B2*temp*D21,
-                spd_dctrl_.B()*temp*D21
+                B1 + B2*spd_dctrl_.D()*D21,
+                spd_dctrl_.B()*R_inv*D21
             )
         );
-        llft.setC(
-            arma::join_rows(C1 + D12*temp*C2, -D12*temp*spd_dctrl_.C())
-        );
-        llft.setD(D11+D12*temp*D21);
+
+        temp1 = D12*S_inv*spd_dctrl_.D()*C2;
+        llft.setC(arma::join_rows(C1 + temp1, D12*S_inv*spd_dctrl_.C()));
+
+        temp1 = D12*S_inv*spd_dctrl_.D()*D21;
+        llft.setD(D11 + temp1);
+
         llft.A().print("[Spd] LLFT A : ");
         llft.B().print("[Spd] LLFT B : ");
         llft.C().print("[Spd] LLFT C : ");
