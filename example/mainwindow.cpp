@@ -856,7 +856,7 @@ void MainWindow::setupDiscreteController(){
 
         //-- closed-loop
         jacl::state_space::Linear<double, 6,1,1> cl_ss;
-        jacl::system::Discrete<jacl::state_space::Linear<double, 6,1,1>> cl_sys(&cl_ss, SAMPLING_PERIOD);
+        jacl::system::Discrete<decltype(cl_ss)> cl_sys(&cl_ss, SAMPLING_PERIOD);
         {
             arma::mat temp1;
 
@@ -882,7 +882,7 @@ void MainWindow::setupDiscreteController(){
         cl_ss.C().print("[Pos] C_cl : ");
         cl_ss.D().print("[Pos] D_cl : ");
         jacl::analysis::transient_data_t transient_data =
-            jacl::analysis::transient<jacl::system::Discrete<jacl::state_space::Linear<double,6,1,1>>,5000>(cl_sys, {1.57},
+            jacl::analysis::transient<decltype(cl_sys),5000>(cl_sys, {1.57},
                 "Closed-loop position control simulation - r = 1.57 (rad or 90 degree)");
 
         std::cout << "[Pos] Rise time : " << jacl::analysis::getRiseTime(transient_data) << std::endl;
@@ -923,8 +923,12 @@ void MainWindow::setupDiscreteController(){
         llft.B().print("[Pos] LLFT B : ");
         llft.C().print("[Pos] LLFT C : ");
         llft.D().print("[Pos] LLFT D : ");
-        std::cout << "[Pos] Nominal stability : " << std::boolalpha << (bool)jacl::analysis::nominalStability(pos_real_, pos_dctrl_) << std::endl;
-        std::cout << "[Pos] Nominal performance : " << std::boolalpha << (bool)jacl::analysis::nominalPerformance(llft, gamma_pos_) << std::endl;
+        std::cout << "[Pos] Nominal stability : "
+                  << std::boolalpha
+                  << (bool)jacl::analysis::nominalStability(
+                      jacl::system::Discrete<decltype(pos_real_)>(&pos_real_, SAMPLING_PERIOD)
+                      ,jacl::system::Discrete<decltype(pos_dctrl_)>(&pos_dctrl_, SAMPLING_PERIOD)) << std::endl;
+        std::cout << "[Pos] Nominal performance : " << std::boolalpha << (bool)jacl::analysis::nominalPerformance(llft, gamma_pos_, false) << std::endl;
 
         pos_dctrl_plt_.init();
         pos_dctrl_plt_.setTitle("Discrete Position Controller");
@@ -932,7 +936,7 @@ void MainWindow::setupDiscreteController(){
     }
 
     //-- speed controller
-    jacl::system::Discrete<jacl::state_space::Linear<double,2,1,1>> spd_sys(&spd_real_, SPD_SP);
+    // jacl::system::Discrete<jacl::state_space::Linear<double,2,1,1>> spd_sys(&spd_real_, SPD_SP);
     jacl::state_space::Linear<double,2,1,1> spd;
     {        
         spd.setA(simo_.A().submat(1,1,2,2));
@@ -997,7 +1001,7 @@ void MainWindow::setupDiscreteController(){
 
         //-- closed-loop
         jacl::state_space::Linear<double, 4,1,1> cl_ss;
-        jacl::system::Discrete<jacl::state_space::Linear<double, 4,1,1>> cl_sys(&cl_ss, SPD_SP);
+        jacl::system::Discrete<decltype(cl_ss)> cl_sys(&cl_ss, SPD_SP);
         {
             arma::mat temp1;
 
@@ -1022,7 +1026,7 @@ void MainWindow::setupDiscreteController(){
         cl_ss.C().print("[Spd] C_cl : ");
         cl_ss.D().print("[Spd] D_cl : ");
         jacl::analysis::transient_data_t transient_data =
-            jacl::analysis::transient<jacl::system::Discrete<jacl::state_space::Linear<double, 4,1,1>>,500>(cl_sys, {131},
+            jacl::analysis::transient<decltype(cl_sys),500>(cl_sys, {131},
                 "Closed-loop speed control simulation - r = 1260 (rpm) or 131 rad/s");
 
         std::cout << "[Spd] Rise time : " << jacl::analysis::getRiseTime(transient_data) << std::endl;
@@ -1062,8 +1066,12 @@ void MainWindow::setupDiscreteController(){
         llft.B().print("[Spd] LLFT B : ");
         llft.C().print("[Spd] LLFT C : ");
         llft.D().print("[Spd] LLFT D : ");
-        std::cout << "[Spd] Nominal stability : " << std::boolalpha << (bool)jacl::analysis::nominalStability(spd_real_, spd_dctrl_) << std::endl;
-        std::cout << "[Spd] Nominal performance : " << std::boolalpha << (bool)jacl::analysis::nominalPerformance(llft, gamma_spd_) << std::endl;
+        std::cout << "[Spd] Nominal stability : "
+                  << std::boolalpha
+                  << (bool)jacl::analysis::nominalStability(
+                      jacl::system::Discrete<decltype(spd_real_)>(&spd_real_, SAMPLING_PERIOD)
+                      ,jacl::system::Discrete<decltype(spd_dctrl_)>(&spd_dctrl_, SAMPLING_PERIOD)) << std::endl;
+        std::cout << "[Spd] Nominal performance : " << std::boolalpha << (bool)jacl::analysis::nominalPerformance(llft, gamma_spd_, false) << std::endl;
 
         spd_dctrl_plt_.init();
         spd_dctrl_plt_.setTitle("Discrete Speed Controller");

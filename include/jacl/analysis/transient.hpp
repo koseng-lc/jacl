@@ -71,10 +71,13 @@ static auto transient(_System _sys, typename _System::input_t _input,
 
         response[i] = out(0);
     }
-
     tr = (tr_end - tr_start)*_sys.samplingPeriod();
     tp *= _sys.samplingPeriod();
-    overshoot = std::fabs(1. - peak_val/in(0)) * 100.;
+    if(tr_end < 0){ //-- overdamped
+        overshoot = 0.;
+    }else{
+        overshoot = std::fabs(1. - peak_val/in(0)) * 100.;
+    }    
 
     //-- wayback to find when the response reach 2% of error
     for(auto i(NUM_SAMPLE_DATA - 1); i >= 0; i--){
@@ -122,10 +125,14 @@ static auto transient(std::vector<Scalar>& _response,
             tp = i;
         }
     }
-
+    
     tr = (tr_end - tr_start)*_sampling_period;
     tp *= _sampling_period;
-    overshoot = std::fabs(1. - peak_val/_in(0)) * 100.;
+    if(tr_end < 0){ //-- overdamped
+        overshoot = 0.;
+    }else{
+        overshoot = std::fabs(1. - peak_val/_in(0)) * 100.;
+    } 
 
     //-- wayback to find when the response reach 2% of error
     for(auto i(_response.size() - 1); i >= 0; i--){

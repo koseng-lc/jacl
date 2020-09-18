@@ -1,3 +1,8 @@
+/**
+*   @author : koseng (Lintang)
+*   @brief : jacl numerical methods
+*/
+
 #pragma once
 
 #include <numeric>
@@ -5,9 +10,7 @@
 
 #define NUMERICAL_METHODS_VERBOSE
 
-namespace jacl{
-
-namespace numerical_methods{
+namespace jacl{ namespace numerical_methods{
 
 //-- mf is a method that have two arguments(current estimate and that target function) and return boolean
 //-- true -> less than
@@ -36,6 +39,4 @@ static auto bisection(const TargetFunction& target,
     return est;
 }
 
-}
-
-}
+} }

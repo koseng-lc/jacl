@@ -1,11 +1,18 @@
+/**
+*   @author : koseng (Lintang)
+*   @brief : jacl analysis stuff
+*/
+
 #pragma once
 
 #include <jacl/lti_common.hpp>
+#include <jacl/traits.hpp>
 
 namespace jacl{ namespace analysis{
 
 template <typename _Plant, typename _Controller>
-auto nominalStability(const _Plant& _p, const _Controller& _k){
+auto nominalStability(_Plant _p, _Controller _k)
+    -> std::enable_if_t<::jacl::traits::is_discrete_system<_Plant>::value, bool>{
     typename arma::Mat<typename _Plant::scalar_t>::template
         fixed<_Plant::n_states + _Controller::n_states,
          _Controller::n_inputs> temp2 = arma::join_cols(
@@ -37,14 +44,14 @@ auto nominalStability(const _Plant& _p, const _Controller& _k){
     typename arma::Mat<typename _Plant::scalar_t>::template
         fixed<_Plant::n_states + _Controller::n_states,
          _Plant::n_states + _Controller::n_states> A_bar = temp1 + temp2*temp4*temp3;
-         
-    return lti_common::isStable(A_bar,false)
-            & lti_common::stabilizable(temp1, temp2)
-            & lti_common::detectability(temp1, temp3);
+
+    return lti_common::isStable(A_bar, false)
+            & lti_common::stabilizable(temp1, temp2, false)
+            & lti_common::detectability(temp1, temp3, false);
 }
 
 template <typename _StateSpace>
-auto nominalPerformance(const _StateSpace& _ss, double _obj){
+auto nominalPerformance(const _StateSpace& _ss, double _obj, bool _continuous=false){
     return lti_common::approxInfNorm(_ss, _obj*100., _obj*0.1) < _obj;
 }
 

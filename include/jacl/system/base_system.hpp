@@ -63,6 +63,11 @@ public:
     }
     inline auto dt() const{ return dt_; }
     
+    auto A() -> typename state_space_t::state_matrix_t { return this->ss_->A(); }
+    auto B() -> typename state_space_t::input_matrix_t { return this->ss_->B(); }
+    auto C() -> typename state_space_t::output_matrix_t { return this->ss_->C(); }
+    auto D() -> typename state_space_t::feedforward_matrix_t { return this->ss_->D(); }
+
 protected:
     virtual void setIn(const input_t& _in) = 0;
     virtual auto dstate() -> state_t = 0;
@@ -78,10 +83,7 @@ protected:
             this->s_->attach(this);
         }
     }    
-    auto A() -> typename state_space_t::state_matrix_t { return this->ss_->A(); }
-    auto B() -> typename state_space_t::input_matrix_t { return this->ss_->B(); }
-    auto C() -> typename state_space_t::output_matrix_t { return this->ss_->C(); }
-    auto D() -> typename state_space_t::feedforward_matrix_t { return this->ss_->D(); }
+    
 protected:
     state_t state_;
     state_t prev_state_;

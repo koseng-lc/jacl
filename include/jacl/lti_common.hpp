@@ -36,7 +36,7 @@ namespace detail{
     }
 
     template <typename StateMatrix, typename InputMatrix>
-    static auto stabilizable(const StateMatrix& _A, const InputMatrix& _B){
+    static auto stabilizable(const StateMatrix& _A, const InputMatrix& _B, bool _continuous = true){
         //-- must be square matrix
         assert(_A.n_rows == _A.n_cols);
         //-- must be compatible with A
@@ -53,11 +53,21 @@ namespace detail{
         cx_B.set_real(_B);
         bool ok(true);
         for(int i(0); i < eigval_re.n_rows; i++){
-            if(eigval_re(i) > .0){
-                temp = _A - eigval(i)*eye;
-                if(arma::rank( arma::join_horiz(temp, cx_B) ) < _A.n_rows){
-                    ~ok;
-                    break;
+            if(_continuous){
+                if(std::real(eigval(i)) > .0){
+                    temp = _A - eigval(i)*eye;
+                    if(arma::rank( arma::join_horiz(temp, cx_B) ) < _A.n_rows){
+                        ~ok;
+                        break;
+                    }
+                }
+            }else{
+                if(std::abs(eigval(i)) - 1. > 1e-4){
+                    temp = _A - eigval(i)*eye;
+                    if(arma::rank( arma::join_horiz(temp, cx_B) ) < _A.n_rows){
+                        ~ok;
+                        break;
+                    }
                 }
             }
         }
@@ -87,7 +97,7 @@ namespace detail{
     }
 
     template <typename StateMatrix, typename OutputMatrix>
-    static auto detectability(const StateMatrix& _A, const OutputMatrix& _C){
+    static auto detectability(const StateMatrix& _A, const OutputMatrix& _C, bool _continuous = true){
         //-- must be square matrix
         assert(_A.n_rows == _A.n_cols);
         //-- must be compatible with A
@@ -104,11 +114,21 @@ namespace detail{
         cx_C.set_real(_C);
         bool ok(true);
         for(int i(0); i < eigval_re.n_rows; i++){
-            if(eigval_re(i) > .0){
-                temp = _A - eigval(i)*eye;
-                if(arma::rank( arma::join_vert(temp, cx_C) ) < _A.n_cols){
-                    ~ok;
-                    break;
+            if(_continuous){
+                if(std::real(eigval(i)) > .0){
+                    temp = _A - eigval(i)*eye;
+                    if(arma::rank( arma::join_vert(temp, cx_C) ) < _A.n_cols){
+                        ~ok;
+                        break;
+                    }
+                }
+            }else{
+                if(std::abs(eigval(i)) - 1. > 1e-4){
+                    temp = _A - eigval(i)*eye;
+                    if(arma::rank( arma::join_vert(temp, cx_C) ) < _A.n_cols){
+                        ~ok;
+                        break;
+                    }
                 }
             }
         }
@@ -134,8 +154,8 @@ namespace detail{
                 }
             }
         }else{
-            for(const auto& _p:p){                 
-                if(std::fabs(std::abs(_p) - 1.0) < 1e-4){
+            for(const auto& _p:p){              
+                if(std::abs(_p) - 1. > .1){
                     ok = false;
                     break;
                 }
@@ -158,8 +178,8 @@ static auto controllable(const _StateSpace& _ss){
 }
 
 template <typename StateMatrix, typename InputMatrix>
-static auto stabilizable(const StateMatrix& _A, const InputMatrix& _B){
-    return detail::stabilizable(_A, _B);
+static auto stabilizable(const StateMatrix& _A, const InputMatrix& _B, bool _continuous = true){
+    return detail::stabilizable(_A, _B, _continuous);
 }
 
 template <typename _StateSpace>
@@ -237,8 +257,8 @@ static auto observable(const _StateSpace& _ss, arma::mat* _O = nullptr){
 }
 
 template <typename StateMatrix, typename OutputMatrix>
-static auto detectability(const StateMatrix& _A, const OutputMatrix& _C){
-    return detail::detectability(_A, _C);
+static auto detectability(const StateMatrix& _A, const OutputMatrix& _C, bool _continuous = true){
+    return detail::detectability(_A, _C, _continuous);
 }
 
 template <typename _StateSpace>

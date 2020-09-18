@@ -148,9 +148,9 @@ private:
                          jacl::PhysicalParameter<>>;
     LinearStateSpace ss_;
     jacl::system::Continuous<LinearStateSpace> csys_;
-    jacl::Plotter<jacl::system::Continuous<LinearStateSpace> > csys_plt_;    
+    jacl::Plotter<decltype(csys_)> csys_plt_;    
     jacl::system::ContinuousObserver<LinearStateSpace> cobserver_;
-    jacl::Plotter<jacl::system::ContinuousObserver<LinearStateSpace> > cobserver_plt_;
+    jacl::Plotter<decltype(cobserver_)> cobserver_plt_;
 
     //-- Discrete SIMO DC motor
     using SIMO = jacl::state_space::Linear<double,3, 1, 3,
@@ -162,13 +162,13 @@ private:
                                     jacl::PhysicalParameter<>>;
     SIMO simo_;
     jacl::state_space::Linear<double,3,1,3> dsimo_;
-    jacl::system::Discrete<jacl::state_space::Linear<double,3,1,3>> dsys_simo_;
-    jacl::system::DiscreteObserver<jacl::state_space::Linear<double,3,1,3>> dobserver_simo_;
-    jacl::Plotter<jacl::system::Discrete<jacl::state_space::Linear<double,3,1,3>>> dsys_simo_plt_;
-    jacl::Plotter<jacl::system::DiscreteObserver<jacl::state_space::Linear<double,3,1,3>>> dobserver_simo_plt_;
+    jacl::system::Discrete<decltype(dsimo_)> dsys_simo_;
+    jacl::system::DiscreteObserver<decltype(dsimo_)> dobserver_simo_;
+    jacl::Plotter<decltype(dsys_simo_)> dsys_simo_plt_;
+    jacl::Plotter<decltype(dobserver_simo_)> dobserver_simo_plt_;
     arma::mat din_;    
-    jacl::diagnosis::IFD<jacl::system::Discrete<jacl::state_space::Linear<double,3,1,3>>> ifd_;
-    using SIFD = jacl::diagnosis::SIFD<jacl::system::Discrete<jacl::state_space::Linear<double,3,1,3>>,0>;
+    jacl::diagnosis::IFD<decltype(dsys_simo_)> ifd_;
+    using SIFD = jacl::diagnosis::SIFD<decltype(dsys_simo_),0>;
     SIFD sifd_;
     void makeFault(arma::vec* _out);
     void setupSIMODCMotor();
