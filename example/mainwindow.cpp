@@ -928,7 +928,10 @@ void MainWindow::setupDiscreteController(){
                   << (bool)jacl::analysis::nominalStability(
                       jacl::system::Discrete<decltype(pos_real_)>(&pos_real_, SAMPLING_PERIOD)
                       ,jacl::system::Discrete<decltype(pos_dctrl_)>(&pos_dctrl_, SAMPLING_PERIOD)) << std::endl;
-        std::cout << "[Pos] Nominal performance : " << std::boolalpha << (bool)jacl::analysis::nominalPerformance(llft, gamma_pos_, false) << std::endl;
+        std::cout << "[Pos] Nominal performance : "
+                  << std::boolalpha
+                  << (bool)jacl::analysis::nominalPerformance(
+                      jacl::system::Discrete<decltype(llft)>(&llft, SAMPLING_PERIOD), gamma_pos_) << std::endl;
 
         pos_dctrl_plt_.init();
         pos_dctrl_plt_.setTitle("Discrete Position Controller");
@@ -1071,7 +1074,10 @@ void MainWindow::setupDiscreteController(){
                   << (bool)jacl::analysis::nominalStability(
                       jacl::system::Discrete<decltype(spd_real_)>(&spd_real_, SAMPLING_PERIOD)
                       ,jacl::system::Discrete<decltype(spd_dctrl_)>(&spd_dctrl_, SAMPLING_PERIOD)) << std::endl;
-        std::cout << "[Spd] Nominal performance : " << std::boolalpha << (bool)jacl::analysis::nominalPerformance(llft, gamma_spd_, false) << std::endl;
+        std::cout << "[Spd] Nominal performance : "
+                  << std::boolalpha
+                  << (bool)jacl::analysis::nominalPerformance(
+                      jacl::system::Discrete<decltype(llft)>(&llft, SAMPLING_PERIOD), gamma_spd_) << std::endl;
 
         spd_dctrl_plt_.init();
         spd_dctrl_plt_.setTitle("Discrete Speed Controller");

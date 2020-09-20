@@ -8,7 +8,7 @@
 #include <numeric>
 #include <cassert>
 
-#define NUMERICAL_METHODS_VERBOSE
+// #define NUMERICAL_METHODS_VERBOSE
 
 namespace jacl{ namespace numerical_methods{
 
@@ -33,8 +33,8 @@ static auto bisection(const TargetFunction& target,
         ++num_iter;
     }
     #ifdef NUMERICAL_METHODS_VERBOSE    
-    std::cout << "Iter : " << num_iter << std::endl;
-    std::cout << "Est : " << est << std::endl;
+    std::cout << "[numerical_methods] Iter : " << num_iter << std::endl;
+    std::cout << "[numerical_methods] Est : " << est << std::endl;
     #endif
     return est;
 }

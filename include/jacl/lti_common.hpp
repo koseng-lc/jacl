@@ -10,6 +10,7 @@
 #include <armadillo>
 
 #include <jacl/traits.hpp>
+#include <jacl/linear_algebra.hpp>
 #include <jacl/numerical_methods.hpp>
 
 namespace jacl{ namespace lti_common{
@@ -154,7 +155,7 @@ namespace detail{
                 }
             }
         }else{
-            for(const auto& _p:p){              
+            for(const auto& _p:p){
                 if(std::abs(_p) - 1. > .1){
                     ok = false;
                     break;
@@ -356,51 +357,87 @@ static auto discretize(const _StateSpace& _ss, double _sampling_time) -> StateSp
     return std::make_tuple(Ad,Bd, _ss.C(), _ss.D());
 }
 
-template <typename _StateSpace>
-bool isInfNormLessThan(double _gam, const _StateSpace& _ss){
-    arma::mat temp;
-    arma::mat B = (1./_gam)*_ss.B();
-    arma::mat D = (1./_gam)*_ss.D();
-
-    arma::mat R = arma::eye(_StateSpace::n_inputs,_StateSpace::n_inputs) - arma::trans(D)*D;
-    arma::mat R_inv = arma::inv(R);
-    arma::mat T = arma::eye(_StateSpace::n_outputs,_StateSpace::n_outputs) - D*arma::trans(D);
-    arma::mat T_inv = arma::inv(T);
-    temp = B*R_inv*arma::trans(D)*_ss.C();
-    arma::mat E = _ss.A() + temp;
-    arma::mat E_t_inv = arma::inv(arma::trans(E));
-    arma::mat G = -B*R_inv*arma::trans(B);
-    arma::mat Q = arma::trans(_ss.C())*T_inv*_ss.C();
-
-    arma::mat S11 = E + G*E_t_inv*Q;
-    arma::mat S12 = -G*E_t_inv;
-    arma::mat S21 = -E_t_inv*Q;
-    arma::mat S22 = E_t_inv;
-
-    //-- Symplectic matrix
-    arma::mat S = arma::join_cols(
-        arma::join_rows(S11, S12),
-        arma::join_rows(S21, S22)
-    );
-    arma::mat I(arma::size(_ss.A()), arma::fill::eye);
-    temp = arma::inv(I - _ss.A());
-    if(arma::norm(_ss.C()*temp*B+D,2) >= 1)
-        return false;  
-    arma::cx_vec p( detail::poles(S) );
+template <typename _System>
+bool isInfNormLessThan(double _gam, _System _sys){
+    constexpr auto continuous = ::jacl::traits::is_continuous_system<_System>::value;
     bool ok(true);
-    for(const auto& _p:p){
-        if(std::fabs(std::abs(_p) - 1.0) < 1e-6){
+    if(continuous){
+        arma::mat temp;
+        temp = arma::trans(_sys.D())*_sys.D();
+        arma::mat R = (_gam*_gam)*arma::eye(_System::n_inputs, _System::n_inputs) - temp;
+        arma::mat R_inv = arma::inv(R);
+
+        temp = _sys.B()*R_inv*arma::trans(_sys.D());
+        arma::mat H11 = _sys.A() + temp*_sys.C();
+        arma::mat H12 = _sys.B()*R_inv*arma::trans(_sys.B());
+        temp = arma::eye(_System::n_outputs, _System::n_outputs) + _sys.D()*R_inv*arma::trans(_sys.D());
+        arma::mat H21 = -arma::trans(_sys.C())*temp*_sys.C();
+        arma::mat H22 = -arma::trans(H11);
+
+        arma::mat H = arma::join_cols(
+            arma::join_rows(H11, H12),
+            arma::join_rows(H21, H22)
+        );
+        arma::cx_vec p( detail::poles(H) );
+
+        if(linear_algebra::largestSV(H) < _gam){
+            for(const auto& _p:p){
+                if(std::abs(std::real(_p)) < 1e-6){
+                    ok = false;
+                    break;
+                }
+            }
+        }else{
             ok = false;
-            break;
         }
-    }
+
+    }else{
+        arma::mat temp;
+        arma::mat B = (1./_gam)*_sys.B();
+        arma::mat D = (1./_gam)*_sys.D();
+
+        arma::mat R = arma::eye(_System::n_inputs,_System::n_inputs) - arma::trans(D)*D;
+        arma::mat R_inv = arma::inv(R);
+        arma::mat T = arma::eye(_System::n_outputs,_System::n_outputs) - D*arma::trans(D);
+        arma::mat T_inv = arma::inv(T);
+        temp = B*R_inv*arma::trans(D)*_sys.C();
+        arma::mat E = _sys.A() + temp;
+        arma::mat E_t_inv = arma::inv(arma::trans(E));
+        arma::mat G = -B*R_inv*arma::trans(B);
+        arma::mat Q = arma::trans(_sys.C())*T_inv*_sys.C();
+
+        arma::mat S11 = E + G*E_t_inv*Q;
+        arma::mat S12 = -G*E_t_inv;
+        arma::mat S21 = -E_t_inv*Q;
+        arma::mat S22 = E_t_inv;
+
+        //-- Symplectic matrix
+        arma::mat S = arma::join_cols(
+            arma::join_rows(S11, S12),
+            arma::join_rows(S21, S22)
+        );
+        arma::mat I(arma::size(_sys.A()), arma::fill::eye);
+        temp = arma::inv(I - _sys.A());
+        if(arma::norm(_sys.C()*temp*B+D,2) < 1){
+            arma::cx_vec p( detail::poles(S) );
+            for(const auto& _p:p){
+                if(std::fabs(std::abs(_p) - 1.0) < 1e-6){
+                    ok = false;
+                    break;
+                }
+            }
+        }else{
+            ok = false;
+        } 
+        
+    }    
+    
     return ok;
 }
 
-template <typename _StateSpace>
-auto approxInfNorm(const _StateSpace& _ss, double _ubound, double _lbound){
-    // auto metric = std::function<bool(double,_StateSpace)>(isInfNormLessThan<_StateSpace>);
-    return numerical_methods::bisection(_ss, isInfNormLessThan<_StateSpace>, _ubound, _lbound);
+template <typename _System>
+auto approxInfNorm(_System _sys){    
+    return numerical_methods::bisection(_sys, isInfNormLessThan<_System>, 100., .1);
 }
 
 } }

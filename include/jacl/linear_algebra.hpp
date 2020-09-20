@@ -104,6 +104,13 @@ static auto spectralRadius(const arma::Mat<Type>& in){
     return max_mag_eigval;
 }
 
+template <typename Type>
+static auto largestSV(const arma::Mat<Type>& in)
+    -> Type{
+    arma::Col<Type> s;
+    return arma::max(s);
+}
+
 // template <typename _StateSpace>
 // auto isInfNormLessThan(double _gam, const _StateSpace& _ss){
 //     arma::mat C_t = arma::trans( _ss.C() );
