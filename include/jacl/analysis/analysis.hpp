@@ -12,7 +12,7 @@ namespace jacl{ namespace analysis{
 
 template <typename _Plant, typename _Controller>
 auto nominalStability(_Plant _p, _Controller _k){
-    auto continuous = ::jacl::traits::is_continuous_system<_Plant>::value;
+    auto continuous = ::jacl::traits::is_continuous_system_v<_Plant>;
     typename arma::Mat<typename _Plant::scalar_t>::template
         fixed<_Plant::n_states + _Controller::n_states,
          _Controller::n_inputs> temp2 = arma::join_cols(

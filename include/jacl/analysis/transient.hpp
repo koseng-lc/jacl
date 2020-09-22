@@ -34,7 +34,7 @@ static auto transient(_System _sys, typename _System::input_t _input,
                       std::string&& _plot_name,
                       double _ts_threshold=.02)
     -> typename std::enable_if_t<
-        ::jacl::traits::is_siso<typename _System::state_space_t>::value,transient_data_t>{
+        ::jacl::traits::is_siso_v<typename _System::state_space_t>,transient_data_t>{
     _sys.reset();
     constexpr auto NUM_SAMPLE_DATA(num_sample);
     const typename _System::input_t in(_input);

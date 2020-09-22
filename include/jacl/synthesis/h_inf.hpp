@@ -25,7 +25,7 @@ template <typename _System,
 class Hinf:public ::jacl::system::detail::BaseSystemClient<typename _System::base_t>{
 public:
     template<typename __System = _System,
-             typename std::enable_if_t<traits::is_continuous_system<__System>::value, int>* = nullptr>
+             typename std::enable_if_t<::jacl::traits::is_continuous_system_v<__System>, int>* = nullptr>
     Hinf(__System* _sys, double _gam)
         : ss_(::jacl::system::detail::BaseSystemClient<typename _System::base_t>::ss(_sys))
         , llft_(ss_)

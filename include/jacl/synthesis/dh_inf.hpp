@@ -25,7 +25,7 @@ template <typename _System,
 class DHinf:public ::jacl::system::detail::BaseSystemClient<typename _System::base_t>{
 public:
     template<typename __System = _System,
-             typename std::enable_if_t<traits::is_discrete_system<__System>::value, int>* = nullptr>
+             typename std::enable_if_t<::jacl::traits::is_discrete_system_v<__System>, int>* = nullptr>
     DHinf(__System* _sys, double _gam,
           typename _System::state_t _reg1,
           typename _System::state_t _reg2)
@@ -76,8 +76,8 @@ auto DHinf<_System,
     performance_size,
     perturbation_size>::checkAssumption1(){
 
-    auto ctrb = lti_common::stabilizable(llft_.A(), llft_.B2());
-    auto obsv = lti_common::detectability(llft_.A(), llft_.C2());
+    auto ctrb = ::jacl::lti_common::stabilizable(llft_.A(), llft_.B2());
+    auto obsv = ::jacl::lti_common::detectability(llft_.A(), llft_.C2());
 #ifdef DHINF_VERBOSE
     std::cout << "[DHinf] Assumption 1 : " << std::boolalpha << ctrb << " ; " << obsv << std::endl;
 #endif
@@ -109,7 +109,7 @@ auto DHinf<_System,
     temp2 = temp1*llft_.C1();
     arma::mat A = llft_.A() - temp2;    
 
-    bool ok = !lti_common::hasUnobservableModeInUnitCircle(A, C);
+    bool ok = !::jacl::lti_common::hasUnobservableModeInUnitCircle(A, C);
    
 #ifdef DHINF_VERBOSE
     std::cout << "[DHinf] Assumption 2 : " << std::boolalpha << ok << std::endl;
@@ -138,7 +138,7 @@ auto DHinf<_System,
     temp2 = (I - temp1);
     arma::mat B = llft_.B1()*temp2;
 
-    bool ok = !lti_common::hasUncontrollableModeInUnitCircle(A, B);
+    bool ok = !::jacl::lti_common::hasUncontrollableModeInUnitCircle(A, B);
 
 #ifdef DHINF_VERBOSE
     std::cout << "[DHinf] Assumption 3 : " << std::boolalpha << ok << std::endl;

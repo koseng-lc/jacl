@@ -332,7 +332,7 @@ static auto poles(const typename arma::Mat<Scalar>::template fixed<n_states,n_st
 template <typename _StateSpace>
 static auto poles(const _StateSpace& _ss)
     -> typename std::enable_if_t<
-        jacl::traits::is_state_space<_StateSpace>::value, decltype(detail::poles(_ss.A()))>{
+        ::jacl::traits::is_state_space_v<_StateSpace>, decltype(detail::poles(_ss.A()))>{
     return detail::poles(_ss.A());
 }
 
@@ -359,7 +359,7 @@ static auto discretize(const _StateSpace& _ss, double _sampling_time) -> StateSp
 
 template <typename _System>
 bool isInfNormLessThan(double _gam, _System _sys){
-    constexpr auto continuous = ::jacl::traits::is_continuous_system<_System>::value;
+    constexpr auto continuous = ::jacl::traits::is_continuous_system_v<_System>;
     bool ok(true);
     if(continuous){
         arma::mat temp;

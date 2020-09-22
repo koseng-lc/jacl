@@ -133,7 +133,7 @@ protected:
                     const arma::mat& _term3,
                     const arma::vec& _yI)
             -> typename std::enable_if_t<
-                ::jacl::traits::is_continuous_system<T>::value, typename __System::state_t>{
+                ::jacl::traits::is_continuous_system_v<T>, typename __System::state_t>{
             //-- not implemented yet
             return arma::vec(T::n_outputs, 1, arma::fill::zeros);
         }
@@ -144,7 +144,7 @@ protected:
                     const arma::vec& _yI,
                     const arma::vec& _prev_yI)
             -> typename std::enable_if_t<
-                ::jacl::traits::is_discrete_system<T>::value,
+                ::jacl::traits::is_discrete_system_v<T>,
                 typename arma::Col<typename __System::scalar_t>::template fixed<__System::n_states-1>>{
             return _term1*prev_z_ + _term2*_prev_yI + _term3*this->prev_in_ + L_*_yI; 
         }
