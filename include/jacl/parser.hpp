@@ -42,7 +42,7 @@ namespace detail{
 
 template <typename _StateSpace>
 static auto saveStateSpace(const _StateSpace& _ss, std::string _file_path)
-    -> typename std::enable_if<::jacl::traits::is_state_space_v<_StateSpace>, int>::type{
+    -> typename std::enable_if_t<::jacl::traits::is_state_space_v<_StateSpace>, int>{
     std::ofstream ss_file(_file_path);
     if(ss_file.is_open()){
         ss_file << "state_space\n";
@@ -73,7 +73,7 @@ static auto saveGain(const arma::Mat<Type>& _G, std::string _file_path){
 
 template <typename _StateSpace>
 static auto readStateSpace(_StateSpace* _ss, std::string _file_path)
-    -> typename std::enable_if<::jacl::traits::is_state_space_v<_StateSpace>, int>::type{
+    -> typename std::enable_if_t<::jacl::traits::is_state_space_v<_StateSpace>, int>{
     std::ifstream ss_file(_file_path);
     if(ss_file.is_open()){
         std::string type;

@@ -10,7 +10,9 @@
 
 namespace jacl{ namespace analysis{
 
-template <typename _Plant, typename _Controller>
+template <typename _Plant, typename _Controller,
+          typename = std::enable_if_t<::jacl::traits::is_system_v<_Plant>>,
+          typename = std::enable_if_t<::jacl::traits::is_system_v<_Controller>>>
 auto nominalStability(_Plant _p, _Controller _k){
     auto continuous = ::jacl::traits::is_continuous_system_v<_Plant>;
     typename arma::Mat<typename _Plant::scalar_t>::template
@@ -50,7 +52,8 @@ auto nominalStability(_Plant _p, _Controller _k){
             & lti_common::detectability(temp1, temp3, continuous);
 }
 
-template <typename _System>
+template <typename _System,
+          typename = std::enable_if_t<::jacl::traits::is_system_v<_System>>>
 auto nominalPerformance(_System _sys, double _obj){
     return  lti_common::approxInfNorm(_sys) < _obj;
 }

@@ -37,7 +37,6 @@ MainWindow::MainWindow(double _bias,
     , ifd_(&dsys_simo_, {10.,9.,8.})
     , sifd_(&dsys_simo_, {10., .05, .07})
     , m_real_(&bm,&jm,&ki,&la,&kb,&ra)
-    , m_sys_(&m_icm_, SAMPLING_PERIOD)
     //-- discrete position controller
     , pos_sys_(&pos_icm_, SAMPLING_PERIOD)
     , pos_dctrl_sys_(&pos_dctrl_, SAMPLING_PERIOD)
@@ -46,12 +45,18 @@ MainWindow::MainWindow(double _bias,
     , spd_sys_(&spd_icm_, SPD_SP)
     , spd_dctrl_sys_(&spd_dctrl_, SPD_SP)
     , spd_dctrl_plt_(&spd_dctrl_sys_, {4,5}, SPD_SP)
+    //-- closed-loop stuff
     , ref_(3, 1, arma::fill::zeros)
     , cl_status_(true)
-    , posctrl_sys_(&k_pos_)
-    , posctrl_plt_(&posctrl_sys_,{7,8})
-    , spdctrl_sys_(&k_spd_)
-    , spdctrl_plt_(&spdctrl_sys_,{6,7})
+    //-- continuous position controller
+    , c_pos_sys_(&c_pos_icm_)
+    , c_pos_ctrl_sys_(&c_pos_ctrl_)
+    , c_pos_ctrl_plt_(&c_pos_ctrl_sys_,{7,8})
+    //-- continuous speed controller
+    , c_spd_sys_(&c_spd_icm_)
+    , c_spd_ctrl_sys_(&c_spd_ctrl_)
+    , c_spd_ctrl_plt_(&c_spd_ctrl_sys_,{6,7})
+    //-- nonlinear init
     , pg_(9.8), pl_(1.0), pk_(0.1), pm_(0.5)
     , nlp_(&pg_, &pl_, &pk_, &pm_)
     , nlp_sys_(&nlp_){
@@ -128,8 +133,7 @@ MainWindow::MainWindow(double _bias,
 
     setupSIMODCMotor();
     setupDiscreteController();
-    setupPositionController();
-    setupSpeedController();    
+    setupContinuousController();  
 
     //-- plotter
     csys_plt_.init();
@@ -848,7 +852,8 @@ void MainWindow::setupDiscreteController(){
         pos_icm_.B().print("[Pos] B_icm : ");
         pos_icm_.C().print("[Pos] C_icm : ");
         pos_icm_.D().print("[Pos] D_icm : ");
-        pos_dhinf_ = new PosDHinf(&pos_sys_, gamma_pos_, {1e-4,1e-4,1e-4}, {1e-4,1e-4,1e-4});
+        pos_dhinf_ = new jacl::synthesis::DHinf<decltype(pos_sys_), 2, 3>
+                        (&pos_sys_, gamma_pos_, {1e-4,1e-4,1e-4}, {1e-4,1e-4,1e-4});
         auto K( pos_dhinf_->solve() );
         pos_dctrl_.setA(std::get<0>(K)); pos_dctrl_.setB(std::get<1>(K));
         pos_dctrl_.setC(std::get<2>(K)); pos_dctrl_.setD(std::get<3>(K));
@@ -939,7 +944,6 @@ void MainWindow::setupDiscreteController(){
     }
 
     //-- speed controller
-    // jacl::system::Discrete<jacl::state_space::Linear<double,2,1,1>> spd_sys(&spd_real_, SPD_SP);
     jacl::state_space::Linear<double,2,1,1> spd;
     {        
         spd.setA(simo_.A().submat(1,1,2,2));
@@ -996,7 +1000,7 @@ void MainWindow::setupDiscreteController(){
         spd_icm_.B().print("[Spd] B_icm : ");
         spd_icm_.C().print("[Spd] C_icm : ");
         spd_icm_.D().print("[Spd] D_icm : ");
-        spd_dhinf_ = new SpdDHinf(&spd_sys_, gamma_spd_, {1e-4,1e-4}, {1e-4,1e-4});
+        spd_dhinf_ = new jacl::synthesis::DHinf<decltype(spd_sys_), 2, 3>(&spd_sys_, gamma_spd_, {1e-4,1e-4}, {1e-4,1e-4});
         auto K( spd_dhinf_->solve() );
         spd_dctrl_.setA(std::get<0>(K)); spd_dctrl_.setB(std::get<1>(K));
         spd_dctrl_.setC(std::get<2>(K)); spd_dctrl_.setD(std::get<3>(K));
@@ -1086,131 +1090,130 @@ void MainWindow::setupDiscreteController(){
 
 }
 
-void MainWindow::setupPositionController(){
+void MainWindow::setupContinuousController(){
+    //-- position controller
+    {
+        c_pos_real_.setA(simo_.A());
+        c_pos_real_.setB(simo_.B());
+        c_pos_real_.setC({1.,0.,0.});
+        c_pos_real_.setD(arma::zeros(1,1));
 
-    siso_pos_.setA({{0.,1.,0.},
-                    {0.,-.6667,722.2},
-                    {0,-83.87,-3339}});
-    siso_pos_.setB(arma::colvec({0.,
-                    0.,
-                    1613.}));
-    siso_pos_.setC({1.,0.,0.});
-    siso_pos_.setD(arma::colvec({0.}));
+        arma::mat temp1, temp2, temp3;
+        arma::mat zeros3x1(3,1,arma::fill::zeros);
+        arma::mat zeros1x3(1,3,arma::fill::zeros);
+        arma::mat zeros1x1(1,1,arma::fill::zeros);
+        arma::mat eye1x1(1,1,arma::fill::eye);
 
-    InterConnMatPos::formulas_t fA = {
-        JC(icm_pos_, -1.444e+04), JC(icm_pos_, -7780), JC(icm_pos_, -2912), JC(icm_pos_, -841.9), JC(icm_pos_,-269), JC(icm_pos_, 0),
-        JC(icm_pos_, 8192), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0),
-        JC(icm_pos_, 0), JC(icm_pos_, 4096), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0),
-        JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 1024), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0),
-        JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 256), JC(icm_pos_, 0), JC(icm_pos_, 0),
-        JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 1), JC(icm_pos_, 0)
-    };
+        temp1 = arma::join_horiz(zeros3x1, c_pos_real_.B());
+        temp2 = arma::join_horiz(zeros3x1, temp1);        
+        arma::mat B = arma::join_horiz(c_pos_real_.B(), temp2);
+        arma::mat B1 = B.head_cols(3);
+        arma::mat B2 = B.tail_cols(1);
 
+        temp1 = arma::join_vert(zeros1x3, -c_pos_real_.C());
+        arma::mat C = arma::join_vert(-c_pos_real_.C(), temp1);
+        arma::mat C1 = C.head_rows(2);
+        arma::mat C2 = C.tail_rows(1);
 
-    InterConnMatPos::formulas_t fB = {
-        JC(icm_pos_, 64), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 64),
-        JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0),
-        JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0),
-        JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0),
-        JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0),
-        JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0)
-    };
+        temp1 = arma::join_horiz(zeros1x1, eye1x1);
+        temp2 = arma::join_horiz(zeros1x1, temp1);
+        temp3 = arma::join_horiz(zeros1x1, arma::join_horiz(zeros1x1, zeros1x1));
+        arma::mat D11 = arma::join_vert(temp2, temp3);
 
-    InterConnMatPos::formulas_t fC = {
-        JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 2.276e-06), JC(icm_pos_, 0.04105), JC(icm_pos_, 0.5249), JC(icm_pos_, 77.95),
-        JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0),
-        JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 2.276e-06), JC(icm_pos_, 0.04105), JC(icm_pos_, 0.5249), JC(icm_pos_, 77.95)
-    };
+        arma::mat D12 = arma::join_vert(zeros1x1, eye1x1);
 
-    InterConnMatPos::formulas_t fD = {
-        JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 1), JC(icm_pos_, 0),
-        JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 0), JC(icm_pos_, 1),
-        JC(icm_pos_, 0), JC(icm_pos_, -1), JC(icm_pos_, 1), JC(icm_pos_, 0)
-    };    
+        temp1 = arma::join_horiz(-eye1x1, eye1x1);
+        arma::mat D21 = arma::join_horiz(zeros1x1,temp1);
+        
+        arma::mat D22 = zeros1x1;
 
-    icm_pos_.setA(fA);
-    icm_pos_.setB(fB);
-    icm_pos_.setC(fC);
-    icm_pos_.setD(fD);
-    jacl::system::Continuous<InterConnMatPos> icm_pos_sys(&icm_pos_);
-    hinf_pc_ = new HInfPC(&icm_pos_sys, 2.7882);
-    jacl::lti_common::StateSpacePack K( hinf_pc_->solve() );
-    k_pos_.setA(std::get<0>(K));
-    k_pos_.setB(std::get<1>(K));
-    k_pos_.setC(std::get<2>(K));
-    k_pos_.setD(std::get<3>(K));    
+        temp1 = arma::join_horiz(D11, D12);
+        temp2 = arma::join_horiz(D21, D22);
+        arma::mat D = arma::join_vert(temp1, temp2);
 
-    k_pos_.A().print("A : ");
-    k_pos_.B().print("B : ");
-    k_pos_.C().print("C : ");
-    k_pos_.D().print("D : ");
+        c_pos_icm_.setA(c_pos_real_.A());
+        c_pos_icm_.setB(B);
+        c_pos_icm_.setC(C);
+        c_pos_icm_.setD(D);
 
-    
+        pos_hinf_ = new jacl::synthesis::Hinf<decltype(c_pos_sys_), 2, 3>(&c_pos_sys_, 2.7882);
+        jacl::lti_common::StateSpacePack K( pos_hinf_->solve() );
+        c_pos_ctrl_.setA(std::get<0>(K));
+        c_pos_ctrl_.setB(std::get<1>(K));
+        c_pos_ctrl_.setC(std::get<2>(K));
+        c_pos_ctrl_.setD(std::get<3>(K));    
 
-    //-- Example read
-    /*PosCtrl controller;
-    jacl::parser::readStateSpace(&controller, "position_controller.jacl");
-    controller.A().print("Controller A : ");
-    controller.B().print("Controller B : ");
-    controller.C().print("Controller C : ");
-    controller.D().print("Controller D : ");*/
+        //-- Example read
+        /*PosCtrl controller;
+        jacl::parser::readStateSpace(&controller, "position_controller.jacl");
+        controller.A().print("Controller A : ");
+        controller.B().print("Controller B : ");
+        controller.C().print("Controller C : ");
+        controller.D().print("Controller D : ");*/
 
-    posctrl_plt_.init();
-    posctrl_plt_.setTitle("Position Controller");
-    posctrl_plt_.setDelay() = SAMPLING_PERIOD;
-    posctrl_plt_.setPlotName({"Position Error", "Voltage"});
-}
+        c_pos_ctrl_plt_.init();
+        c_pos_ctrl_plt_.setTitle("Position Controller");
+        c_pos_ctrl_plt_.setDelay() = SAMPLING_PERIOD;
+        c_pos_ctrl_plt_.setPlotName({"Position Error", "Voltage"});
+    }
 
-void MainWindow::setupSpeedController(){
-    InterConnMatSpd::formulas_t fA = {
-        JC(icm_spd_, -1.444e+04), JC(icm_spd_, -7780), JC(icm_spd_, -2912), JC(icm_spd_, -841.9), JC(icm_spd_, -269),
-        JC(icm_spd_, 8192), JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 0),
-        JC(icm_spd_, 0), JC(icm_spd_, 4096), JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 0),
-        JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 1024), JC(icm_spd_, 0), JC(icm_spd_, 0),
-        JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 256), JC(icm_spd_, 0)
-    };
+    //-- speed controller
+    {
+        c_spd_real_.setA(simo_.A().submat(1,1,2,2));
+        c_spd_real_.setB(simo_.B().tail_rows(2));
+        c_spd_real_.setC({1.,0.});
+        c_spd_real_.setD(arma::zeros(1,1));
 
-    InterConnMatSpd::formulas_t fB = {
-        JC(icm_spd_, 128), JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 128),
-        JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 0),
-        JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 0),
-        JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 0),
-        JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 0)
-    };
+        arma::mat temp1, temp2, temp3;
+        arma::mat zeros2x1(2,1,arma::fill::zeros);
+        arma::mat zeros1x2(1,2,arma::fill::zeros);
+        arma::mat zeros1x1(1,1,arma::fill::zeros);
+        arma::mat eye1x1(1,1,arma::fill::eye);
+        
+        temp1 = arma::join_horiz(zeros2x1, c_spd_real_.B());
+        temp2 = arma::join_horiz(zeros2x1, temp1);
+        arma::mat B = arma::join_horiz(c_spd_real_.B(), temp2);
+        arma::mat B1 = B.head_cols(3);
+        arma::mat B2 = B.tail_cols(1);
 
-    InterConnMatSpd::formulas_t fC = {
-        JC(icm_spd_, 0), JC(icm_spd_, 0.004661), JC(icm_spd_, 24.99), JC(icm_spd_, 80.17), JC(icm_spd_, 48.49),
-        JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 0),
-        JC(icm_spd_, 0), JC(icm_spd_, 0.004661), JC(icm_spd_, 24.99), JC(icm_spd_, 80.17), JC(icm_spd_, 48.49)
-    };
+        temp1 = arma::join_vert(zeros1x2, -c_spd_real_.C());
+        arma::mat C = arma::join_vert(-c_spd_real_.C(), temp1);
+        arma::mat C1 = C.head_rows(2);
+        arma::mat C2 = C.tail_rows(1);
 
-    InterConnMatSpd::formulas_t fD = {
-        JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 1), JC(icm_spd_, 0),
-        JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 0), JC(icm_spd_, 1),
-        JC(icm_spd_, 0), JC(icm_spd_, -1), JC(icm_spd_, 1), JC(icm_spd_, 0)
-    };
+        temp1 = arma::join_horiz(zeros1x1, eye1x1);
+        temp2 = arma::join_horiz(zeros1x1, temp1);
+        temp3 = arma::join_horiz(zeros1x1, arma::join_horiz(zeros1x1, zeros1x1));
+        arma::mat D11 = arma::join_vert(temp2, temp3);
 
-    icm_spd_.setA(fA);
-    icm_spd_.setB(fB);
-    icm_spd_.setC(fC);
-    icm_spd_.setD(fD);
-    jacl::system::Continuous<InterConnMatSpd> icm_spd_sys(&icm_spd_);
-    hinf_sc_ = new HInfSC(&icm_spd_sys, 3.1);
-    jacl::lti_common::StateSpacePack K( hinf_sc_->solve() );
-    k_spd_.setA(std::get<0>(K));
-    k_spd_.setB(std::get<1>(K));
-    k_spd_.setC(std::get<2>(K));
-    k_spd_.setD(std::get<3>(K));    
+        arma::mat D12 = arma::join_vert(zeros1x1, eye1x1);
 
-    k_spd_.A().print("Kspd_A : ");
-    k_spd_.B().print("Kspd_B : ");
-    k_spd_.C().print("Kspd_C : ");
-    k_spd_.D().print("Kspd_D : ");
+        temp1 = arma::join_horiz(-eye1x1,eye1x1);
+        arma::mat D21 = arma::join_horiz(zeros1x1,temp1);
+        
+        arma::mat D22 = zeros1x1;
 
-    spdctrl_plt_.init();
-    spdctrl_plt_.setTitle("Speed Controller");
-    spdctrl_plt_.setDelay() = SAMPLING_PERIOD;
-    spdctrl_plt_.setPlotName({"Velocity Error", "Voltage"});
+        temp1 = arma::join_horiz(D11, D12);
+        temp2 = arma::join_horiz(D21, D22);
+        arma::mat D = arma::join_vert(temp1, temp2);
+
+        c_spd_icm_.setA(c_spd_real_.A());
+        c_spd_icm_.setB(B);
+        c_spd_icm_.setC(C);
+        c_spd_icm_.setD(D);
+
+        spd_hinf_ = new jacl::synthesis::Hinf<decltype(c_spd_sys_), 2, 3>(&c_spd_sys_, 3.1);
+        jacl::lti_common::StateSpacePack K( spd_hinf_->solve() );
+        c_spd_ctrl_.setA(std::get<0>(K));
+        c_spd_ctrl_.setB(std::get<1>(K));
+        c_spd_ctrl_.setC(std::get<2>(K));
+        c_spd_ctrl_.setD(std::get<3>(K));    
+
+        c_spd_ctrl_plt_.init();
+        c_spd_ctrl_plt_.setTitle("Speed Controller");
+        c_spd_ctrl_plt_.setDelay() = SAMPLING_PERIOD;
+        c_spd_ctrl_plt_.setPlotName({"Velocity Error", "Voltage"});
+    }
 }
 
 void MainWindow::setupNLP(){

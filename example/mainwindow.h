@@ -180,63 +180,51 @@ private:
                                          jacl::PhysicalParameter<>,
                                          jacl::PhysicalParameter<>,
                                          jacl::PhysicalParameter<>,
-                                         jacl::PhysicalParameter<>>;    
-    using MICM = jacl::state_space::Linear<double,MReal::n_states, MReal::n_inputs+3, MReal::n_outputs+2>;
-    using MSys = jacl::system::Discrete<MICM>;
+                                         jacl::PhysicalParameter<>>;
     MReal m_real_;
-    MICM m_icm_;
-    MSys m_sys_;
+    jacl::state_space::Linear<double, MReal::n_states, MReal::n_inputs+3, MReal::n_outputs+2> m_icm_;
     //-- Position controller
-    using PosReal = jacl::state_space::Linear<double,3, 1, 1>;
-    using PosICM = jacl::state_space::Linear<double,PosReal::n_states, PosReal::n_inputs+3, PosReal::n_outputs+2>;
-    using PosSys = jacl::system::Discrete<PosICM>;
-    using PosDHinf = jacl::synthesis::DHinf<PosSys,2,3>;
-    using PosDCtrl = jacl::state_space::Linear<double,PosReal::n_states, PosReal::n_outputs, PosReal::n_inputs>;
+    using PosReal = jacl::state_space::Linear<double, 3, 1, 1>;
     PosReal pos_real_;
-    PosICM pos_icm_;
-    PosSys pos_sys_;
-    PosDHinf* pos_dhinf_;
-    PosDCtrl pos_dctrl_;
-    jacl::system::Discrete<PosDCtrl> pos_dctrl_sys_;
-    jacl::Plotter<jacl::system::Discrete<PosDCtrl>> pos_dctrl_plt_;    
+    jacl::state_space::Linear<PosReal::scalar_t ,PosReal::n_states, PosReal::n_inputs+3, PosReal::n_outputs+2> pos_icm_;
+    jacl::system::Discrete<decltype(pos_icm_)> pos_sys_;
+    jacl::synthesis::DHinf<decltype(pos_sys_), 2, 3>* pos_dhinf_;
+    jacl::state_space::Linear<PosReal::scalar_t, PosReal::n_states, PosReal::n_outputs, PosReal::n_inputs> pos_dctrl_;
+    jacl::system::Discrete<decltype(pos_dctrl_)> pos_dctrl_sys_;
+    jacl::Plotter<jacl::system::Discrete<decltype(pos_dctrl_)>> pos_dctrl_plt_;    
     //-- Speed controller
-    using SpdReal = jacl::state_space::Linear<double,2, 1, 1>;
-    using SpdICM = jacl::state_space::Linear<double,SpdReal::n_states, SpdReal::n_inputs+3, SpdReal::n_outputs+2>;
-    using SpdSys = jacl::system::Discrete<SpdICM>;
-    using SpdDHinf = jacl::synthesis::DHinf<SpdSys,2,3>;
-    using SpdDCtrl = jacl::state_space::Linear<double,SpdReal::n_states, SpdReal::n_outputs, SpdReal::n_inputs>;
+    using SpdReal = jacl::state_space::Linear<double, 2, 1, 1>;
     SpdReal spd_real_;
-    SpdICM spd_icm_;
-    SpdSys spd_sys_;
-    SpdDHinf* spd_dhinf_;
-    SpdDCtrl spd_dctrl_;
-    jacl::system::Discrete<SpdDCtrl> spd_dctrl_sys_;
-    jacl::Plotter<jacl::system::Discrete<SpdDCtrl>> spd_dctrl_plt_;
+    jacl::state_space::Linear<SpdReal::scalar_t, SpdReal::n_states, SpdReal::n_inputs+3, SpdReal::n_outputs+2> spd_icm_;
+    jacl::system::Discrete<decltype(spd_icm_)> spd_sys_;
+    jacl::synthesis::DHinf<decltype(spd_sys_), 2, 3>* spd_dhinf_;
+    jacl::state_space::Linear<SpdReal::scalar_t, SpdReal::n_states, SpdReal::n_outputs, SpdReal::n_inputs> spd_dctrl_;    
+    jacl::system::Discrete<decltype(spd_dctrl_)> spd_dctrl_sys_;
+    jacl::Plotter<jacl::system::Discrete<decltype(spd_dctrl_)>> spd_dctrl_plt_;
     void setupDiscreteController();
 
-    //-- Continuous H-infinity position control of dc motor
+    //-- Continuous H-infinity controller
     using SISOPos = jacl::state_space::Linear<double,3,1,1>;
     SISOPos siso_pos_;
-    using InterConnMatPos = jacl::state_space::Linear<double,6, 4, 3>;
-    InterConnMatPos icm_pos_;
-    using PosCtrl = jacl::state_space::Linear<double,6, 1, 1>;
-    PosCtrl k_pos_;
-    using HInfPC = jacl::synthesis::Hinf<jacl::system::Continuous<InterConnMatPos>,2,3>;
-    HInfPC* hinf_pc_;
-    jacl::system::Continuous<PosCtrl> posctrl_sys_;
-    jacl::Plotter<jacl::system::Continuous<PosCtrl>> posctrl_plt_;
-    void setupPositionController();
-
-    //-- H-infinity speed control of dc motor
-    using InterConnMatSpd = jacl::state_space::Linear<double,5,4,3>;
-    InterConnMatSpd icm_spd_;
-    using SpdCtrl = jacl::state_space::Linear<double,5,1,1>;
-    SpdCtrl k_spd_;
-    using HInfSC = jacl::synthesis::Hinf<jacl::system::Continuous<InterConnMatSpd>,2,3>;
-    HInfSC* hinf_sc_;
-    jacl::system::Continuous<SpdCtrl> spdctrl_sys_;
-    jacl::Plotter<jacl::system::Continuous<SpdCtrl>> spdctrl_plt_;
-    void setupSpeedController();    
+    //-- Position controller
+    using CPosReal = jacl::state_space::Linear<double, 3, 1, 1>;
+    CPosReal c_pos_real_;
+    jacl::state_space::Linear<CPosReal::scalar_t, CPosReal::n_states, CPosReal::n_inputs+3, CPosReal::n_outputs+2> c_pos_icm_;
+    jacl::system::Continuous<decltype(c_pos_icm_)> c_pos_sys_;
+    jacl::synthesis::Hinf<decltype(c_pos_sys_), 2, 3>* pos_hinf_;
+    jacl::state_space::Linear<CPosReal::scalar_t, CPosReal::n_states, CPosReal::n_inputs, CPosReal::n_outputs> c_pos_ctrl_;
+    jacl::system::Continuous<decltype(c_pos_ctrl_)> c_pos_ctrl_sys_;
+    jacl::Plotter<decltype(c_pos_ctrl_sys_)> c_pos_ctrl_plt_;
+    //-- Speed controller
+    using CSpdReal = jacl::state_space::Linear<double, 2, 1, 1>;
+    CSpdReal c_spd_real_;
+    jacl::state_space::Linear<CSpdReal::scalar_t, CSpdReal::n_states, CSpdReal::n_inputs+3, CSpdReal::n_outputs+2> c_spd_icm_;
+    jacl::system::Continuous<decltype(c_spd_icm_)> c_spd_sys_;
+    jacl::synthesis::Hinf<decltype(c_spd_sys_), 2, 3>* spd_hinf_;
+    jacl::state_space::Linear<CSpdReal::scalar_t, CSpdReal::n_states, CSpdReal::n_inputs, CSpdReal::n_outputs> c_spd_ctrl_;
+    jacl::system::Continuous<decltype(c_spd_ctrl_)> c_spd_ctrl_sys_;
+    jacl::Plotter<decltype(c_spd_ctrl_sys_)> c_spd_ctrl_plt_;
+    void setupContinuousController();    
 
     //-- Non-Linear Pendulum Model
     enum {

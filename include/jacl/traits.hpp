@@ -64,6 +64,13 @@ namespace jacl{ namespace traits{
 
     //--
     template <typename T>
+    struct is_system:std::is_base_of<::jacl::system::BaseSystem<typename T::state_space_t>, T>{};
+
+    template <typename T>
+    constexpr bool is_system_v = is_system<T>::value;
+
+    //--
+    template <typename T>
     struct is_continuous_system:std::false_type{};
 
     template <typename _StateSpace>

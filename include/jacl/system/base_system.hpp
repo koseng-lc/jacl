@@ -48,7 +48,7 @@ public:
     virtual auto convolve(const input_t& _in)
         -> output_t{
         setIn(_in);        
-        this->state_ = dstate();        
+        this->state_ = dstate();
         this->out_ = output();
         this->prev_state_ = this->state_;
         return this->out_;
