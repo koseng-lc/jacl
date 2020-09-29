@@ -71,8 +71,8 @@ static auto transient(_System _sys, typename _System::input_t _input,
 
         response[i] = out(0);
     }
-    tr = (tr_end - tr_start)*_sys.samplingPeriod();
-    tp *= _sys.samplingPeriod();
+    tr = (tr_end - tr_start)*_sys.dt();
+    tp *= _sys.dt();
     if(tr_end < 0){ //-- overdamped
         overshoot = 0.;
     }else{
@@ -82,7 +82,7 @@ static auto transient(_System _sys, typename _System::input_t _input,
     //-- wayback to find when the response reach 2% of error
     for(auto i(NUM_SAMPLE_DATA - 1); i >= 0; i--){
         if(std::fabs(1. - response[i]) >= _ts_threshold){
-            ts = (decltype(ts))i*_sys.samplingPeriod();
+            ts = (decltype(ts))i*_sys.dt();
             break;
         }
     }

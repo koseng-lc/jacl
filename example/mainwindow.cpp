@@ -943,9 +943,9 @@ void MainWindow::setupDiscreteController(){
         pos_dctrl_plt_.setPlotName({"Error","Input"});
     }
 
-    //-- speed controller
-    jacl::state_space::Linear<double,2,1,1> spd;
-    {        
+    //-- speed controller    
+    {
+        jacl::state_space::Linear<double,2,1,1> spd;
         spd.setA(simo_.A().submat(1,1,2,2));
         spd.setB(simo_.B().tail_rows(2));
         spd.setC({1.,0.});
@@ -1136,7 +1136,12 @@ void MainWindow::setupContinuousController(){
         c_pos_icm_.setC(C);
         c_pos_icm_.setD(D);
 
-        pos_hinf_ = new jacl::synthesis::Hinf<decltype(c_pos_sys_), 2, 3>(&c_pos_sys_, 2.7882);
+        c_pos_icm_.A().print("[CPos] LLFT A : ");
+        c_pos_icm_.B().print("[CPos] LLFT B : ");
+        c_pos_icm_.C().print("[CPos] LLFT C : ");
+        c_pos_icm_.D().print("[CPos] LLFT D : ");
+
+        pos_hinf_ = new jacl::synthesis::Hinf<decltype(c_pos_sys_), 2, 3>(&c_pos_sys_, 3.0);//2.7882);
         jacl::lti_common::StateSpacePack K( pos_hinf_->solve() );
         c_pos_ctrl_.setA(std::get<0>(K));
         c_pos_ctrl_.setB(std::get<1>(K));
@@ -1150,6 +1155,96 @@ void MainWindow::setupContinuousController(){
         controller.B().print("Controller B : ");
         controller.C().print("Controller C : ");
         controller.D().print("Controller D : ");*/
+
+        //-- closed-loop
+        jacl::state_space::Linear<double, 6,1,1> cl_ss;
+        jacl::system::Continuous<decltype(cl_ss)> cl_sys(&cl_ss);
+        {
+            arma::mat temp1;
+
+            temp1 = c_pos_real_.B()*c_pos_ctrl_.D()*c_pos_real_.C();
+
+            //-- positive feedback
+            arma::mat A_cl = arma::join_cols(
+                arma::join_rows(c_pos_real_.A() + temp1, c_pos_real_.B()*c_pos_ctrl_.C()),
+                arma::join_rows(c_pos_ctrl_.B()*c_pos_real_.C(), c_pos_ctrl_.A())
+            );
+            
+            //-- negative feedback
+            // arma::mat A_cl = arma::join_cols(
+            //     arma::join_rows(c_pos_real_.A() - temp1, c_pos_real_.B()*c_pos_ctrl_.C()),
+            //     arma::join_rows(-c_pos_ctrl_.B()*c_pos_real_.C(), c_pos_ctrl_.A())
+            // );
+
+            arma::mat B_cl = arma::join_cols(
+                c_pos_real_.B()*c_pos_ctrl_.D(),
+                c_pos_ctrl_.B()
+            );
+
+            cl_ss.setA(A_cl);
+            cl_ss.setB(B_cl);
+            cl_ss.setC(-1*arma::join_rows(c_pos_real_.C(), arma::zeros(1,3)));
+            cl_ss.setD(c_pos_real_.D());
+        }
+
+        arma::cx_vec poles = ::jacl::lti_common::poles(cl_ss);
+        poles.print("CHECK POLES : ");
+
+        cl_ss.A().print("[CPos] A_cl : ");
+        cl_ss.B().print("[CPos] B_cl : ");
+        cl_ss.C().print("[CPos] C_cl : ");
+        cl_ss.D().print("[CPos] D_cl : ");
+        jacl::analysis::transient_data_t transient_data =
+            jacl::analysis::transient<decltype(cl_sys),5000>(cl_sys, {1.57},
+                "Closed-loop continuous position control simulation - r = 1.57 rad");
+
+        std::cout << "[CPos] Rise time : " << jacl::analysis::getRiseTime(transient_data) << std::endl;
+        std::cout << "[CPos] Peak time : " << jacl::analysis::getPeakTime(transient_data) << std::endl;
+        std::cout << "[CPos] Overshoot : " << jacl::analysis::getOvershoot(transient_data) << std::endl;
+        std::cout << "[CPos] Settling time : " << jacl::analysis::getSettlingTime(transient_data) << std::endl;
+
+        //-- Nominal analysis
+
+        jacl::state_space::Linear<double, 6, 3, 2> llft;
+        arma::mat R = eye1x1 - D22*c_pos_ctrl_.D();
+        arma::mat R_inv = arma::inv(R);
+        arma::mat S = eye1x1 - c_pos_ctrl_.D()*D22;
+        arma::mat S_inv = arma::inv(S);
+        temp1 = B2*S_inv*c_pos_ctrl_.D()*C2;
+        temp2 = c_pos_ctrl_.B()*R_inv*D22*c_pos_ctrl_.C();
+        llft.setA(
+            arma::join_cols(
+                arma::join_rows(c_pos_icm_.A() + temp1, B2*S_inv*c_pos_ctrl_.C()),
+                arma::join_rows(c_pos_ctrl_.B()*R_inv*C2, c_pos_ctrl_.A() + temp2)
+            )
+        );
+
+        llft.setB(
+            arma::join_cols(
+                B1 + B2*c_pos_ctrl_.D()*D21,
+                c_pos_ctrl_.B()*R_inv*D21
+            )
+        );
+
+        temp1 = D12*S_inv*c_pos_ctrl_.D()*C2;
+        llft.setC(arma::join_rows(C1 + temp1, D12*S_inv*c_pos_ctrl_.C()));
+
+        temp1 = D12*S_inv*c_pos_ctrl_.D()*D21;
+        llft.setD(D11 + temp1);
+
+        llft.A().print("[CPos] LLFT A : ");
+        llft.B().print("[CPos] LLFT B : ");
+        llft.C().print("[CPos] LLFT C : ");
+        llft.D().print("[CPos] LLFT D : ");
+        std::cout << "[CPos] Nominal stability : "
+                  << std::boolalpha
+                  << (bool)jacl::analysis::nominalStability(
+                      jacl::system::Continuous<decltype(c_pos_real_)>(&c_pos_real_)
+                      ,jacl::system::Continuous<decltype(c_pos_ctrl_)>(&c_pos_ctrl_)) << std::endl;
+        std::cout << "[CPos] Nominal performance : "
+                  << std::boolalpha
+                  << (bool)jacl::analysis::nominalPerformance(
+                      jacl::system::Continuous<decltype(llft)>(&llft), 3.0) << std::endl;
 
         c_pos_ctrl_plt_.init();
         c_pos_ctrl_plt_.setTitle("Position Controller");

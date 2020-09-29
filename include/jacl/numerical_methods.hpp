@@ -8,7 +8,7 @@
 #include <numeric>
 #include <cassert>
 
-// #define NUMERICAL_METHODS_VERBOSE
+#define NUMERICAL_METHODS_VERBOSE
 
 namespace jacl{ namespace numerical_methods{
 

@@ -47,9 +47,11 @@ auto nominalStability(_Plant _p, _Controller _k){
         fixed<_Plant::n_states + _Controller::n_states,
          _Plant::n_states + _Controller::n_states> A_bar = temp1 + temp2*temp4*temp3;
 
-    return lti_common::isStable(A_bar, continuous)
-            & lti_common::stabilizable(temp1, temp2, continuous)
-            & lti_common::detectability(temp1, temp3, continuous);
+    auto a = lti_common::isStable(A_bar, continuous);
+    auto b = lti_common::stabilizable(temp1, temp2, continuous);
+    auto c = lti_common::detectability(temp1, temp3, continuous);
+    std::cout << std::boolalpha << a << " ; " << b << " ; " << c << std::endl;
+    return a & b & c;
 }
 
 template <typename _System,

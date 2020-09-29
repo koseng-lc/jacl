@@ -323,7 +323,6 @@ auto DHinf<_System,
         // ctemp6 = arma::trans(ctemp3)*G_inv*ctemp4;
         // arma::cx_mat dare_rhs = ctemp5 - ctemp6 - P;                    
 
-        //-- TODO : check whether is Acl asymptotically stable or not
         ctemp1 = B2_B1*G_inv*cterm5;
         Aclp = cxA - ctemp1;
         assert(lti_common::isStable(Aclp, false) && "[DHinf] Aclp is not asymptotically stable !");
@@ -437,7 +436,6 @@ auto DHinf<_System,
         arma::cx_mat G = S + arma::trans(C1_C2)*Y*C1_C2;
         arma::cx_mat G_inv = arma::inv(G);
 
-        //-- TODO : check whether is Acl asymptotically stable or not
         arma::cx_mat Acl = Ap - arma::trans(cterm5)*G_inv*arma::trans(C1_C2);
         assert(lti_common::isStable(Aclp, false) && "[DHinf] Acl is not asymptotically stable !");
 

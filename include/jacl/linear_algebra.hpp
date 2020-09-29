@@ -107,7 +107,7 @@ static auto spectralRadius(const arma::Mat<Type>& in){
 template <typename Type>
 static auto largestSV(const arma::Mat<Type>& in)
     -> Type{
-    arma::Col<Type> s;
+    arma::Col<Type> s = arma::svd(in);
     return arma::max(s);
 }
 

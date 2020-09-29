@@ -15,7 +15,7 @@
 #include <jacl/numerical_methods.hpp>
 #include <jacl/medium.hpp>
 
-// #define HINF_VERBOSE
+#define HINF_VERBOSE
 
 namespace jacl{ namespace synthesis{
 
@@ -57,6 +57,10 @@ private:
              perturbation_size,
              OUTPUT_SIZE,
              INPUT_SIZE> llft_;
+
+    //-- normalization factors
+    arma::mat R1_, R1_inv_;
+    arma::mat R2_, R2_inv_;
 
     double gam_;
     arma::cx_mat X_inf_;
@@ -100,7 +104,7 @@ auto Hinf<_System,
 
     if(performance_size > INPUT_SIZE){
         if(!arma::approx_equal(llft_.D12(), expected_D12, "absdiff", .0)){
-
+            R1_ = R1_inv_ = arma::eye(performance_size, performance_size);
         }else{
             //-- do normalization here using SVD
 
@@ -118,14 +122,14 @@ auto Hinf<_System,
 
             arma::mat U1 = U_flip;
             arma::mat U1_t = arma::trans( U1 );
-            arma::mat R1 = S_flip * arma::trans( V );
-            arma::mat R1_inv = arma::inv(R1);
+            R1_ = S_flip * arma::trans( V );
+            R1_inv_ = arma::inv( R1_ );
 
-            llft_.B2() = llft_.B2()*R1_inv;
+            llft_.B2() = llft_.B2()*R1_inv_;
             llft_.C1() = U1_t*llft_.C1();
             llft_.D11() = U1_t*llft_.D11();
-            llft_.D12() = U1_t*llft_.D12()*R1_inv;
-            llft_.D22() = llft_.D22()*R1_inv;
+            llft_.D12() = U1_t*llft_.D12()*R1_inv_;
+            llft_.D22() = llft_.D22()*R1_inv_;
 
         }
     }else if(performance_size == INPUT_SIZE){
@@ -144,7 +148,7 @@ auto Hinf<_System,
 
     if(perturbation_size > OUTPUT_SIZE){
         if(arma::approx_equal(llft_.D12(), expected_D21, "absdiff", .0)){
-
+            R2_ = R2_inv_ = arma::eye(perturbation_size, perturbation_size);
         }else{
             //-- do normalization here using SVD
 
@@ -160,16 +164,16 @@ auto Hinf<_System,
 
             arma::mat V_flip( arma::flipud( arma::trans(V) ) ), S_flip( arma::fliplr(S) );
 
-            arma::mat R2 = U * S_flip;
-            arma::mat R2_inv = arma::inv( R2 );
+            R2_ = U * S_flip;
+            R2_inv_ = arma::inv( R2_ );
             arma::mat U2 = V_flip;
             arma::mat U2_t = arma::trans( U2 );
 
             llft_.B1() = llft_.B1()*U2_t;
             llft_.D11() = llft_.D11()*U2_t;
-            llft_.C2() = R2_inv*llft_.C2();
-            llft_.D21() = R2_inv*llft_.D21()*U2_t;
-            llft_.D22() = R2_inv*llft_.D22();
+            llft_.C2() = R2_inv_*llft_.C2();
+            llft_.D21() = R2_inv_*llft_.D21()*U2_t;
+            llft_.D22() = R2_inv_*llft_.D22();
         }
     }else if(perturbation_size == OUTPUT_SIZE){
         if(arma::approx_equal(llft_.D12(), I_out, "absdiff", .0)){
@@ -270,6 +274,7 @@ auto Hinf<_System,
     arma::mat D11_ = llft_.D11().head_rows(performance_size - INPUT_SIZE);
     arma::mat D_11 = llft_.D11().head_cols(perturbation_size - OUTPUT_SIZE);
 
+    //-- TODO: use module in linear_algebra.hpp
     arma::mat U, V;
     arma::vec s;
     arma::svd(U, s, V, D11_);
@@ -341,6 +346,9 @@ auto Hinf<_System,
     bool check_assumption = checkAllAssumption();
     assert(check_assumption && "[Hinf] The assumption made for interconnection matrix is not fulfill !");
 
+    llft_.D12().print("Normalized D12 : ");
+    llft_.D21().print("Normalized D21 : ");
+
     using namespace ::jacl::linear_algebra;
 
     arma::mat temp1, temp2, temp3, temp4;
@@ -357,7 +365,7 @@ auto Hinf<_System,
     arma::mat D_1 = ss_->D().head_cols(perturbation_size);
     arma::mat D_1_t = D_1.t();
 
-    temp1 = gam_*gam_*arma::eye(perturbation_size, perturbation_size);
+    temp1 = (gam_*gam_)*arma::eye(perturbation_size, perturbation_size);
     temp2 = arma::zeros<arma::mat>(D1_.n_cols,  D1_.n_cols);
     temp2.submat(0, 0, perturbation_size - 1, perturbation_size - 1) = temp1;
     arma::mat R1 = (D1__t * D1_) - temp2;
@@ -406,11 +414,56 @@ auto Hinf<_System,
     ARE<typename _System::state_space_t> solver1(ss_);
     ARE<typename _System::state_space_t> solver2(ss_);
 
+#ifdef HINF_VERBOSE
+    //-- check whether Hamiltonian or not
+    {
+        arma::mat J = arma::join_cols(
+            arma::join_rows(arma::zeros(arma::size(ss_->A())), -arma::eye(arma::size(ss_->A()))),
+            arma::join_rows(arma::eye(arma::size(ss_->A())), arma::zeros(arma::size(ss_->A())))
+        );
+
+        arma::mat check_H_inf = -J*H_inf*J;
+        check_H_inf = -arma::trans(check_H_inf);
+        H_inf.print("[Hinf] H_inf : ");
+        check_H_inf.print("[Hinf] Check H_inf : ");
+
+        arma::mat check_J_inf = -J*J_inf*J;
+        check_J_inf = -arma::trans(check_J_inf);
+        J_inf.print("[Hinf] J_inf : ");
+        check_J_inf.print("[Hinf] Check J_inf : ");
+    }
+#endif
+
     solver1.setHamiltonianMatrix(H_inf);
     solver2.setHamiltonianMatrix(J_inf);
 
     arma::cx_mat X_inf = solver1.solve();
     arma::cx_mat Y_inf = solver2.solve();
+
+#ifdef HINF_VERBOSE
+    //--check the ARE solution
+    {
+        arma::cx_mat H11 = toCx(H_inf.submat(0,0,_System::n_states-1,_System::n_states-1));
+        arma::cx_mat H12 = toCx(H_inf.submat(0, _System::n_states, _System::n_states-1, 2*_System::n_states-1));
+        arma::cx_mat H21 = toCx(H_inf.submat(_System::n_states, 0, 2*_System::n_states-1, _System::n_states-1));
+        arma::cx_mat H22 = toCx(H_inf.submat(_System::n_states, _System::n_states,
+                                            2*_System::n_states-1, 2*_System::n_states-1));
+        ctemp1 = -H22*X_inf + X_inf*H11;
+        ctemp2 = X_inf*H12*X_inf - H21;
+        ctemp3 = ctemp1 + ctemp2;
+        ctemp3.print("[Hinf] ARE 1 rhs : ");
+
+        arma::cx_mat J11 = toCx(J_inf.submat(0,0,_System::n_states-1,_System::n_states-1));
+        arma::cx_mat J12 = toCx(J_inf.submat(0, _System::n_states, _System::n_states-1, 2*_System::n_states-1));
+        arma::cx_mat J21 = toCx(J_inf.submat(_System::n_states, 0, 2*_System::n_states-1, _System::n_states-1));
+        arma::cx_mat J22 = toCx(J_inf.submat(_System::n_states, _System::n_states,
+                                            2*_System::n_states-1, 2*_System::n_states-1));
+        ctemp1 = -J22*Y_inf + Y_inf*J11;
+        ctemp2 = Y_inf*J12*Y_inf - J21;
+        ctemp3 = ctemp1 + ctemp2;
+        ctemp3.print("[Hinf] ARE 2 rhs : ");
+    }
+#endif
 
 #ifdef HINF_VERBOSE
     std::cout << "[Hinf] Solution of ARE : " << std::endl;
@@ -453,11 +506,12 @@ auto Hinf<_System,
 #ifdef HINF_VERBOSE
     std::cout << "[Hinf] Condition : " << std::boolalpha << check_cond << std::endl;
 #endif
-    assert(check_cond && "[Hinf] Condition for finding Controller that make the lower LFT is less than gamma was failed !");
+    assert(check_cond && "[Hinf] Condition for existence controller that make the objective is less than gamma was failed !");
 
-    //-- I assume the arbitrary system that have property less than to gamma is zero
+    //-- I assume the arbitrary system that have property less than to gamma is zero a.k.a central controller
     ctemp1 = (1./(gam_*gam_))*Y_inf*X_inf;
-    arma::cx_mat Z_inf = arma::inv(arma::eye(_System::n_states, _System::n_states) - ctemp1);
+    arma::cx_mat Z_inf = arma::inv(arma::eye(_System::n_states, _System::n_states) - ctemp1);    
+    Z_inf.print("[Hinf] Z_inf : ");
 
     ctemp1 = -D1121*arma::trans(D1111);
     ctemp2 = (gam_*gam_)*arma::eye(performance_size - INPUT_SIZE, performance_size - INPUT_SIZE)
@@ -470,22 +524,28 @@ auto Hinf<_System,
             - arma::trans(D1111)*D1111;
     ctemp2 = arma::eye(INPUT_SIZE, INPUT_SIZE) - D1121*arma::inv(ctemp1)*arma::trans(D1121);
     arma::cx_mat D12_hat = arma::chol(ctemp2, "lower");
+    ctemp2.print("RHS : ");
+    ctemp1 = D12_hat.t()*D12_hat;
+    ctemp1.print("LHS : ");
 
     ctemp1 = (gam_*gam_)*arma::eye(performance_size - INPUT_SIZE, performance_size - INPUT_SIZE)
             - D1111*arma::trans(D1111);
     ctemp2 = arma::eye(OUTPUT_SIZE, OUTPUT_SIZE) - arma::trans(D1112)*arma::inv(ctemp1)*D1112;
     arma::cx_mat D21_hat = arma::chol(ctemp2, "upper");
+    ctemp2.print("RHS : ");
+    ctemp1 = D21_hat*D21_hat.t();
+    ctemp1.print("LHS : ");
 
-//    ctemp1 = llft_.B2() + L12_inf;
-//    arma::cx_mat B2_hat = Z_inf*ctemp1*D12_hat;
-//    arma::cx_mat C2_hat = -D21_hat*(llft_.C2() + F12_inf);
-//    ctemp1 = -Z_inf*L2_inf;
-//    ctemp2 = B2_hat*arma::inv(D12_hat)*D11_hat;
-//    arma::cx_mat B1_hat = ctemp1 + ctemp2;
-//    ctemp1 = D11_hat*arma::inv(D21_hat)*C2_hat;
-//    arma::cx_mat C1_hat = F2_inf + ctemp1;
-//    ctemp1 = B1_hat*arma::inv(D21_hat)*C2_hat;
-//    arma::cx_mat A_hat = ss_->A() + ss_->B()*F + ctemp1;
+    // ctemp1 = llft_.B2() + L12_inf;
+    // arma::cx_mat B2_hat = Z_inf*ctemp1*D12_hat;
+    // arma::cx_mat C2_hat = -D21_hat*(llft_.C2() + F12_inf);
+    // ctemp1 = -Z_inf*L2_inf;
+    // ctemp2 = B2_hat*arma::inv(D12_hat)*D11_hat;
+    // arma::cx_mat B1_hat = ctemp1 + ctemp2;
+    // ctemp1 = D11_hat*arma::inv(D21_hat)*C2_hat;
+    // arma::cx_mat C1_hat = F2_inf + ctemp1;
+    // ctemp1 = B1_hat*arma::inv(D21_hat)*C2_hat;
+    // arma::cx_mat A_hat = ss_->A() + ss_->B()*F + ctemp1;
 
     arma::cx_mat B2_hat = (llft_.B2() + L12_inf)*D12_hat;
     ctemp1 = llft_.C2() + F12_inf;
@@ -497,6 +557,13 @@ auto Hinf<_System,
     arma::cx_mat C1_hat = ctemp1 + ctemp2;
     ctemp1 = B2_hat*arma::inv(D12_hat)*C1_hat;
     arma::cx_mat A_hat = ss_->A() + L*ss_->C() + ctemp1;
+
+    //-- recover from normalization matrix
+    B1_hat = B1_hat*toCx(R2_inv_);
+    C1_hat = toCx(R1_inv_)*C1_hat;
+    D11_hat = toCx(R1_inv_)*D11_hat*toCx(R2_inv_);
+    D12_hat = toCx(R1_inv_)*D12_hat;
+    D21_hat = D21_hat*toCx(R2_inv_);
 
 #ifdef HINF_VERBOSE
     std::cout << "[Hinf] Controller Result : " << std::endl;

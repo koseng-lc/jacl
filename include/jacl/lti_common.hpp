@@ -46,14 +46,13 @@ namespace detail{
         arma::cx_vec eigval;
         arma::cx_mat eigvec;
         arma::eig_gen(eigval, eigvec, _A);
-        arma::vec eigval_re = arma::real(eigval);
 
         arma::cx_mat temp;
         arma::cx_mat eye(arma::size(_A), arma::fill::eye);
         arma::cx_mat cx_B( arma::size(_B) );
         cx_B.set_real(_B);
         bool ok(true);
-        for(int i(0); i < eigval_re.n_rows; i++){
+        for(int i(0); i < eigval.n_rows; i++){
             if(_continuous){
                 if(std::real(eigval(i)) > .0){
                     temp = _A - eigval(i)*eye;
@@ -107,14 +106,13 @@ namespace detail{
         arma::cx_vec eigval;
         arma::cx_mat eigvec;
         arma::eig_gen(eigval, eigvec, _A);
-        arma::vec eigval_re = arma::real(eigval);
 
         arma::cx_mat temp;
         arma::cx_mat eye(arma::size(_A), arma::fill::eye);
         arma::cx_mat cx_C( arma::size(_C) );
         cx_C.set_real(_C);
         bool ok(true);
-        for(int i(0); i < eigval_re.n_rows; i++){
+        for(int i(0); i < eigval.n_rows; i++){
             if(_continuous){
                 if(std::real(eigval(i)) > .0){
                     temp = _A - eigval(i)*eye;
@@ -146,6 +144,7 @@ namespace detail{
     template <typename StateMatrix>
     static auto isStable(const StateMatrix& _A, bool _continuous){
         arma::cx_vec p( poles(_A) );
+        p.print("Poles : ");
         bool ok(true);
         if(_continuous){
             for(const auto& _p:p){
@@ -380,7 +379,7 @@ bool isInfNormLessThan(double _gam, _System _sys){
         );
         arma::cx_vec p( detail::poles(H) );
 
-        if(linear_algebra::largestSV(H) < _gam){
+        if(linear_algebra::largestSV(_sys.D()) < _gam){
             for(const auto& _p:p){
                 if(std::abs(std::real(_p)) < 1e-6){
                     ok = false;
@@ -390,7 +389,6 @@ bool isInfNormLessThan(double _gam, _System _sys){
         }else{
             ok = false;
         }
-
     }else{
         arma::mat temp;
         arma::mat B = (1./_gam)*_sys.B();
