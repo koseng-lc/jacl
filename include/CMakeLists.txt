@@ -19,7 +19,7 @@ include_directories(${PROJECT_SOURCE_DIR})
 add_library(observer_pattern ${JACL_HEADER_PREFIX}/pattern/observer.hpp)
 set_target_properties(observer_pattern PROPERTIES LINKER_LANGUAGE CXX)
 
-add_library(singleton_pattern ${JACL_HEADER_PREFIX}/pattern/observer.hpp)
+add_library(singleton_pattern ${JACL_HEADER_PREFIX}/pattern/singleton.hpp)
 set_target_properties(singleton_pattern PROPERTIES LINKER_LANGUAGE CXX)
 target_link_libraries(singleton_pattern PRIVATE Boost::thread)
 
