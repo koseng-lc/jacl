@@ -15,6 +15,7 @@ install:
   - sudo ./b2 -d0
   - sudo ./b2 install -d0
   - cd ..
+  - sudo apt install libboost-numpy1.65-dev
   - sudo wget https://svwh.dl.sourceforge.net/project/arma/armadillo-9.900.1.tar.xz
   - sudo tar xf armadillo-9.900.1.tar.xz
   - cd armadillo-9.900.1/
