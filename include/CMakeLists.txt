@@ -7,7 +7,6 @@ find_package(PythonInterp 3 REQUIRED)
 find_package(Boost REQUIRED COMPONENTS
     system
     python
-    numpy
     thread
     chrono
 )
