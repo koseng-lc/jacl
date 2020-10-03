@@ -59,12 +59,16 @@ private:
              INPUT_SIZE> llft_;
 
     //-- normalization factors
-    arma::mat R1_, R1_inv_;
-    arma::mat R2_, R2_inv_;
+    typename arma::Mat<typename _System::scalar_t>::template
+        fixed<INPUT_SIZE, INPUT_SIZE> R1_, R1_inv_;
+    typename arma::Mat<typename _System::scalar_t>::template
+        fixed<OUTPUT_SIZE, OUTPUT_SIZE> R2_, R2_inv_;
 
     double gam_;
-    arma::cx_mat X_inf_;
-    arma::cx_mat Y_inf_;
+    typename arma::Mat<std::complex<typename _System::scalar_t>>::template
+        fixed<_System::n_states, _System::n_states> X_inf_;
+    typename arma::Mat<std::complex<typename _System::scalar_t>>::template
+        fixed<_System::n_states, _System::n_states> Y_inf_;
 };
 
 template <typename _System,
@@ -99,29 +103,40 @@ auto Hinf<_System,
     perturbation_size>::checkAssumption2(){
 
     auto ok(true); //-- RVO
-    arma::mat I_in(INPUT_SIZE, INPUT_SIZE, arma::fill::eye);
-    arma::mat expected_D12 = arma::join_vert(arma::mat(performance_size - INPUT_SIZE, INPUT_SIZE, arma::fill::zeros), I_in);
+    typename arma::Mat<typename _System::scalar_t>::template
+        fixed<INPUT_SIZE, INPUT_SIZE> I_in(arma::fill::eye);
+    typename arma::Mat<typename _System::scalar_t>::template
+        fixed<performance_size, INPUT_SIZE> expected_D12 = arma::join_vert(
+            arma::mat(performance_size - INPUT_SIZE, INPUT_SIZE, arma::fill::zeros),
+            I_in
+    );
 
     if(performance_size > INPUT_SIZE){
         if(!arma::approx_equal(llft_.D12(), expected_D12, "absdiff", .0)){
-            R1_ = R1_inv_ = arma::eye(performance_size, performance_size);
+            R1_ = R1_inv_ = arma::eye(INPUT_SIZE, INPUT_SIZE);
         }else{
             //-- do normalization here using SVD
 
-            arma::mat U, V;
-            arma::vec s;
+            typename arma::Mat<typename _System::scalar_t>::template
+                fixed<performance_size, performance_size> U;
+            typename arma::Mat<typename _System::scalar_t>::template
+                fixed<INPUT_SIZE, INPUT_SIZE> V;
+            typename arma::Col<typename _System::scalar_t>::template
+                fixed<INPUT_SIZE> s;
             arma::svd(U,s,V,llft_.D12());
 
-            arma::mat S = arma::diagmat(s);
-            arma::mat recip_S(arma::size(S), arma::fill::zeros);
-            for(int i(0); i < S.n_rows; i++){
-                recip_S(i, i) = 1./S(i,i);
-            }
+            typename arma::Mat<typename _System::scalar_t>::template
+                fixed<INPUT_SIZE, INPUT_SIZE> S = arma::diagmat(s);
+            // decltype(S) recip_S(arma::fill::zeros);
+            // for(int i(0); i < S.n_rows; i++){
+            //     recip_S(i, i) = 1./S(i,i);
+            // }
 
-            arma::mat U_flip( arma::fliplr( U ) ), S_flip( arma::flipud( S ) );
+            decltype(U) U_flip( arma::fliplr( U ) );
+            decltype(S) S_flip( arma::flipud( S ) );
 
-            arma::mat U1 = U_flip;
-            arma::mat U1_t = arma::trans( U1 );
+            decltype(U) U1 = U_flip;
+            decltype(U1) U1_t = arma::trans( U1 );
             R1_ = S_flip * arma::trans( V );
             R1_inv_ = arma::inv( R1_ );
 
@@ -130,7 +145,6 @@ auto Hinf<_System,
             llft_.D11() = U1_t*llft_.D11();
             llft_.D12() = U1_t*llft_.D12()*R1_inv_;
             llft_.D22() = llft_.D22()*R1_inv_;
-
         }
     }else if(performance_size == INPUT_SIZE){
         if(arma::approx_equal(llft_.D12(), I_in, "absdiff", .0)){
@@ -143,31 +157,42 @@ auto Hinf<_System,
     }
 
     auto ok2(true); //-- RVO
-    arma::mat I_out(OUTPUT_SIZE, OUTPUT_SIZE, arma::fill::eye);
-    arma::mat expected_D21 = arma::join_horiz(arma::mat(OUTPUT_SIZE, perturbation_size - OUTPUT_SIZE, arma::fill::zeros), I_out);
+    typename arma::Mat<typename _System::scalar_t>::template
+        fixed<OUTPUT_SIZE, OUTPUT_SIZE> I_out(arma::fill::eye);
+    typename arma::Mat<typename _System::scalar_t>::template
+        fixed<OUTPUT_SIZE, perturbation_size> expected_D21 = arma::join_horiz(
+            arma::mat(OUTPUT_SIZE, perturbation_size - OUTPUT_SIZE, arma::fill::zeros),
+            I_out
+    );
 
     if(perturbation_size > OUTPUT_SIZE){
         if(arma::approx_equal(llft_.D12(), expected_D21, "absdiff", .0)){
-            R2_ = R2_inv_ = arma::eye(perturbation_size, perturbation_size);
+            R2_ = R2_inv_ = arma::eye(OUTPUT_SIZE, OUTPUT_SIZE);
         }else{
             //-- do normalization here using SVD
 
-            arma::mat U, V;
-            arma::vec s;
+            typename arma::Mat<typename _System::scalar_t>::template
+                fixed<OUTPUT_SIZE, OUTPUT_SIZE> U;
+            typename arma::Mat<typename _System::scalar_t>::template
+                fixed<perturbation_size, perturbation_size> V;
+            typename arma::Col<typename _System::scalar_t>::template
+                fixed<OUTPUT_SIZE> s;
             arma::svd(U,s,V,llft_.D21());
 
-            arma::mat S = arma::diagmat(s);
-            arma::mat recip_S(arma::size(S), arma::fill::zeros);
-            for(int i(0); i < S.n_rows; i++){
-                recip_S(i, i) = 1./S(i,i);
-            }
+            typename arma::Mat<typename _System::scalar_t>::template
+                fixed<OUTPUT_SIZE, OUTPUT_SIZE> S = arma::diagmat(s);
+            // arma::mat recip_S(arma::size(S), arma::fill::zeros);
+            // for(int i(0); i < S.n_rows; i++){
+            //     recip_S(i, i) = 1./S(i,i);
+            // }
 
-            arma::mat V_flip( arma::flipud( arma::trans(V) ) ), S_flip( arma::fliplr(S) );
+            decltype(V) V_flip( arma::flipud( arma::trans(V) ) );
+            decltype(S) S_flip( arma::fliplr(S) );
 
             R2_ = U * S_flip;
             R2_inv_ = arma::inv( R2_ );
-            arma::mat U2 = V_flip;
-            arma::mat U2_t = arma::trans( U2 );
+            decltype(V) U2 = V_flip;
+            decltype(U2) U2_t = arma::trans( U2 );
 
             llft_.B1() = llft_.B1()*U2_t;
             llft_.D11() = llft_.D11()*U2_t;
@@ -203,19 +228,24 @@ auto Hinf<_System,
     performance_size,
     perturbation_size>::checkAssumption3(){
 
-    arma::mat D12_t( llft_.D12().t() );
-    arma::mat R( D12_t*llft_.D12() );
-    arma::mat R_inv( arma::inv(R) );
-    arma::mat I(performance_size, performance_size, arma::fill::eye);
+    typename arma::Mat<typename _System::scalar_t>::template
+        fixed<INPUT_SIZE, performance_size> D12_t( llft_.D12().t() );
+    typename arma::Mat<typename _System::scalar_t>::template
+        fixed<INPUT_SIZE, INPUT_SIZE> R( D12_t*llft_.D12() );
+    decltype(R) R_inv( arma::inv(R) );
+    typename arma::Mat<typename _System::scalar_t>::template
+        fixed<performance_size, performance_size> I(arma::fill::eye);
 
     arma::mat temp1, temp2;
     temp1 = llft_.D12()*R_inv*D12_t;
     temp2 = I - temp1;
-    arma::mat C = temp2*llft_.C1();
+    typename arma::Mat<typename _System::scalar_t>::template
+        fixed<performance_size, _System::n_states> C = temp2*llft_.C1();
 
     temp1 = llft_.B2()*R_inv*D12_t;
     temp2 = temp1*llft_.C1();
-    arma::mat A = llft_.A() - temp2;    
+    typename arma::Mat<typename _System::scalar_t>::template
+        fixed<_System::n_states, _System::n_states> A = llft_.A() - temp2;    
 
     bool ok = !lti_common::hasUnobservableModeInImAxis(A, C);
 #ifdef HINF_VERBOSE
@@ -231,19 +261,24 @@ auto Hinf<_System,
     performance_size,
     perturbation_size>::checkAssumption4(){
 
-    arma::mat D21_t( llft_.D21().t() );
-    arma::mat R( llft_.D21()*D21_t );
-    arma::mat R_inv( arma::inv(R) );
-    arma::mat I(perturbation_size, perturbation_size, arma::fill::eye);
+    typename arma::Mat<typename _System::scalar_t>::template
+        fixed<perturbation_size, OUTPUT_SIZE> D21_t( llft_.D21().t() );
+    typename arma::Mat<typename _System::scalar_t>::template
+        fixed<OUTPUT_SIZE, OUTPUT_SIZE> R( llft_.D21()*D21_t );
+    decltype(R) R_inv( arma::inv(R) );
+    typename arma::Mat<typename _System::scalar_t>::template
+        fixed<perturbation_size, perturbation_size> I(arma::fill::eye);
 
     arma::mat temp1, temp2;
     temp1 = llft_.B1()*D21_t*R_inv;
     temp2 = temp1*llft_.C2();
-    arma::mat A = llft_.A() - temp2;
+    typename arma::Mat<typename _System::scalar_t>::template
+        fixed<_System::n_states, _System::n_states> A = llft_.A() - temp2;
 
     temp1 = D21_t*R_inv*llft_.D21();
     temp2 = (I - temp1);
-    arma::mat B = llft_.B1()*temp2;
+    typename arma::Mat<typename _System::scalar_t>::template
+        fixed<_System::n_states, perturbation_size> B = llft_.B1()*temp2;
 
     bool ok = !lti_common::hasUncontrollableModeInImAxis(A, B);
 #ifdef HINF_VERBOSE
@@ -271,18 +306,17 @@ auto Hinf<_System,
     performance_size,
     perturbation_size>::checkCondition1(){
 
-    arma::mat D11_ = llft_.D11().head_rows(performance_size - INPUT_SIZE);
-    arma::mat D_11 = llft_.D11().head_cols(perturbation_size - OUTPUT_SIZE);
+    typename arma::Mat<typename _System::scalar_t>::template
+        fixed<performance_size-INPUT_SIZE, perturbation_size> D11_ =
+            llft_.D11().head_rows(performance_size - INPUT_SIZE);
+    typename arma::Mat<typename _System::scalar_t>::template
+        fixed<performance_size, perturbation_size - OUTPUT_SIZE> D_11 =
+            llft_.D11().head_cols(perturbation_size - OUTPUT_SIZE);
 
-    //-- TODO: use module in linear_algebra.hpp
-    arma::mat U, V;
-    arma::vec s;
-    arma::svd(U, s, V, D11_);
-    auto sval1( s.max() );
-    arma::svd(U, s, V, D_11);
-    auto sval2( s.max() );
-
-    return gam_ > std::max(sval1, sval2);
+    return gam_ > std::max(
+        linear_algebra::largestSV(D11_),
+        linear_algebra::largestSV(D_11)
+    );
 }
 
 template <typename _System,
@@ -311,7 +345,8 @@ template <typename _System,
 auto Hinf<_System,
     performance_size,
     perturbation_size>::checkCondition4(){
-    arma::cx_mat temp( X_inf_*Y_inf_ );
+
+    decltype(X_inf_) temp( X_inf_*Y_inf_ );
     return linear_algebra::spectralRadius(temp) < gam_*gam_;
 }
 
@@ -346,70 +381,142 @@ auto Hinf<_System,
     bool check_assumption = checkAllAssumption();
     assert(check_assumption && "[Hinf] The assumption made for interconnection matrix is not fulfill !");
 
-    llft_.D12().print("Normalized D12 : ");
-    llft_.D21().print("Normalized D21 : ");
+    llft_.D12().print("[Hinf] Normalized D12 : ");
+    llft_.D21().print("[Hinf] Normalized D21 : ");
 
     using namespace ::jacl::linear_algebra;
 
     arma::mat temp1, temp2, temp3, temp4;
     arma::cx_mat ctemp1, ctemp2, ctemp3;
 
-    arma::mat A_t = ss_->A().t();
-    arma::mat B_t = ss_->B().t();
-    arma::mat B1_t = llft_.B1().t();
-    arma::mat C_t = ss_->C().t();
-    arma::mat C1_t = llft_.C1().t();
+    const typename arma::Mat<typename _System::scalar_t>::template
+        fixed<_System::n_states, _System::n_states>& A = llft_.A();
+    typename arma::Mat<typename _System::scalar_t>::template
+        fixed<_System::n_states, _System::n_states> A_t = arma::trans(A);
+    typename arma::Mat<std::complex<typename _System::scalar_t>>::template
+        fixed<_System::n_states, _System::n_states> cxA = toCx(A);
+    const typename arma::Mat<typename _System::scalar_t>::template
+        fixed<_System::n_states, perturbation_size+INPUT_SIZE>& B = ss_->B();
+    typename arma::Mat<typename _System::scalar_t>::template
+        fixed<perturbation_size+INPUT_SIZE, _System::n_states> B_t = arma::trans(B);
+    const typename arma::Mat<typename _System::scalar_t>::template
+        fixed<performance_size+OUTPUT_SIZE, _System::n_states>& C = ss_->C();
+    typename arma::Mat<typename _System::scalar_t>::template
+        fixed<_System::n_states, performance_size+OUTPUT_SIZE> C_t = arma::trans(C);
+    const typename arma::Mat<typename _System::scalar_t>::template
+        fixed<performance_size+OUTPUT_SIZE, perturbation_size+INPUT_SIZE>& D = ss_->D();
+    typename arma::Mat<typename _System::scalar_t>::template
+        fixed<perturbation_size+INPUT_SIZE, performance_size+OUTPUT_SIZE> D_t = arma::trans(D);
+    const typename arma::Mat<typename _System::scalar_t>::template
+        fixed<_System::n_states, perturbation_size>& B1 = llft_.B1();
+    typename arma::Mat<std::complex<typename _System::scalar_t>>::template
+        fixed<_System::n_states, perturbation_size> cxB1 = toCx(B1);
+    typename arma::Mat<typename _System::scalar_t>::template
+        fixed<perturbation_size, _System::n_states> B1_t = arma::trans(B1);
+    typename arma::Mat<std::complex<typename _System::scalar_t>>::template
+        fixed<perturbation_size, _System::n_states> cxB1_t = toCx(B1_t);
+    const typename arma::Mat<typename _System::scalar_t>::template
+        fixed<_System::n_states, INPUT_SIZE>& B2 = llft_.B2();
+    typename arma::Mat<std::complex<typename _System::scalar_t>>::template
+        fixed<_System::n_states, INPUT_SIZE> cxB2 = toCx(B2);
+    typename arma::Mat<typename _System::scalar_t>::template
+        fixed<INPUT_SIZE, _System::n_states> B2_t = arma::trans(B2);
+    typename arma::Mat<std::complex<typename _System::scalar_t>>::template
+        fixed<INPUT_SIZE, _System::n_states> cxB2_t = toCx(B2_t);
+    const typename arma::Mat<typename _System::scalar_t>::template
+        fixed<performance_size, _System::n_states>& C1 = llft_.C1();
+    typename arma::Mat<std::complex<typename _System::scalar_t>>::template
+        fixed<performance_size, _System::n_states> cxC1 = toCx(C1);
+    typename arma::Mat<typename _System::scalar_t>::template
+        fixed<_System::n_states, performance_size> C1_t = arma::trans(C1);
+    const typename arma::Mat<typename _System::scalar_t>::template
+        fixed<OUTPUT_SIZE, _System::n_states>& C2 = llft_.C2();
+    typename arma::Mat<std::complex<typename _System::scalar_t>>::template
+        fixed<OUTPUT_SIZE, _System::n_states> cxC2 = toCx(C2);
+    typename arma::Mat<typename _System::scalar_t>::template
+        fixed<_System::n_states, OUTPUT_SIZE> C2_t = arma::trans(C2);
+    const typename arma::Mat<typename _System::scalar_t>::template
+        fixed<performance_size, perturbation_size>& D11 = llft_.D11();
+    typename arma::Mat<std::complex<typename _System::scalar_t>>::template
+        fixed<performance_size, perturbation_size> cxD11 = toCx(D11);
+    typename arma::Mat<typename _System::scalar_t>::template
+        fixed<perturbation_size, performance_size> D11_t = arma::trans(D11);
+    const typename arma::Mat<typename _System::scalar_t>::template
+        fixed<performance_size, INPUT_SIZE>& D12 = llft_.D12();
+    typename arma::Mat<std::complex<typename _System::scalar_t>>::template
+        fixed<performance_size, INPUT_SIZE> cxD12 = toCx(D12);
+    typename arma::Mat<typename _System::scalar_t>::template
+        fixed<INPUT_SIZE, performance_size> D12_t = arma::trans(D12);
+    const typename arma::Mat<typename _System::scalar_t>::template
+        fixed<OUTPUT_SIZE, perturbation_size>& D21 = llft_.D21();
+    typename arma::Mat<std::complex<typename _System::scalar_t>>::template
+        fixed<OUTPUT_SIZE, perturbation_size> cxD21 = toCx(D21);
+    typename arma::Mat<typename _System::scalar_t>::template
+        fixed<perturbation_size, OUTPUT_SIZE> D21_t = arma::trans(D21);
+    const typename arma::Mat<typename _System::scalar_t>::template
+        fixed<OUTPUT_SIZE, INPUT_SIZE>& D22 = llft_.D22();
+    typename arma::Mat<std::complex<typename _System::scalar_t>>::template
+        fixed<OUTPUT_SIZE, INPUT_SIZE> cxD22 = toCx(D22);
+    typename arma::Mat<typename _System::scalar_t>::template
+        fixed<INPUT_SIZE, OUTPUT_SIZE> D22_t = arma::trans(D22);
 
-    arma::mat D1_ = ss_->D().head_rows(performance_size);
-    arma::mat D1__t = D1_.t();
-    arma::mat D_1 = ss_->D().head_cols(perturbation_size);
-    arma::mat D_1_t = D_1.t();
+    typename arma::Mat<typename _System::scalar_t>::template
+        fixed<performance_size, perturbation_size+INPUT_SIZE> D1_ = ss_->D().head_rows(performance_size);
+    typename arma::Mat<typename _System::scalar_t>::template
+        fixed<perturbation_size+INPUT_SIZE, performance_size> D1__t = D1_.t();
+    typename arma::Mat<typename _System::scalar_t>::template
+        fixed<performance_size+OUTPUT_SIZE, perturbation_size> D_1 = ss_->D().head_cols(perturbation_size);
+    typename arma::Mat<typename _System::scalar_t>::template
+        fixed<perturbation_size, performance_size+OUTPUT_SIZE> D_1_t = D_1.t();
 
     temp1 = (gam_*gam_)*arma::eye(perturbation_size, perturbation_size);
     temp2 = arma::zeros<arma::mat>(D1_.n_cols,  D1_.n_cols);
-    temp2.submat(0, 0, perturbation_size - 1, perturbation_size - 1) = temp1;
-    arma::mat R1 = (D1__t * D1_) - temp2;
+    temp2.submat(0, 0, perturbation_size-1, perturbation_size-1) = temp1;
+    typename arma::Mat<typename _System::scalar_t>::template
+        fixed<perturbation_size+INPUT_SIZE, perturbation_size+INPUT_SIZE> R1 = (D1__t * D1_) - temp2;
 //    R1.print("R1 : ");
     //-- create exception here for singular R1 and warn to change the gamma
-    arma::mat R1_inv = arma::inv(R1);
+    decltype(R1) R1_inv = arma::inv(R1);
 
     temp1 = gam_*gam_*arma::eye(performance_size, performance_size);
     temp2 = arma::zeros<arma::mat>(D_1.n_rows, D_1.n_rows);
-    temp2.submat(0, 0, performance_size - 1, performance_size - 1) = temp1;
-    arma::mat R2 = (D_1 * D_1_t) - temp2;
+    temp2.submat(0, 0, performance_size-1, performance_size-1) = temp1;
+    typename arma::Mat<typename _System::scalar_t>::template
+        fixed<performance_size+OUTPUT_SIZE, performance_size+OUTPUT_SIZE> R2 = (D_1 * D_1_t) - temp2;
 //    R2.print("R2 : ");
     //-- create exception here for singular R2 and warn to change the gamma
-    arma::mat R2_inv = arma::inv(R2);
+    decltype(R2) R2_inv = arma::inv(R2);
 
     //-- Ricatti Domain
 
     temp1 = arma::join_vert(
                 //-- create a function to simplify the zeros
-                arma::join_horiz(ss_->A(), arma::zeros<arma::mat>(arma::size(ss_->A()))),
-                arma::join_horiz(-C1_t*llft_.C1(), -A_t)
-                );
+                arma::join_horiz(A, arma::zeros<arma::mat>(arma::size(A))),
+                arma::join_horiz(-C1_t*C1, -A_t)
+            );
     temp2 = arma::join_vert(
-                ss_->B(),
+                B,
                 -C1_t*D1_
-                );
-    temp3 = arma::join_horiz(D1__t*llft_.C1(), B_t);
+            );
+    temp3 = arma::join_horiz(D1__t*C1, B_t);
     temp4 = temp2*R1_inv*temp3;
-    arma::mat H_inf = temp1 - temp4;
+    typename arma::Mat<typename _System::scalar_t>::template
+        fixed<_System::n_states<<1, _System::n_states<<1> H_inf = temp1 - temp4;
 
     temp1 = arma::join_vert(
-                arma::join_horiz(A_t, arma::zeros<arma::mat>(arma::size(ss_->A()))),
-                arma::join_horiz(-llft_.B1()*B1_t, -ss_->A())
+                arma::join_horiz(A_t, arma::zeros<arma::mat>(arma::size(A))),
+                arma::join_horiz(-B1*B1_t, -A)
                 );
     temp2 = arma::join_vert(
                 C_t,
-                -llft_.B1()*D_1_t
+                -B1*D_1_t
                 );
     temp3 = arma::join_horiz(
                 D_1*B1_t,
-                ss_->C()
+                C
                 );
     temp4 = temp2*R2_inv*temp3;
-    arma::mat J_inf = temp1 - temp4;
+    decltype(H_inf) J_inf = temp1 - temp4;
 
     ARE<typename _System::state_space_t> solver1(ss_);
     ARE<typename _System::state_space_t> solver2(ss_);
@@ -417,17 +524,17 @@ auto Hinf<_System,
 #ifdef HINF_VERBOSE
     //-- check whether Hamiltonian or not
     {
-        arma::mat J = arma::join_cols(
-            arma::join_rows(arma::zeros(arma::size(ss_->A())), -arma::eye(arma::size(ss_->A()))),
-            arma::join_rows(arma::eye(arma::size(ss_->A())), arma::zeros(arma::size(ss_->A())))
+        decltype(H_inf) J = arma::join_cols(
+            arma::join_rows(arma::zeros(arma::size(A)), -arma::eye(arma::size(A))),
+            arma::join_rows(arma::eye(arma::size(A)), arma::zeros(arma::size(A)))
         );
 
-        arma::mat check_H_inf = -J*H_inf*J;
+        decltype(H_inf) check_H_inf = -J*H_inf*J;
         check_H_inf = -arma::trans(check_H_inf);
         H_inf.print("[Hinf] H_inf : ");
         check_H_inf.print("[Hinf] Check H_inf : ");
 
-        arma::mat check_J_inf = -J*J_inf*J;
+        decltype(H_inf) check_J_inf = -J*J_inf*J;
         check_J_inf = -arma::trans(check_J_inf);
         J_inf.print("[Hinf] J_inf : ");
         check_J_inf.print("[Hinf] Check J_inf : ");
@@ -437,29 +544,29 @@ auto Hinf<_System,
     solver1.setHamiltonianMatrix(H_inf);
     solver2.setHamiltonianMatrix(J_inf);
 
-    arma::cx_mat X_inf = solver1.solve();
-    arma::cx_mat Y_inf = solver2.solve();
+    X_inf_ = solver1.solve();
+    Y_inf_ = solver2.solve();
 
 #ifdef HINF_VERBOSE
     //--check the ARE solution
     {
-        arma::cx_mat H11 = toCx(H_inf.submat(0,0,_System::n_states-1,_System::n_states-1));
-        arma::cx_mat H12 = toCx(H_inf.submat(0, _System::n_states, _System::n_states-1, 2*_System::n_states-1));
-        arma::cx_mat H21 = toCx(H_inf.submat(_System::n_states, 0, 2*_System::n_states-1, _System::n_states-1));
-        arma::cx_mat H22 = toCx(H_inf.submat(_System::n_states, _System::n_states,
+        decltype(X_inf_) H11 = toCx(H_inf.submat(0,0,_System::n_states-1,_System::n_states-1));
+        decltype(X_inf_) H12 = toCx(H_inf.submat(0, _System::n_states, _System::n_states-1, 2*_System::n_states-1));
+        decltype(X_inf_) H21 = toCx(H_inf.submat(_System::n_states, 0, 2*_System::n_states-1, _System::n_states-1));
+        decltype(X_inf_) H22 = toCx(H_inf.submat(_System::n_states, _System::n_states,
                                             2*_System::n_states-1, 2*_System::n_states-1));
-        ctemp1 = -H22*X_inf + X_inf*H11;
-        ctemp2 = X_inf*H12*X_inf - H21;
+        ctemp1 = -H22*X_inf_ + X_inf_*H11;
+        ctemp2 = X_inf_*H12*X_inf_ - H21;
         ctemp3 = ctemp1 + ctemp2;
         ctemp3.print("[Hinf] ARE 1 rhs : ");
 
-        arma::cx_mat J11 = toCx(J_inf.submat(0,0,_System::n_states-1,_System::n_states-1));
-        arma::cx_mat J12 = toCx(J_inf.submat(0, _System::n_states, _System::n_states-1, 2*_System::n_states-1));
-        arma::cx_mat J21 = toCx(J_inf.submat(_System::n_states, 0, 2*_System::n_states-1, _System::n_states-1));
-        arma::cx_mat J22 = toCx(J_inf.submat(_System::n_states, _System::n_states,
+        decltype(Y_inf_) J11 = toCx(J_inf.submat(0,0,_System::n_states-1,_System::n_states-1));
+        decltype(Y_inf_) J12 = toCx(J_inf.submat(0, _System::n_states, _System::n_states-1, 2*_System::n_states-1));
+        decltype(Y_inf_) J21 = toCx(J_inf.submat(_System::n_states, 0, 2*_System::n_states-1, _System::n_states-1));
+        decltype(Y_inf_) J22 = toCx(J_inf.submat(_System::n_states, _System::n_states,
                                             2*_System::n_states-1, 2*_System::n_states-1));
-        ctemp1 = -J22*Y_inf + Y_inf*J11;
-        ctemp2 = Y_inf*J12*Y_inf - J21;
+        ctemp1 = -J22*Y_inf_ + Y_inf_*J11;
+        ctemp2 = Y_inf_*J12*Y_inf_ - J21;
         ctemp3 = ctemp1 + ctemp2;
         ctemp3.print("[Hinf] ARE 2 rhs : ");
     }
@@ -467,40 +574,51 @@ auto Hinf<_System,
 
 #ifdef HINF_VERBOSE
     std::cout << "[Hinf] Solution of ARE : " << std::endl;
-    X_inf.print("[Hinf] X_inf : ");
-    Y_inf.print("[Hinf] Y_inf : ");
+    X_inf_.print("[Hinf] X_inf : ");
+    Y_inf_.print("[Hinf] Y_inf : ");
 #endif
 
-    ctemp1 = toCx(D1__t * llft_.C1());
-    ctemp2 = toCx(B_t) * X_inf;
-    arma::cx_mat F = -toCx(R1_inv)*(ctemp1 + ctemp2);
-    arma::cx_mat F1_inf = F.head_rows(perturbation_size);
-    arma::cx_mat F2_inf = F.tail_rows(INPUT_SIZE);
+    ctemp1 = toCx(D1__t * C1);
+    ctemp2 = toCx(B_t) * X_inf_;
+    typename arma::Mat<std::complex<typename _System::scalar_t>>::template
+        fixed<perturbation_size+INPUT_SIZE, _System::n_states> F = -toCx(R1_inv)*(ctemp1 + ctemp2);
+    typename arma::Mat<std::complex<typename _System::scalar_t>>::template
+        fixed<perturbation_size, _System::n_states> F1_inf = F.head_rows(perturbation_size);
+    typename arma::Mat<std::complex<typename _System::scalar_t>>::template
+        fixed<INPUT_SIZE, _System::n_states> F2_inf = F.tail_rows(INPUT_SIZE);
 
-    ctemp1 = toCx(llft_.B1() * D_1_t);
-    ctemp2 = Y_inf * toCx(C_t);
-    arma::cx_mat L = -(ctemp1 + ctemp2)*toCx(R2_inv);
-    arma::cx_mat L1_inf = L.head_cols(performance_size);
-    arma::cx_mat L2_inf = L.tail_cols(OUTPUT_SIZE);
+    ctemp1 = toCx(B1 * D_1_t);
+    ctemp2 = Y_inf_ * toCx(C_t);
+    typename arma::Mat<std::complex<typename _System::scalar_t>>::template
+        fixed<_System::n_states, performance_size+OUTPUT_SIZE> L = -(ctemp1 + ctemp2)*toCx(R2_inv);
+    typename arma::Mat<std::complex<typename _System::scalar_t>>::template
+        fixed<_System::n_states, performance_size> L1_inf = L.head_cols(performance_size);
+    typename arma::Mat<std::complex<typename _System::scalar_t>>::template
+        fixed<_System::n_states, OUTPUT_SIZE> L2_inf = L.tail_cols(OUTPUT_SIZE);
 
     //-- Partition of D, F1_inf and L1_inf
-    arma::cx_mat F11_inf = F1_inf.head_rows(perturbation_size - OUTPUT_SIZE);
-    arma::cx_mat F12_inf = F1_inf.tail_rows(OUTPUT_SIZE);
+    typename arma::Mat<std::complex<typename _System::scalar_t>>::template
+        fixed<perturbation_size-OUTPUT_SIZE, _System::n_states> F11_inf = F1_inf.head_rows(perturbation_size - OUTPUT_SIZE);
+    typename arma::Mat<std::complex<typename _System::scalar_t>>::template
+        fixed<OUTPUT_SIZE, _System::n_states> F12_inf = F1_inf.tail_rows(OUTPUT_SIZE);
 
-    arma::cx_mat L11_inf = L1_inf.head_cols(performance_size - INPUT_SIZE);
-    arma::cx_mat L12_inf = L1_inf.tail_cols(INPUT_SIZE);
+    typename arma::Mat<std::complex<typename _System::scalar_t>>::template
+        fixed<_System::n_states, performance_size-INPUT_SIZE> L11_inf = L1_inf.head_cols(performance_size - INPUT_SIZE);
+    typename arma::Mat<std::complex<typename _System::scalar_t>>::template
+        fixed<_System::n_states, INPUT_SIZE> L12_inf = L1_inf.tail_cols(INPUT_SIZE);
 
-    arma::cx_mat D1111 = toCx(llft_.D11()).submat(0, 0,
+    typename arma::Mat<std::complex<typename _System::scalar_t>>::template
+        fixed<performance_size-INPUT_SIZE, perturbation_size-OUTPUT_SIZE> D1111 = toCx(D11).submat(0, 0,
                                           (performance_size - INPUT_SIZE) - 1, (perturbation_size - OUTPUT_SIZE) - 1);
-    arma::cx_mat D1112 = toCx(llft_.D11()).submat(0, (perturbation_size - OUTPUT_SIZE),
+    typename arma::Mat<std::complex<typename _System::scalar_t>>::template
+        fixed<performance_size-INPUT_SIZE, OUTPUT_SIZE> D1112 = toCx(D11).submat(0, (perturbation_size - OUTPUT_SIZE),
                                           (performance_size - INPUT_SIZE) - 1, perturbation_size - 1);
-    arma::cx_mat D1121 = toCx(llft_.D11()).submat((performance_size - INPUT_SIZE), 0,
+    typename arma::Mat<std::complex<typename _System::scalar_t>>::template
+        fixed<INPUT_SIZE, perturbation_size-OUTPUT_SIZE> D1121 = toCx(D11).submat((performance_size - INPUT_SIZE), 0,
                                             performance_size - 1, (perturbation_size - OUTPUT_SIZE) - 1);
-    arma::cx_mat D1122 = toCx(llft_.D11()).submat((performance_size - INPUT_SIZE), (perturbation_size - OUTPUT_SIZE),
+    typename arma::Mat<std::complex<typename _System::scalar_t>>::template
+        fixed<INPUT_SIZE, OUTPUT_SIZE> D1122 = toCx(D11).submat((performance_size - INPUT_SIZE), (perturbation_size - OUTPUT_SIZE),
                                             performance_size - 1,  perturbation_size - 1);
-
-    X_inf_ = X_inf;
-    Y_inf_ = Y_inf;
 
     bool check_cond = checkAllCondition();
 #ifdef HINF_VERBOSE
@@ -509,54 +627,57 @@ auto Hinf<_System,
     assert(check_cond && "[Hinf] Condition for existence controller that make the objective is less than gamma was failed !");
 
     //-- I assume the arbitrary system that have property less than to gamma is zero a.k.a central controller
-    ctemp1 = (1./(gam_*gam_))*Y_inf*X_inf;
-    arma::cx_mat Z_inf = arma::inv(arma::eye(_System::n_states, _System::n_states) - ctemp1);    
+    ctemp1 = (1./(gam_*gam_))*Y_inf_*X_inf_;
+    typename arma::Mat<std::complex<typename _System::scalar_t>>::template
+        fixed<_System::n_states, _System::n_states> Z_inf = arma::inv(arma::eye<arma::cx_mat>(_System::n_states, _System::n_states) - ctemp1);    
     Z_inf.print("[Hinf] Z_inf : ");
 
     ctemp1 = -D1121*arma::trans(D1111);
-    ctemp2 = (gam_*gam_)*arma::eye(performance_size - INPUT_SIZE, performance_size - INPUT_SIZE)
+    ctemp2 = (gam_*gam_)*arma::eye<arma::cx_mat>(performance_size - INPUT_SIZE, performance_size - INPUT_SIZE)
             - D1111*arma::trans(D1111);
     ctemp3 = ctemp1*arma::inv(ctemp2);
-    arma::cx_mat D11_hat = ctemp3*D1112 - D1122;
+    typename arma::Mat<std::complex<typename _System::scalar_t>>::template
+        fixed<INPUT_SIZE, OUTPUT_SIZE> D11_hat = ctemp3*D1112 - D1122;
 
     //-- calculate D12_hat and D21_hat
     ctemp1 = (gam_*gam_)*arma::eye(perturbation_size - OUTPUT_SIZE, perturbation_size - OUTPUT_SIZE)
             - arma::trans(D1111)*D1111;
     ctemp2 = arma::eye(INPUT_SIZE, INPUT_SIZE) - D1121*arma::inv(ctemp1)*arma::trans(D1121);
-    arma::cx_mat D12_hat = arma::chol(ctemp2, "lower");
-    ctemp2.print("RHS : ");
-    ctemp1 = D12_hat.t()*D12_hat;
-    ctemp1.print("LHS : ");
+    typename arma::Mat<std::complex<typename _System::scalar_t>>::template
+        fixed<INPUT_SIZE, INPUT_SIZE> D12_hat = arma::chol(ctemp2, "lower");
 
     ctemp1 = (gam_*gam_)*arma::eye(performance_size - INPUT_SIZE, performance_size - INPUT_SIZE)
             - D1111*arma::trans(D1111);
     ctemp2 = arma::eye(OUTPUT_SIZE, OUTPUT_SIZE) - arma::trans(D1112)*arma::inv(ctemp1)*D1112;
-    arma::cx_mat D21_hat = arma::chol(ctemp2, "upper");
-    ctemp2.print("RHS : ");
-    ctemp1 = D21_hat*D21_hat.t();
-    ctemp1.print("LHS : ");
+    typename arma::Mat<std::complex<typename _System::scalar_t>>::template
+        fixed<OUTPUT_SIZE, OUTPUT_SIZE> D21_hat = arma::chol(ctemp2, "upper");
 
-    // ctemp1 = llft_.B2() + L12_inf;
+    // ctemp1 = B2 + L12_inf;
     // arma::cx_mat B2_hat = Z_inf*ctemp1*D12_hat;
-    // arma::cx_mat C2_hat = -D21_hat*(llft_.C2() + F12_inf);
+    // arma::cx_mat C2_hat = -D21_hat*(C2 + F12_inf);
     // ctemp1 = -Z_inf*L2_inf;
     // ctemp2 = B2_hat*arma::inv(D12_hat)*D11_hat;
     // arma::cx_mat B1_hat = ctemp1 + ctemp2;
     // ctemp1 = D11_hat*arma::inv(D21_hat)*C2_hat;
     // arma::cx_mat C1_hat = F2_inf + ctemp1;
     // ctemp1 = B1_hat*arma::inv(D21_hat)*C2_hat;
-    // arma::cx_mat A_hat = ss_->A() + ss_->B()*F + ctemp1;
+    // arma::cx_mat A_hat = A + B*F + ctemp1;
 
-    arma::cx_mat B2_hat = (llft_.B2() + L12_inf)*D12_hat;
-    ctemp1 = llft_.C2() + F12_inf;
-    arma::cx_mat C2_hat = -D21_hat*ctemp1*Z_inf;
+    typename arma::Mat<std::complex<typename _System::scalar_t>>::template
+        fixed<_System::n_states, INPUT_SIZE> B2_hat = (B2 + L12_inf)*D12_hat;
+    ctemp1 = C2 + F12_inf;
+    typename arma::Mat<std::complex<typename _System::scalar_t>>::template
+        fixed<OUTPUT_SIZE, _System::n_states> C2_hat = -D21_hat*ctemp1*Z_inf;
     ctemp1 = B2_hat*arma::inv(D12_hat)*D11_hat;
-    arma::cx_mat B1_hat = -L2_inf + ctemp1;
+    typename arma::Mat<std::complex<typename _System::scalar_t>>::template
+        fixed<_System::n_states, OUTPUT_SIZE> B1_hat = -L2_inf + ctemp1;
     ctemp1 = F2_inf*Z_inf;
     ctemp2 = D11_hat*arma::inv(D21_hat)*C2_hat;
-    arma::cx_mat C1_hat = ctemp1 + ctemp2;
+    typename arma::Mat<std::complex<typename _System::scalar_t>>::template
+        fixed<INPUT_SIZE, _System::n_states> C1_hat = ctemp1 + ctemp2;
     ctemp1 = B2_hat*arma::inv(D12_hat)*C1_hat;
-    arma::cx_mat A_hat = ss_->A() + L*ss_->C() + ctemp1;
+    typename arma::Mat<std::complex<typename _System::scalar_t>>::template
+        fixed<_System::n_states, _System::n_states> A_hat = A + L*C + ctemp1;
 
     //-- recover from normalization matrix
     B1_hat = B1_hat*toCx(R2_inv_);
