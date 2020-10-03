@@ -30,6 +30,7 @@ install:
   - source /opt/qt512/bin/qt512-env.sh
 
 before_script:
+  - sudo ln -s /usr/lib/x86_64-linux-gnu/libboost_python-py36.so /usr/local/lib/libboost_python.so
   - mkdir build
   - cd build
   - cmake ..
