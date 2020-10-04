@@ -105,8 +105,7 @@ target_link_libraries(py_stuff PRIVATE ${PYTHON_LIBRARIES})
 #-- Simulator(more precisely is plotter)
 add_library(plotter ${JACL_HEADER_PREFIX}/plotter.hpp)
 target_link_libraries(plotter PRIVATE
-    Boost::system Boost::thread Boost::chrono
-    boost_python
+    Boost::system Boost::thread Boost::chrono boost_python
     py_stuff
     continuous_system
     discrete_system
