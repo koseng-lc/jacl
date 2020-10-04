@@ -346,8 +346,8 @@ auto Hinf<_System,
     performance_size,
     perturbation_size>::checkCondition4(){
 
-    decltype(X_inf_) temp( X_inf_*Y_inf_ );
-    return linear_algebra::spectralRadius(temp) < gam_*gam_;
+    return linear_algebra::spectralRadius(
+        arma::Mat<std::complex<typename _System::scalar_t>>(X_inf_*Y_inf_)) < gam_*gam_;
 }
 
 template <typename _System,
