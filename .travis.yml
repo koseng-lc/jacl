@@ -35,6 +35,7 @@ before_script:
   - mkdir build
   - cd build
   - cmake ..
+  - cat example/CMakeFiles/control_sim.dir/build.make
 
 script:
   - make -j2 --trace
