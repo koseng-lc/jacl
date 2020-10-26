@@ -14,6 +14,26 @@ namespace jacl::linear_algebra{
 
 namespace detail{
 
+    template <typename Matrix>
+    static auto toCx(const Matrix& m){
+        return arma::cx_mat(m, arma::zeros<arma::mat>( arma::size(m) ));
+    }
+
+    template <typename Matrix>
+    static auto toCx(Matrix&& m){        
+        return arma::cx_mat(m, arma::zeros<arma::mat>( arma::size(m) ));
+    }
+
+    template <typename Matrix>
+    static inline auto toReal(const Matrix& m){
+        return arma::real(m);
+    }
+
+    template <typename Matrix>
+    static inline auto toReal(Matrix&& m){
+        return arma::real(m);
+    }
+
     template <typename Type>
     static auto isPosSemiDefinite(const arma::Mat<Type>& in){
         arma::Mat<Type> hessian_in = .5*(in + arma::trans(in));
@@ -73,72 +93,101 @@ namespace detail{
     }
 }
 
-// template <typename Type>
-// static inline auto toCx(const arma::Mat<Type>& _in)
-//     -> decltype(arma::Mat<std::complex<Type>>(_in, arma::zeros<arma::Mat<Type>>( arma::size(_in) ))){
-//     return arma::Mat<std::complex<Type>>(_in, arma::zeros<arma::Mat<Type>>( arma::size(_in) ));
-// }
-
-static inline auto toCx(const arma::mat _in){
-    return arma::cx_mat(_in, arma::zeros<arma::mat>( arma::size(_in) ));
+template <typename Matrix>
+static inline auto toCx(Matrix&& m){
+    return detail::toCx(std::forward<Matrix>(m));
 }
 
-template <typename Type>
-static inline auto toReal(const arma::Mat<std::complex<Type>>& _in)
-    -> decltype(arma::real(_in)){
-    return arma::real(_in);
+template <typename Matrix>
+static inline auto toReal(Matrix&& m){
+    return detail::toReal(std::forward<Matrix>(m));
 }
 
-static void GramSchmidtProjection(int idx, const arma::mat& col, arma::mat* u, std::vector<arma::mat>* e){
-    if(idx > 0){
-        auto norm = arma::dot(col, (*e)[idx-1]);
-        *u -= (norm * (*e)[idx-1]);
-        GramSchmidtProjection(idx - 1, col, u, e);
-    }
+template <std::size_t idx, typename C=arma::mat, typename U=arma::mat, typename E>
+static auto GramSchmidtProjection_iter(const C& col, U* u, const E& e)
+    -> std::enable_if_t<idx==0>{
 }
 
-static auto QRDecomp(const arma::mat& in, arma::mat* Q, arma::mat* R){
-
-    *Q = arma::mat(in.n_rows, in.n_cols, arma::fill::zeros);
-    *R = arma::mat(arma::size(in), arma::fill::zeros);
-    std::vector<arma::mat> e;
-
-//    int n_rank = arma::rank(in);
-    arma::mat u;
-
-    //-- Gram-Schmidt Process
-    auto norm(.0);
-    arma::mat normalized_u;
-    for(int i(0); i < in.n_cols; i++){
-        u = in.col(i);
-        GramSchmidtProjection(i, in.col(i), &u, &e);
-        norm = arma::norm(u, 2);
-        normalized_u = (norm == .0) ? u : u / norm;
-        e.push_back(normalized_u);
-        Q->col(i) = e[i];
-    }
-
-    for(int r(0); r < in.n_cols; r++){ //-- limit row iteration
-        for(int c(r); c < in.n_cols; c++){
-            (*R)(r, c) = arma::dot(in.col(c), Q->col(r));
-        }
-    }
+template <std::size_t idx, typename C=arma::mat, typename U=arma::mat, typename E>
+static auto GramSchmidtProjection_iter(const C& col, U* u, const E& e)
+    -> std::enable_if_t<0<idx>{
+    // if(idx > 0){
+        auto norm = arma::dot(col, e[idx-1]);
+        *u -= (norm * e[idx-1]);
+        GramSchmidtProjection_iter<idx-1>(col, u, e);
+    // }
 }
 
-static auto QRAlgorithm(const arma::mat& in, arma::mat* T, arma::mat* U, int num_iter = 20){
-    arma::mat updated_in(in);
-    *U = arma::mat(arma::size(in), arma::fill::eye);
-    arma::mat Q, R;
-    for(int i(0); i < num_iter; i++){
-//        updated_in.print("UIN : ");
-        QRDecomp(updated_in, &Q, &R);
-//        Q.print("Q : ");
-//        R.print("R : ");
-        updated_in = R * Q;
-        (*U) = (*U) * Q;
-    }
+template <std::size_t idx, typename I, typename Q, typename E>
+static auto GramSchmidtProjection(const I& in, Q* q, E* e)
+    -> std::enable_if_t<idx==(I::n_cols-1)>{
+        arma::mat u = in.col(idx);
+        GramSchmidtProjection_iter<idx>(in.col(idx), &u, *e);
+        auto norm = arma::norm(u, 2);
+        arma::mat normalized_u = (norm == .0) ? u : u / norm;
+        (*e)[idx] = normalized_u;
+        q->col(idx) = (*e)[idx];
+}
 
-    *T = updated_in;
+template <std::size_t idx, typename I, typename Q, typename E>
+static auto GramSchmidtProjection(const I& in, Q* q, E* e)
+    -> std::enable_if_t<idx<I::n_cols-1>{
+    // if(idx > 0){
+        arma::mat u = in.col(idx);
+        GramSchmidtProjection_iter<idx>(in.col(idx), &u, *e);
+        auto norm = arma::norm(u, 2);
+        arma::mat normalized_u = (norm == .0) ? u : u / norm;
+        (*e)[idx] = normalized_u;
+        q->col(idx) = (*e)[idx];
+        GramSchmidtProjection<idx+1>(in, q, e);
+    // }
+}
+
+template <std::size_t col, std::size_t row, typename I, typename Q, typename R>
+static auto QRDecomp_col_iter(const I& in, const Q& q, R* r)
+    -> std::enable_if_t<col==(I::n_cols-1)>{
+    // if(col < I::n_cols){
+        (*r)(row, col) = arma::dot(in.col(col), q.col(row));
+    // }
+}
+
+template <std::size_t col, std::size_t row, typename I, typename Q, typename R>
+static auto QRDecomp_col_iter(const I& in, const Q& q, R* r)
+    -> std::enable_if_t<col<I::n_cols-1>{
+    // if(col < I::n_cols){
+        (*r)(row, col) = arma::dot(in.col(col), q.col(row));
+        QRDecomp_col_iter<col+1,row>(in, q, r);
+    // }
+}
+
+template <std::size_t row, typename I, typename Q, typename R>
+static auto QRDecomp_row_iter(const I& in, const Q& q, R* r)
+    -> std::enable_if_t<row==(I::n_cols-1)>{
+    // if(row < I::n_cols){//-- set limit row iteration into cols size
+        QRDecomp_col_iter<row,row>(in, q, r);
+    // }
+}
+
+template <std::size_t row, typename I, typename Q, typename R>
+static auto QRDecomp_row_iter(const I& in, const Q& q, R* r)
+    -> std::enable_if_t<row<I::n_cols-1>{
+    // if(row < I::n_cols){//-- set limit row iteration into cols size
+        QRDecomp_col_iter<row,row>(in, q, r);
+        QRDecomp_row_iter<row+1>(in, q, r);
+    // }
+}
+
+template <typename I, typename Q, typename R>
+static auto QRDecomp(const I& in, Q* q, R* r){
+
+    *q = arma::mat::fixed<I::n_rows, I::n_cols>(arma::fill::zeros);
+    *r = arma::mat::fixed<I::n_rows, I::n_cols>(arma::fill::zeros);
+    std::array<arma::mat::fixed<I::n_rows,1>, I::n_cols> e;
+
+    //-- Gram-Schmidt process
+    GramSchmidtProjection<0>(in, q, &e);
+
+    QRDecomp_row_iter<0>(in, *q, r);
 }
 
 //-- using universal reference
