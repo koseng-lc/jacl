@@ -91,119 +91,104 @@ namespace detail{
         arma::Col<Type> s = arma::svd(in);
         return arma::max(s);
     }
+
+    template <std::size_t idx, typename C=arma::mat, typename U=arma::mat, typename E>
+    static auto GramSchmidtProjection_iter(const C& col, U* u, const E& e){
+
+        if constexpr(idx > 0){
+            auto norm = arma::dot(col, e[idx-1]);
+            *u -= (norm * e[idx-1]);
+            GramSchmidtProjection_iter<idx-1>(col, u, e);
+        }
+    }
+
+    template <std::size_t idx, typename I, typename Q, typename E>
+    static auto GramSchmidtProjection(const I& in, Q* q, E* e){
+        
+        if constexpr(idx < I::n_cols){
+            arma::mat u = in.col(idx);
+            GramSchmidtProjection_iter<idx>(in.col(idx), &u, *e);
+            auto norm = arma::norm(u, 2);
+            arma::mat normalized_u = (norm == .0) ? u : u / norm;
+            (*e)[idx] = normalized_u;
+            q->col(idx) = (*e)[idx];
+            GramSchmidtProjection<idx+1>(in, q, e);
+        }
+    }
+
+    template <std::size_t col, std::size_t row, typename I, typename Q, typename R>
+    static auto QRDecomp_col_iter(const I& in, const Q& q, R* r){
+
+        if constexpr(col < I::n_cols){
+            (*r)(row, col) = arma::dot(in.col(col), q.col(row));
+            QRDecomp_col_iter<col+1,row>(in, q, r);
+        }
+    }
+
+    template <std::size_t row, typename I, typename Q, typename R>
+    static auto QRDecomp_row_iter(const I& in, const Q& q, R* r){
+
+        if constexpr(row < I::n_cols){//-- set limit row iteration into cols size
+            QRDecomp_col_iter<row,row>(in, q, r);
+            QRDecomp_row_iter<row+1>(in, q, r);
+        }
+    }
 }
 
 template <typename Matrix>
 static inline auto toCx(Matrix&& m){
+
+    static_assert(arma::is_arma_type<Matrix>::value, "Please input arma_type only!");
+
     return detail::toCx(std::forward<Matrix>(m));
 }
 
 template <typename Matrix>
 static inline auto toReal(Matrix&& m){
+
+    static_assert(arma::is_arma_type<Matrix>::value, "Please input arma_type only!");
+    
     return detail::toReal(std::forward<Matrix>(m));
-}
-
-template <std::size_t idx, typename C=arma::mat, typename U=arma::mat, typename E>
-static auto GramSchmidtProjection_iter(const C& col, U* u, const E& e)
-    -> std::enable_if_t<idx==0>{
-}
-
-template <std::size_t idx, typename C=arma::mat, typename U=arma::mat, typename E>
-static auto GramSchmidtProjection_iter(const C& col, U* u, const E& e)
-    -> std::enable_if_t<0<idx>{
-    // if(idx > 0){
-        auto norm = arma::dot(col, e[idx-1]);
-        *u -= (norm * e[idx-1]);
-        GramSchmidtProjection_iter<idx-1>(col, u, e);
-    // }
-}
-
-template <std::size_t idx, typename I, typename Q, typename E>
-static auto GramSchmidtProjection(const I& in, Q* q, E* e)
-    -> std::enable_if_t<idx==(I::n_cols-1)>{
-        arma::mat u = in.col(idx);
-        GramSchmidtProjection_iter<idx>(in.col(idx), &u, *e);
-        auto norm = arma::norm(u, 2);
-        arma::mat normalized_u = (norm == .0) ? u : u / norm;
-        (*e)[idx] = normalized_u;
-        q->col(idx) = (*e)[idx];
-}
-
-template <std::size_t idx, typename I, typename Q, typename E>
-static auto GramSchmidtProjection(const I& in, Q* q, E* e)
-    -> std::enable_if_t<idx<I::n_cols-1>{
-    // if(idx > 0){
-        arma::mat u = in.col(idx);
-        GramSchmidtProjection_iter<idx>(in.col(idx), &u, *e);
-        auto norm = arma::norm(u, 2);
-        arma::mat normalized_u = (norm == .0) ? u : u / norm;
-        (*e)[idx] = normalized_u;
-        q->col(idx) = (*e)[idx];
-        GramSchmidtProjection<idx+1>(in, q, e);
-    // }
-}
-
-template <std::size_t col, std::size_t row, typename I, typename Q, typename R>
-static auto QRDecomp_col_iter(const I& in, const Q& q, R* r)
-    -> std::enable_if_t<col==(I::n_cols-1)>{
-    // if(col < I::n_cols){
-        (*r)(row, col) = arma::dot(in.col(col), q.col(row));
-    // }
-}
-
-template <std::size_t col, std::size_t row, typename I, typename Q, typename R>
-static auto QRDecomp_col_iter(const I& in, const Q& q, R* r)
-    -> std::enable_if_t<col<I::n_cols-1>{
-    // if(col < I::n_cols){
-        (*r)(row, col) = arma::dot(in.col(col), q.col(row));
-        QRDecomp_col_iter<col+1,row>(in, q, r);
-    // }
-}
-
-template <std::size_t row, typename I, typename Q, typename R>
-static auto QRDecomp_row_iter(const I& in, const Q& q, R* r)
-    -> std::enable_if_t<row==(I::n_cols-1)>{
-    // if(row < I::n_cols){//-- set limit row iteration into cols size
-        QRDecomp_col_iter<row,row>(in, q, r);
-    // }
-}
-
-template <std::size_t row, typename I, typename Q, typename R>
-static auto QRDecomp_row_iter(const I& in, const Q& q, R* r)
-    -> std::enable_if_t<row<I::n_cols-1>{
-    // if(row < I::n_cols){//-- set limit row iteration into cols size
-        QRDecomp_col_iter<row,row>(in, q, r);
-        QRDecomp_row_iter<row+1>(in, q, r);
-    // }
 }
 
 template <typename I, typename Q, typename R>
 static auto QRDecomp(const I& in, Q* q, R* r){
+
+    static_assert(arma::is_arma_type<I>::value & arma::is_arma_type<Q>::value & arma::is_arma_type<R>::value, "Please input arma_type only!");
 
     *q = arma::mat::fixed<I::n_rows, I::n_cols>(arma::fill::zeros);
     *r = arma::mat::fixed<I::n_rows, I::n_cols>(arma::fill::zeros);
     std::array<arma::mat::fixed<I::n_rows,1>, I::n_cols> e;
 
     //-- Gram-Schmidt process
-    GramSchmidtProjection<0>(in, q, &e);
+    detail::GramSchmidtProjection<0>(in, q, &e);
 
-    QRDecomp_row_iter<0>(in, *q, r);
+    detail::QRDecomp_row_iter<0>(in, *q, r);
 }
 
 //-- using universal reference
 
 template <typename Matrix>
 static auto isPosSemiDefinite(Matrix&& in){
+
+    static_assert(arma::is_arma_type<Matrix>::value, "Please input arma_type only!");
+
     return detail::isPosSemiDefinite(std::forward<Matrix>(in));
 }
 
 template <typename Matrix>
 static auto spectralRadius(Matrix&& in){
+
+    static_assert(arma::is_arma_type<Matrix>::value, "Please input arma_type only!");
+
     return detail::spectralRadius(std::forward<Matrix>(in));
 }
 
 template <typename Matrix>
 static auto largestSV(Matrix&& in){
+
+    static_assert(arma::is_arma_type<Matrix>::value, "Please input arma_type only!");
+
     return detail::largestSV(std::forward<Matrix>(in));
 }
 

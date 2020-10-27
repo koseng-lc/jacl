@@ -17,6 +17,7 @@
 namespace jacl{ namespace pole_placement{
 
 namespace detail{
+    using namespace std::complex_literals;
     template <typename T>
     static auto VietaFormula(const arma::Col<T> _roots, arma::Col<T>* _coeff){
         *_coeff = arma::Col<T>(_roots.n_rows + 1, _roots.n_cols, arma::fill::zeros);

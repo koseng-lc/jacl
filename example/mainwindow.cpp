@@ -68,13 +68,6 @@ MainWindow::MainWindow(double _bias,
     QString style_sheet(style_file.readAll());
     this->setStyleSheet(style_sheet);
 
-    arma::mat q, r;
-    arma::mat::fixed<3,3> tes(arma::fill::randu);
-    tes.print("tes : ");
-    ::jacl::linear_algebra::QRDecomp(tes,&q,&r);    
-    q.print("q : ");
-    r.print("r : ");
-
     //-- DC Motor Open-Loop
     std::cout << "Preparing system ..." << std::endl;
     {
