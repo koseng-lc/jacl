@@ -518,9 +518,6 @@ auto Hinf<_System,
     temp4 = temp2*R2_inv*temp3;
     decltype(H_inf) J_inf = temp1 - temp4;
 
-    ARE<typename _System::state_space_t> solver1(ss_);
-    ARE<typename _System::state_space_t> solver2(ss_);
-
 #ifdef HINF_VERBOSE
     //-- check whether Hamiltonian or not
     {
@@ -541,11 +538,8 @@ auto Hinf<_System,
     }
 #endif
 
-    solver1.setHamiltonianMatrix(H_inf);
-    solver2.setHamiltonianMatrix(J_inf);
-
-    X_inf_ = solver1.solve();
-    Y_inf_ = solver2.solve();
+    X_inf_ = ::jacl::are::solve(H_inf);
+    Y_inf_ = ::jacl::are::solve(J_inf);
 
 #ifdef HINF_VERBOSE
     //--check the ARE solution

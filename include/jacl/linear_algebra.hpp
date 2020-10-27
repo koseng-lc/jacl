@@ -7,6 +7,10 @@
 
 #include <vector>
 
+#include <boost/python.hpp>
+#include <boost/python/numpy.hpp>
+#include <numpy/ndarrayobject.h>
+
 #define ARMA_DONT_USE_WRAPPER
 #include <armadillo>
 
@@ -138,7 +142,7 @@ namespace detail{
 template <typename Matrix>
 static inline auto toCx(Matrix&& m){
 
-    static_assert(arma::is_arma_type<Matrix>::value, "Please input arma_type only!");
+    static_assert(arma::is_arma_type<std::decay_t<Matrix>>::value, "Please input arma_type only!");
 
     return detail::toCx(std::forward<Matrix>(m));
 }
@@ -146,7 +150,7 @@ static inline auto toCx(Matrix&& m){
 template <typename Matrix>
 static inline auto toReal(Matrix&& m){
 
-    static_assert(arma::is_arma_type<Matrix>::value, "Please input arma_type only!");
+    static_assert(arma::is_arma_type<std::decay_t<Matrix>>::value, "Please input arma_type only!");
     
     return detail::toReal(std::forward<Matrix>(m));
 }
@@ -154,7 +158,10 @@ static inline auto toReal(Matrix&& m){
 template <typename I, typename Q, typename R>
 static auto QRDecomp(const I& in, Q* q, R* r){
 
-    static_assert(arma::is_arma_type<I>::value & arma::is_arma_type<Q>::value & arma::is_arma_type<R>::value, "Please input arma_type only!");
+    static_assert(arma::is_arma_type<I>::value
+                  & arma::is_arma_type<Q>::value
+                  & arma::is_arma_type<R>::value,
+                  "Please input arma_type only!");
 
     *q = arma::mat::fixed<I::n_rows, I::n_cols>(arma::fill::zeros);
     *r = arma::mat::fixed<I::n_rows, I::n_cols>(arma::fill::zeros);
@@ -171,7 +178,7 @@ static auto QRDecomp(const I& in, Q* q, R* r){
 template <typename Matrix>
 static auto isPosSemiDefinite(Matrix&& in){
 
-    static_assert(arma::is_arma_type<Matrix>::value, "Please input arma_type only!");
+    static_assert(arma::is_arma_type<std::decay_t<Matrix>>::value, "Please input arma_type only!");
 
     return detail::isPosSemiDefinite(std::forward<Matrix>(in));
 }
@@ -179,7 +186,7 @@ static auto isPosSemiDefinite(Matrix&& in){
 template <typename Matrix>
 static auto spectralRadius(Matrix&& in){
 
-    static_assert(arma::is_arma_type<Matrix>::value, "Please input arma_type only!");
+    static_assert(arma::is_arma_type<std::decay_t<Matrix>>::value, "Please input arma_type only!");
 
     return detail::spectralRadius(std::forward<Matrix>(in));
 }
@@ -187,9 +194,54 @@ static auto spectralRadius(Matrix&& in){
 template <typename Matrix>
 static auto largestSV(Matrix&& in){
 
-    static_assert(arma::is_arma_type<Matrix>::value, "Please input arma_type only!");
+    static_assert(arma::is_arma_type<std::decay_t<Matrix>>::value, "Please input arma_type only!");
 
     return detail::largestSV(std::forward<Matrix>(in));
+}
+
+namespace{ //-- private namespace
+        namespace py = boost::python;
+        namespace np = boost::python::numpy;
+}
+
+static auto auxSchur(arma::mat _H, std::tuple<arma::cx_mat, arma::cx_mat>* _TZ, std::string&& ord){
+    ::jacl::py_stuff::AcquireGIL lk;
+    try{
+        py::object sys = py::import("sys");
+        sys.attr("path").attr("append")("../python");
+
+        py::object aux_schur = py::import("aux_schur");
+        Py_intptr_t H_shape[2] = {(int)_H.n_rows, (int)_H.n_cols};
+        PyObject* np_H = PyArray_SimpleNewFromData(2, H_shape, NPY_FLOAT64, reinterpret_cast<void*>(_H.memptr()));
+        py::handle<> H_handle(np_H);
+        py::object H_object(H_handle);
+
+        py::object abc = aux_schur.attr("aux_schur")(H_object, ord);
+        py::stl_input_iterator<py::object> begin(abc),end;
+        std::vector<py::object> l1(begin, end);
+        arma::mat dum[4];
+        for(int i(0); i < l1.size(); i++){
+            arma::mat temp(arma::size(_H));
+            std::vector<py::object> layer2(py::stl_input_iterator<py::object>(l1[i]), py::stl_input_iterator<py::object>());
+            for(int j(0); j < layer2.size(); j++){
+                std::vector<double> layer3(py::stl_input_iterator<double>(layer2[j]), py::stl_input_iterator<double>());
+                for(int k(0); k < layer3.size(); k++)
+                    temp(j,k) = layer3[k];
+            }
+            dum[i] = temp;
+        }
+        arma::cx_mat T(arma::size(_H)),Z(arma::size(_H));
+        T.set_real(dum[0]);
+        T.set_imag(dum[1]);
+        Z.set_real(dum[2]);
+        Z.set_imag(dum[3]);
+        *_TZ = std::make_tuple(T,Z);
+    }catch(py::error_already_set){
+        PyErr_Print();
+        return 1;
+    }
+
+    return 0;
 }
 
 } // namespace jacl::linear_algebra

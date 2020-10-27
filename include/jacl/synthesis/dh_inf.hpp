@@ -325,10 +325,8 @@ auto DHinf<_System,
         check.print("[DHinf] Check symplectic 1 : ");
         #endif
 
-        DARE<typename _System::state_space_t> solver(ss_);
-        solver.setSymplecticMatrix(H);
         typename arma::Mat<std::complex<typename _System::scalar_t>>::template
-            fixed<_System::n_states, _System::n_states> P = solver.solve();
+            fixed<_System::n_states, _System::n_states> P = ::jacl::dare::solve(H);
         decltype(P) P_t = arma::trans(P);
         
         typename arma::Mat<std::complex<typename _System::scalar_t>>::template
@@ -481,10 +479,8 @@ auto DHinf<_System,
         check.print("[DHihf] Check symplectic 2 : ");
         #endif
 
-        DARE<typename _System::state_space_t> solver(ss_);
-        solver.setSymplecticMatrix(toReal(H));
         typename arma::Mat<std::complex<typename _System::scalar_t>>::template
-            fixed<_System::n_states, _System::n_states> Y = solver.solve();
+            fixed<_System::n_states, _System::n_states> Y = ::jacl::dare::solve(toReal(H));
         decltype(Y) Y_t = arma::trans(Y);
         
         #ifdef DHINF_VERBOSE
