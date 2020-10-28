@@ -12,7 +12,7 @@
 #include <jacl/state_space/linear.hpp>
 #include <jacl/traits.hpp>
 
-namespace jacl{ namespace parser{
+namespace jacl::parser{
 
 namespace detail{
     static auto serialize(const arma::mat& _m) -> std::string{
@@ -139,4 +139,4 @@ static auto readArray(std::vector<Type>* _data, std::string _file_path){
     return 0;
 }
 
-} }
+} // namespace jacl::parser

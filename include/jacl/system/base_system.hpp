@@ -10,9 +10,9 @@
 #include <jacl/state_space/nonlinear.hpp>
 #include <jacl/medium.hpp>
 
-namespace jacl{ namespace system{
+namespace jacl::system{
 
-template <class _StateSpace>
+template <typename _StateSpace>
 class BaseSystem:public pattern::Observer
                 ,public ::jacl::state_space::detail::NonLinearStateSpaceClient<_StateSpace>{
 public:
@@ -98,5 +98,5 @@ private:
     friend class ::jacl::system::detail::BaseSystemClient<BaseSystem>;
 };
 
-} } // namespace jacl::system
+} // namespace jacl::system
 

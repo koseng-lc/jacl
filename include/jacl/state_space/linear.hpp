@@ -5,16 +5,17 @@
 
 #pragma once
 
-#include <functional>
 #include <vector>
+#include <functional>
 #include <type_traits>
+
 #define ARMA_DONT_USE_WRAPPER
 #include <armadillo>
 
 #include <jacl/pattern/observer.hpp>
 #include <jacl/physical_parameter.hpp>
 
-namespace jacl{ namespace state_space{
+namespace jacl::state_space{
 
 //-- force to have fixed size
 template<typename Scalar,
@@ -216,4 +217,4 @@ auto Linear<Scalar,
     this->notify();
 }
 
-} }
+} // namespace jacl::state_space

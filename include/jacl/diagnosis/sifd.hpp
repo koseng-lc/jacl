@@ -7,10 +7,13 @@
 
 #include <jacl/diagnosis/ifd.hpp>
 
-namespace jacl{ namespace diagnosis {
+namespace jacl::diagnosis {
 
 template <typename _System, std::size_t chosen_state>
 class SIFD:public IFD<_System>{
+private:
+    using scalar_t = typename _System::scalar_t;
+
 public:
     SIFD(_System* _sys, std::initializer_list<double> _threshold)
         : IFD<_System>(_sys, _threshold){
@@ -19,11 +22,11 @@ public:
     ~SIFD(){}
     void init(std::initializer_list<
                  typename arma::Col<
-                    typename _System::scalar_t>::template fixed<_System::n_states-1>> _poles,
+                    scalar_t>::template fixed<_System::n_states-1>> _poles,
               std::string&& _plot_title = "",
               std::initializer_list<std::string> _plot_name = {}) override{
         std::vector<typename arma::Col<
-                        typename _System::scalar_t>::template fixed<_System::n_states-1>> poles(_poles);
+                        scalar_t>::template fixed<_System::n_states-1>> poles(_poles);
         IFD<_System>::template setPoleDOs<CHOSEN_STATE, decltype(this->dos_)>::set(&this->dos_, poles, typename IFD<_System>::sifd_tag());
         if(_plot_name.size()){
             this->plt_.init();
@@ -65,4 +68,4 @@ public:
     static constexpr std::size_t CHOSEN_STATE{chosen_state};
 };
 
-} } // namespace jacl::diagnosis
+} // namespace jacl::diagnosis

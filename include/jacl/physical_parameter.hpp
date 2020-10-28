@@ -12,14 +12,14 @@ class PhysicalParameter{
 public:
     using scalar_t = Scalar;
 
-    PhysicalParameter(Scalar _nominal)
+    PhysicalParameter(scalar_t _nominal)
         : nominal(_nominal)
         , perturbed(nominal){}
 
     ~PhysicalParameter(){}
 
-    Scalar nominal;
-    Scalar perturbed;
+    scalar_t nominal;
+    scalar_t perturbed;
 };
 
 }

@@ -7,12 +7,13 @@
 
 #include <type_traits>
 
+#include <jacl/system/discrete.hpp>
+#include <jacl/system/continuous.hpp>
 #include <jacl/state_space/linear.hpp>
 #include <jacl/state_space/nonlinear.hpp>
-#include <jacl/system/continuous.hpp>
-#include <jacl/system/discrete.hpp>
 
-namespace jacl{ namespace traits{
+namespace jacl::traits{
+
     template <typename T>
     struct is_state_space:std::false_type{};
 
@@ -114,4 +115,4 @@ namespace jacl{ namespace traits{
     constexpr auto toUType(T t) -> typename std::underlying_type<T>::type{
         return static_cast<typename std::underlying_type<T>::type>(t);
     }
-} }
+}

@@ -7,7 +7,7 @@
 
 #include <boost/thread.hpp>
 
-namespace jacl{ namespace pattern{
+namespace jacl::pattern{
 
 template <typename T>
 class Singleton{
@@ -23,4 +23,4 @@ protected:
     virtual ~Singleton(){}
 };
 
-} } // namespace::pattern
+} // namespace::pattern

@@ -7,7 +7,7 @@
 
 #include <jacl/system/base_system.hpp>
 
-namespace jacl{ namespace system{
+namespace jacl::system{
 
 template <class _StateSpace>
 class DiscreteObserver:public Observer<_StateSpace>{
@@ -30,4 +30,4 @@ protected:
 
 };
 
-} } // namespace jacl::system
+} // namespace jacl::system

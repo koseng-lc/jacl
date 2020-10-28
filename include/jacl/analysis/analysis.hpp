@@ -8,13 +8,15 @@
 #include <jacl/lti_common.hpp>
 #include <jacl/traits.hpp>
 
-namespace jacl{ namespace analysis{
+namespace jacl::analysis{
 
 template <typename _Plant, typename _Controller,
           typename = std::enable_if_t<::jacl::traits::is_system_v<_Plant>>,
           typename = std::enable_if_t<::jacl::traits::is_system_v<_Controller>>>
 auto nominalStability(_Plant _p, _Controller _k){
-    auto continuous = ::jacl::traits::is_continuous_system_v<_Plant>;
+    
+    constexpr auto continuous = ::jacl::traits::is_continuous_system_v<_Plant>;
+
     typename arma::Mat<typename _Plant::scalar_t>::template
         fixed<_Plant::n_states + _Controller::n_states,
          _Controller::n_inputs> temp2 = arma::join_cols(
@@ -47,16 +49,17 @@ auto nominalStability(_Plant _p, _Controller _k){
         fixed<_Plant::n_states + _Controller::n_states,
          _Plant::n_states + _Controller::n_states> A_bar = temp1 + temp2*temp4*temp3;
 
-    auto a = lti_common::isStable(A_bar, continuous);
-    auto b = lti_common::stabilizable(temp1, temp2, continuous);
-    auto c = lti_common::detectability(temp1, temp3, continuous);
-    std::cout << std::boolalpha << a << " ; " << b << " ; " << c << std::endl;
+    auto a = lti_common::isStable<continuous>(A_bar);
+    auto b = lti_common::stabilizable<continuous>(temp1, temp2);
+    auto c = lti_common::detectability<continuous>(temp1, temp3);
+
     return a & b & c;
 }
 
 template <typename _System,
           typename = std::enable_if_t<::jacl::traits::is_system_v<_System>>>
 auto nominalPerformance(_System _sys, double _obj){
+    
     return  lti_common::approxInfNorm(_sys) < _obj;
 }
 
@@ -67,4 +70,4 @@ auto ssv(const _StateSpace& _ss){
     return std::make_pair(ubound, lbound);
 }
 
-} } // namespace::analysis
+} // namespace jacl::analysis

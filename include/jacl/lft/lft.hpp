@@ -7,7 +7,8 @@
 
 #include <jacl/state_space/linear.hpp>
 
-namespace jacl{ namespace lft{
+namespace jacl::lft{
+
 template <typename _StateSpace,
           std::size_t z1_size,
           std::size_t w1_size,
@@ -17,6 +18,7 @@ class LFT{
 public:
 
     using state_space_t = _StateSpace;
+    using scalar_t = typename state_space_t::scalar_t;
 
     LFT(_StateSpace* _ss,
         const arma::mat& _A, const arma::mat& _B1, const arma::mat& _B2,
@@ -113,15 +115,15 @@ public:
 
 protected:
      //-- Realization
-    const arma::mat& A_;
-    arma::mat B1_;
-    arma::mat B2_;
-    arma::mat C1_;
-    arma::mat C2_;
-    arma::mat D11_;
-    arma::mat D12_;
-    arma::mat D21_;
-    arma::mat D22_;
+    const typename arma::Mat<scalar_t>::template fixed<n_states, n_states>& A_;
+    typename arma::Mat<scalar_t>::template fixed<n_states, w1_sz> B1_;
+    typename arma::Mat<scalar_t>::template fixed<n_states, w2_sz> B2_;
+    typename arma::Mat<scalar_t>::template fixed<z1_sz, n_states> C1_;
+    typename arma::Mat<scalar_t>::template fixed<z2_sz, n_states> C2_;
+    typename arma::Mat<scalar_t>::template fixed<z1_sz, w1_sz> D11_;
+    typename arma::Mat<scalar_t>::template fixed<z1_sz, w2_sz> D12_;
+    typename arma::Mat<scalar_t>::template fixed<z2_sz, w1_sz> D21_;
+    typename arma::Mat<scalar_t>::template fixed<z2_sz, w2_sz> D22_;
 
     //-- Delta Matrix
     arma::mat delta_;
@@ -149,4 +151,4 @@ LFT<_StateSpace, z1_size, w1_size, z2_size, w2_size>::LFT(_StateSpace* _ss,
     , D22_(_D22){
 }
 
-} } // namespace jacl::lft
+} // namespace jacl::lft

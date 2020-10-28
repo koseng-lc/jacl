@@ -10,7 +10,7 @@
 #include <Python.h>
 #include <numpy/ndarrayobject.h>
 
-namespace jacl{ namespace py_stuff{
+namespace jacl::py_stuff{
 
 //-- more safe with RAII style
 //-- it is required because the thread being used exclusive from Python API
@@ -51,4 +51,4 @@ private:
     // std::once_flag end_;
 };
 
-} }
+} // namespace jacl::parser

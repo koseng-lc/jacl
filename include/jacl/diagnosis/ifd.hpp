@@ -15,15 +15,18 @@
 #include <jacl/plotter.hpp>
 #include <jacl/medium.hpp>
 
-namespace jacl{ namespace diagnosis{
+namespace jacl::diagnosis{
 
 template <typename _System>
 class IFD:public ::jacl::system::detail::BaseSystemClient<typename _System::base_t>{
 public:
     using diag_pack_t = std::array<std::tuple<arma::vec, arma::vec, bool>, _System::n_outputs>;
 
+private:
+    using scalar_t = typename _System::scalar_t;
+
 public:    
-    IFD(_System* _sys, std::initializer_list<double> _threshold)
+    IFD(_System* _sys, std::initializer_list<scalar_t> _threshold)
         : sys_(_sys)
         , aux_sys_(nullptr)
         , plt_(&aux_sys_, plotSig<_System::n_outputs-1>::idx(), sys_->dt()){  
@@ -39,11 +42,11 @@ public:
     ~IFD(){}
     virtual void init(std::initializer_list<
                         typename arma::Col<
-                            typename _System::scalar_t>::template fixed<_System::n_states-1>> _poles,
+                            scalar_t>::template fixed<_System::n_states-1>> _poles,
                       std::string&& _plot_title = "",
                       std::initializer_list<std::string> _plot_name = {}){
         std::vector<typename arma::Col<
-                        typename _System::scalar_t>::template fixed<_System::n_states-1>> poles(_poles);
+                        scalar_t>::template fixed<_System::n_states-1>> poles(_poles);
         setPoleDOs<_System::n_outputs-1, decltype(dos_)>::set(&dos_, poles, ifd_tag());
         if(_plot_name.size()){
             plt_.init();
@@ -82,13 +85,16 @@ public:
 protected:
     template <typename __System = _System, std::size_t chosen_state=0>
     class DedicatedObserver:public ::jacl::system::BaseSystem<typename __System::state_space_t>{
+    private:
+        using scalar_t = typename __System::scalar_t;
+
     protected:
-        using A11_t = typename arma::Mat<typename __System::scalar_t>::template fixed<1,1>;
-        using A12_t = typename arma::Mat<typename __System::scalar_t>::template fixed<1,_System::n_states-1>;
-        using A21_t = typename arma::Mat<typename __System::scalar_t>::template fixed<_System::n_states-1,1>;
-        using A22_t = typename arma::Mat<typename __System::scalar_t>::template fixed<_System::n_states-1,_System::n_states-1>;
-        using B1_t = typename arma::Mat<typename __System::scalar_t>::template fixed<1,_System::n_inputs>;
-        using B2_t = typename arma::Mat<typename __System::scalar_t>::template fixed<_System::n_states-1,_System::n_inputs>;
+        using A11_t = typename arma::Mat<scalar_t>::template fixed<1,1>;
+        using A12_t = typename arma::Mat<scalar_t>::template fixed<1,_System::n_states-1>;
+        using A21_t = typename arma::Mat<scalar_t>::template fixed<_System::n_states-1,1>;
+        using A22_t = typename arma::Mat<scalar_t>::template fixed<_System::n_states-1,_System::n_states-1>;
+        using B1_t = typename arma::Mat<scalar_t>::template fixed<1,_System::n_inputs>;
+        using B2_t = typename arma::Mat<scalar_t>::template fixed<_System::n_states-1,_System::n_inputs>;
 
     public:
         static constexpr double CHOSEN_STATE{chosen_state};
@@ -106,7 +112,7 @@ protected:
             return est;
         }    
         auto setPole(const typename arma::Col<
-                            typename __System::scalar_t>::template fixed<__System::n_states-1>& _poles){
+                            scalar_t>::template fixed<__System::n_states-1>& _poles){
             poles_ = _poles;
             updateVar();
         }
@@ -145,7 +151,7 @@ protected:
                     const arma::vec& _prev_yI)
             -> typename std::enable_if_t<
                 ::jacl::traits::is_discrete_system_v<T>,
-                typename arma::Col<typename __System::scalar_t>::template fixed<__System::n_states-1>>{
+                typename arma::Col<scalar_t>::template fixed<__System::n_states-1>>{
             return _term1*prev_z_ + _term2*_prev_yI + _term3*this->prev_in_ + L_*_yI; 
         }
         auto dstate() -> typename __System::state_t override{
@@ -175,7 +181,7 @@ protected:
                 jacl::state_space::Linear<double, _System::n_states-1,1,1> ss(A22_, arma::zeros(_System::n_states-1,1),
                                                                     A12_, arma::zeros(1,1));
                 jacl::pole_placement::KautskyNichols(&ss, poles_, &L_, jacl::pole_placement::PolePlacementType::Observer);
-                L_.print("DOS GAIN : ");
+                L_.print("[IFD] DOs gain : ");
                 // ss.A().print("A22 : ");
                 // A21_.print("A21 : ");
                 // ss.C().print("A12 : ");
@@ -248,7 +254,7 @@ protected:
         B1_t B1_;
         B2_t B2_;
         typename __System::state_space_t::state_matrix_t M_;
-        typename arma::Col<typename __System::scalar_t>::template fixed<__System::n_states-1> L_;
+        typename arma::Col<scalar_t>::template fixed<__System::n_states-1> L_;
         arma::vec z_;
         arma::vec prev_z_;
         typename __System::state_t q_hat_;
@@ -333,13 +339,13 @@ protected:
     struct setPoleDOs{
         static auto set(DOs* _dos,
                         const std::vector<typename arma::Col<
-                            typename _System::scalar_t>::template fixed<_System::n_states-1>>& _pole, ifd_tag){
+                            scalar_t>::template fixed<_System::n_states-1>>& _pole, ifd_tag){
             boost::get<DedicatedObserver<_System, n>>( (*_dos)[n] ).setPole(_pole[n]);
             setPoleDOs<n-1,DOs>::set(_dos, _pole, ifd_tag());
         }
         static auto set(DOs* _dos,
                         const std::vector<typename arma::Col<
-                            typename _System::scalar_t>::template fixed<_System::n_states-1>>& _pole, sifd_tag){
+                            scalar_t>::template fixed<_System::n_states-1>>& _pole, sifd_tag){
             boost::get<DedicatedObserver<_System, n>>( (*_dos)[n] ).setPole(_pole[n]);
         }
     };
@@ -347,12 +353,12 @@ protected:
     struct setPoleDOs<0, DOs>{
         static auto set(DOs* _dos,
                         const std::vector<typename arma::Col<
-                            typename _System::scalar_t>::template fixed<_System::n_states-1>>& _pole, ifd_tag){
+                            scalar_t>::template fixed<_System::n_states-1>>& _pole, ifd_tag){
             boost::get<DedicatedObserver<_System, 0>>( (*_dos)[0] ).setPole(_pole[0]);
         }
         static auto set(DOs* _dos,
                         const std::vector<typename arma::Col<
-                            typename _System::scalar_t>::template fixed<_System::n_states-1>>& _pole, sifd_tag){
+                            scalar_t>::template fixed<_System::n_states-1>>& _pole, sifd_tag){
             boost::get<DedicatedObserver<_System, 0>>( (*_dos)[0] ).setPole(_pole[0]);
         }
     };
@@ -412,4 +418,4 @@ protected:
     };
 };
 
-} } // namespace jacl::diagnosis
+} // namespace jacl::diagnosis

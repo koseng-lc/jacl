@@ -6,7 +6,7 @@
 
 #include <vector>
 
-namespace jacl{ namespace pattern{
+namespace jacl::pattern{
 
 class Observer;
 
@@ -43,4 +43,4 @@ auto Subject::notify() -> void{
     }        
 }
 
-} } // namespace jacl::pattern
+} // namespace jacl::pattern

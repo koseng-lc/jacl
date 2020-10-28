@@ -24,7 +24,8 @@ namespace detail{
     }
 
     template <typename Matrix>
-    static auto toCx(Matrix&& m){        
+    static auto toCx(Matrix&& m){   
+        std::cout << "Move it !!!" << std::endl;
         return arma::cx_mat(m, arma::zeros<arma::mat>( arma::size(m) ));
     }
 
@@ -204,24 +205,25 @@ namespace{ //-- private namespace
         namespace np = boost::python::numpy;
 }
 
-static auto auxSchur(arma::mat _H, std::tuple<arma::cx_mat, arma::cx_mat>* _TZ, std::string&& ord){
+static auto auxSchur(arma::mat h, std::tuple<arma::cx_mat, arma::cx_mat>* _TZ, std::string&& ord){
+    // static_assert(arma::is_arma_type<H>::value, "Please input arma_type argument!");
     ::jacl::py_stuff::AcquireGIL lk;
     try{
         py::object sys = py::import("sys");
         sys.attr("path").attr("append")("../python");
 
         py::object aux_schur = py::import("aux_schur");
-        Py_intptr_t H_shape[2] = {(int)_H.n_rows, (int)_H.n_cols};
-        PyObject* np_H = PyArray_SimpleNewFromData(2, H_shape, NPY_FLOAT64, reinterpret_cast<void*>(_H.memptr()));
-        py::handle<> H_handle(np_H);
-        py::object H_object(H_handle);
+        Py_intptr_t h_shape[2] = {(int)h.n_rows, (int)h.n_cols};
+        PyObject* np_h = PyArray_SimpleNewFromData(2, h_shape, NPY_FLOAT64, reinterpret_cast<void*>(h.memptr()));
+        py::handle<> h_handle(np_h);
+        py::object h_object(h_handle);
 
-        py::object abc = aux_schur.attr("aux_schur")(H_object, ord);
+        py::object abc = aux_schur.attr("aux_schur")(h_object, ord);
         py::stl_input_iterator<py::object> begin(abc),end;
         std::vector<py::object> l1(begin, end);
         arma::mat dum[4];
         for(int i(0); i < l1.size(); i++){
-            arma::mat temp(arma::size(_H));
+            arma::mat temp(arma::size(h));
             std::vector<py::object> layer2(py::stl_input_iterator<py::object>(l1[i]), py::stl_input_iterator<py::object>());
             for(int j(0); j < layer2.size(); j++){
                 std::vector<double> layer3(py::stl_input_iterator<double>(layer2[j]), py::stl_input_iterator<double>());
@@ -230,7 +232,7 @@ static auto auxSchur(arma::mat _H, std::tuple<arma::cx_mat, arma::cx_mat>* _TZ, 
             }
             dum[i] = temp;
         }
-        arma::cx_mat T(arma::size(_H)),Z(arma::size(_H));
+        arma::cx_mat T(arma::size(h)),Z(arma::size(h));
         T.set_real(dum[0]);
         T.set_imag(dum[1]);
         Z.set_real(dum[2]);

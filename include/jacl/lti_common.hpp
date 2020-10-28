@@ -6,6 +6,7 @@
 #pragma once
 
 #include <cassert>
+
 #define ARMA_DONT_USE_WRAPPER
 #include <armadillo>
 
@@ -13,35 +14,60 @@
 #include <jacl/linear_algebra.hpp>
 #include <jacl/numerical_methods.hpp>
 
-namespace jacl{ namespace lti_common{
+namespace jacl::lti_common{
 
 namespace detail{
-    template <typename StateMatrix, typename InputMatrix>
-    static auto controllable(const StateMatrix& _A, const InputMatrix& _B){
-        //-- must be square matrix
-        assert(_A.n_rows == _A.n_cols);
-        //-- must be compatible with A
-        assert(_B.n_rows == _A.n_rows);
 
-        int system_order = _A.n_cols;
-        int input_size = _B.n_cols;
+    template <std::size_t idx, std::size_t order, std::size_t input_size, typename C, typename A>
+    constexpr auto controllable_iter(C* c, const A& a){
 
-        arma::mat ctrb(_B);
-        for(int i(1); i < system_order; i++){
-            int first = (i-1) * input_size;
-            int last = i * input_size - 1;
-            ctrb = join_rows(ctrb, _A * ctrb.cols(first, last));
+        if constexpr(idx < order){
+            auto first = (idx-1) * input_size;
+            auto last = idx * input_size - 1;
+            c->cols(first + input_size, last + input_size) = a * c->cols(first, last);
+            controllable_iter<idx+1, order, input_size>(c, a);
         }
+    }
+
+    template <typename StateMatrix, typename InputMatrix, typename C=arma::mat>
+    constexpr auto controllable(const StateMatrix& _A, const InputMatrix& _B, C* c = nullptr){
+
+        //-- must be square matrix
+        static_assert(StateMatrix::n_rows == StateMatrix::n_cols, "StateMatrix must be square!");
+        //-- must be compatible with A
+        static_assert(InputMatrix::n_rows == StateMatrix::n_rows, "InputMatrix and StateMatrix are not compatible!");
+
+        constexpr auto system_order = StateMatrix::n_rows;
+        constexpr auto input_size = InputMatrix::n_cols;
+
+        typename arma::Mat<double>::template fixed<system_order, system_order*input_size> ctrb;
+        ctrb.cols(0, input_size-1) = _B;
+
+        controllable_iter<1, system_order, input_size>(&ctrb, _A);
+
+        if(c != nullptr)
+            *c = ctrb;
 
         return arma::rank(ctrb) == system_order;
     }
 
-    template <typename StateMatrix, typename InputMatrix>
-    static auto stabilizable(const StateMatrix& _A, const InputMatrix& _B, bool _continuous = true){
+    template <typename A, typename B>
+    constexpr auto stabilizable_c_iter(A, B){
+
+    }
+
+    template <typename A, typename B>
+    constexpr auto stabilizable_d_iter(A, B){
+
+    }
+
+    template <bool continuous, typename StateMatrix, typename InputMatrix>
+    auto stabilizable(const StateMatrix& _A, const InputMatrix& _B){
+
         //-- must be square matrix
-        assert(_A.n_rows == _A.n_cols);
+        static_assert(StateMatrix::n_rows == StateMatrix::n_cols, "StateMatrix must be square!");
         //-- must be compatible with A
-        assert(_B.n_rows == _A.n_rows);
+        static_assert(InputMatrix::n_rows == StateMatrix::n_rows, "InputMatrix and StateMatrix are not compatible!");
 
         arma::cx_vec eigval;
         arma::cx_mat eigvec;
@@ -51,9 +77,9 @@ namespace detail{
         arma::cx_mat eye(arma::size(_A), arma::fill::eye);
         arma::cx_mat cx_B( arma::size(_B) );
         cx_B.set_real(_B);
-        bool ok(true);
-        for(int i(0); i < eigval.n_rows; i++){
-            if(_continuous){
+        auto ok(true);
+        if constexpr(continuous){
+            for(int i(0); i < eigval.n_rows; i++){
                 if(std::real(eigval(i)) > .0){
                     temp = _A - eigval(i)*eye;
                     if(arma::rank( arma::join_horiz(temp, cx_B) ) < _A.n_rows){
@@ -61,7 +87,9 @@ namespace detail{
                         break;
                     }
                 }
-            }else{
+            }
+        }else{
+            for(int i(0); i < eigval.n_rows; i++){
                 if(std::abs(eigval(i)) - 1. > 1e-4){
                     temp = _A - eigval(i)*eye;
                     if(arma::rank( arma::join_horiz(temp, cx_B) ) < _A.n_rows){
@@ -70,38 +98,51 @@ namespace detail{
                     }
                 }
             }
-        }
+        }     
 
         return ok;
     }
 
-    template <typename StateMatrix, typename OutputMatrix>
-    static auto observable(const StateMatrix& _A, const OutputMatrix& _C, arma::mat* _O = nullptr){
-        //-- must be square matrix
-        assert(_A.n_rows == _A.n_cols);
-        //-- must be compatible with A
-        assert(_C.n_cols == _A.n_cols);
+    template <std::size_t idx, std::size_t order, std::size_t output_size, typename O, typename A>
+    constexpr auto observable_iter(O* o, const A& a){
 
-        int system_order = _A.n_cols;
-        int output_size = _C.n_rows;
-
-        arma::mat obsv(_C);
-        for(int i(1); i < system_order; i++){
-            int first = (i-1) * output_size;
-            int last = i * output_size - 1;
-            obsv = join_cols(obsv, obsv.rows(first, last) * _A);
+        if constexpr(idx < order){
+            auto first = (idx-1) * output_size;
+            auto last = idx * output_size - 1;
+            o->rows(first + output_size, last + output_size) = o->rows(first, last) * a;
+            observable_iter<idx+1, order, output_size>(o, a);
         }
-        if(_O != nullptr)
-            *_O = obsv;
+    }
+
+    template <typename StateMatrix, typename OutputMatrix, typename O=arma::mat>
+    auto observable(const StateMatrix& _A, const OutputMatrix& _C, O* o = nullptr){
+
+        //-- must be square matrix
+        static_assert(StateMatrix::n_rows == StateMatrix::n_cols, "StateMatrix must be square!");
+        //-- must be compatible with A
+        static_assert(OutputMatrix::n_cols == StateMatrix::n_cols, "OutputMatrix and StateMatrix are not compatible!");
+
+        constexpr auto system_order = StateMatrix::n_cols;
+        constexpr auto output_size = OutputMatrix::n_rows;
+
+        typename arma::Mat<double>::template fixed<system_order*output_size, system_order> obsv;
+        obsv.rows(0,output_size-1) = _C;
+
+        observable_iter<1,system_order,output_size>(&obsv, _A);
+
+        if(o != nullptr)
+            *o = obsv;
+
         return arma::rank(obsv) == system_order;
     }
 
-    template <typename StateMatrix, typename OutputMatrix>
-    static auto detectability(const StateMatrix& _A, const OutputMatrix& _C, bool _continuous = true){
+    template <bool continous, typename StateMatrix, typename OutputMatrix>
+    auto detectability(const StateMatrix& _A, const OutputMatrix& _C){
+
         //-- must be square matrix
-        assert(_A.n_rows == _A.n_cols);
+        static_assert(StateMatrix::n_rows == StateMatrix::n_cols, "StateMatrix must be square!");
         //-- must be compatible with A
-        assert(_C.n_cols == _A.n_cols);
+        static_assert(OutputMatrix::n_cols == StateMatrix::n_cols, "OutputMatrix and StateMatrix are not compatible!");
 
         arma::cx_vec eigval;
         arma::cx_mat eigvec;
@@ -111,9 +152,9 @@ namespace detail{
         arma::cx_mat eye(arma::size(_A), arma::fill::eye);
         arma::cx_mat cx_C( arma::size(_C) );
         cx_C.set_real(_C);
-        bool ok(true);
-        for(int i(0); i < eigval.n_rows; i++){
-            if(_continuous){
+        auto ok(true);
+        if constexpr(continous){
+            for(int i(0); i < eigval.n_rows; i++){
                 if(std::real(eigval(i)) > .0){
                     temp = _A - eigval(i)*eye;
                     if(arma::rank( arma::join_vert(temp, cx_C) ) < _A.n_cols){
@@ -121,7 +162,9 @@ namespace detail{
                         break;
                     }
                 }
-            }else{
+            }
+        }else{
+            for(int i(0); i < eigval.n_rows; i++){
                 if(std::abs(eigval(i)) - 1. > 1e-4){
                     temp = _A - eigval(i)*eye;
                     if(arma::rank( arma::join_vert(temp, cx_C) ) < _A.n_cols){
@@ -131,22 +174,23 @@ namespace detail{
                 }
             }
         }
+        
         return ok;
     }
     template <typename StateMatrix>
-    static auto poles(const StateMatrix& _A){
+    auto poles(const StateMatrix& _A){
         arma::cx_vec p;
         arma::cx_mat eigvec;
         arma::eig_gen(p, eigvec, _A);
         return p;
     }
 
-    template <typename StateMatrix>
-    static auto isStable(const StateMatrix& _A, bool _continuous){
+    template <bool continuous, typename StateMatrix>
+    auto isStable(const StateMatrix& _A){
         arma::cx_vec p( poles(_A) );
-        p.print("Poles : ");
+        // p.print("Poles : ");
         bool ok(true);
-        if(_continuous){
+        if constexpr(continuous){
             for(const auto& _p:p){
                 if(std::real(_p) > .0){
                     ok = false;
@@ -168,27 +212,27 @@ namespace detail{
 using StateSpacePack = std::tuple<arma::mat, arma::mat, arma::mat, arma::mat >;
 
 template <typename StateMatrix, typename InputMatrix>
-static auto controllable(const StateMatrix& _A, const InputMatrix& _B){
+constexpr auto controllable(const StateMatrix& _A, const InputMatrix& _B){
     return detail::controllable(_A, _B);
 }
 
 template <typename _StateSpace>
-static auto controllable(const _StateSpace& _ss){
+constexpr auto controllable(const _StateSpace& _ss){
     return detail::controllable(_ss.A(), _ss.B());
 }
 
-template <typename StateMatrix, typename InputMatrix>
-static auto stabilizable(const StateMatrix& _A, const InputMatrix& _B, bool _continuous = true){
-    return detail::stabilizable(_A, _B, _continuous);
+template <bool continuous, typename StateMatrix, typename InputMatrix>
+auto stabilizable(const StateMatrix& _A, const InputMatrix& _B){
+    return detail::stabilizable<continuous>(_A, _B);
 }
 
-template <typename _StateSpace>
-static auto stabilizable(const _StateSpace& _ss){
-    return detail::stabilizable(_ss.A(), _ss.B());
+template <bool continuous, typename _StateSpace>
+auto stabilizable(const _StateSpace& _ss){
+    return detail::stabilizable<continuous>(_ss.A(), _ss.B());
 }
 
 template <typename StateMatrix, typename InputMatrix>
-static auto hasUncontrollableModeInImAxis(const StateMatrix& _A, const InputMatrix& _B){
+auto hasUncontrollableModeInImAxis(const StateMatrix& _A, const InputMatrix& _B){
     //-- must be square matrix
     assert(_A.n_rows == _A.n_cols);
     //-- must be compatible with A
@@ -218,7 +262,7 @@ static auto hasUncontrollableModeInImAxis(const StateMatrix& _A, const InputMatr
 }
 
 template <typename StateMatrix, typename InputMatrix>
-static auto hasUncontrollableModeInUnitCircle(const StateMatrix& _A, const InputMatrix& _B){
+auto hasUncontrollableModeInUnitCircle(const StateMatrix& _A, const InputMatrix& _B){
     //-- must be square matrix
     assert(_A.n_rows == _A.n_cols);
     //-- must be compatible with A
@@ -247,27 +291,27 @@ static auto hasUncontrollableModeInUnitCircle(const StateMatrix& _A, const Input
 }
 
 template <typename StateMatrix, typename OutputMatrix>
-static auto observable(const StateMatrix& _A, const OutputMatrix& _C, arma::mat* _O = nullptr){
+auto observable(const StateMatrix& _A, const OutputMatrix& _C, arma::mat* _O = nullptr){
     return detail::observable(_A, _C, _O);
 }
 
 template <typename _StateSpace>
-static auto observable(const _StateSpace& _ss, arma::mat* _O = nullptr){
+auto observable(const _StateSpace& _ss, arma::mat* _O = nullptr){
     return detail::observable(_ss.A(), _ss.C(), _O);
 }
 
-template <typename StateMatrix, typename OutputMatrix>
-static auto detectability(const StateMatrix& _A, const OutputMatrix& _C, bool _continuous = true){
-    return detail::detectability(_A, _C, _continuous);
+template <bool continuous, typename StateMatrix, typename OutputMatrix>
+auto detectability(const StateMatrix& _A, const OutputMatrix& _C){
+    return detail::detectability<continuous>(_A, _C);
 }
 
-template <typename _StateSpace>
-static auto detectability(const _StateSpace& _ss){
-    return detail::detectability(_ss.A(), _ss.C());
+template <bool continuous, typename _StateSpace>
+auto detectability(const _StateSpace& _ss){
+    return detail::detectability<continuous>(_ss.A(), _ss.C());
 }
 
 template <typename StateMatrix, typename OutputMatrix>
-static auto hasUnobservableModeInImAxis(const StateMatrix& _A, const OutputMatrix& _C){
+auto hasUnobservableModeInImAxis(const StateMatrix& _A, const OutputMatrix& _C){
     //-- must be square matrix
     assert(_A.n_rows == _A.n_cols);
     //-- must be compatible with A
@@ -296,7 +340,7 @@ static auto hasUnobservableModeInImAxis(const StateMatrix& _A, const OutputMatri
 }
 
 template <typename StateMatrix, typename OutputMatrix>
-static auto hasUnobservableModeInUnitCircle(const StateMatrix& _A, const OutputMatrix& _C){
+auto hasUnobservableModeInUnitCircle(const StateMatrix& _A, const OutputMatrix& _C){
     //-- must be square matrix
     assert(_A.n_rows == _A.n_cols);
     //-- must be compatible with A
@@ -324,12 +368,12 @@ static auto hasUnobservableModeInUnitCircle(const StateMatrix& _A, const OutputM
 }
 
 template <typename Scalar, std::size_t n_states>
-static auto poles(const typename arma::Mat<Scalar>::template fixed<n_states,n_states>& _A){
+auto poles(const typename arma::Mat<Scalar>::template fixed<n_states,n_states>& _A){
     return detail::poles(_A);
 }
 
 template <typename _StateSpace>
-static auto poles(const _StateSpace& _ss)
+auto poles(const _StateSpace& _ss)
     -> typename std::enable_if_t<
         ::jacl::traits::is_state_space_v<_StateSpace>, decltype(detail::poles(_ss.A()))>{
     return detail::poles(_ss.A());
@@ -340,13 +384,13 @@ static auto poles(const _StateSpace& _ss)
 //     return detail::isStable(_A, _continuous);
 // }
 
-template <typename _StateMatrix>
-static auto isStable(const _StateMatrix& _A, bool _continuous){
-    return detail::isStable(_A, _continuous);
+template <bool continuous, typename _StateMatrix>
+auto isStable(const _StateMatrix& _A){
+    return detail::isStable<continuous>(_A);
 }
 
 template <typename _StateSpace>
-static auto discretize(const _StateSpace& _ss, double _sampling_time) -> StateSpacePack{
+auto discretize(const _StateSpace& _ss, double _sampling_time) -> StateSpacePack{
     arma::mat aug = arma::join_cols(arma::join_rows(_ss.A(), _ss.B()),
                                     arma::zeros(_StateSpace::n_inputs, _StateSpace::n_states + _StateSpace::n_inputs));
     arma::mat expmAB = arma::expmat(aug*_sampling_time);
@@ -359,8 +403,8 @@ static auto discretize(const _StateSpace& _ss, double _sampling_time) -> StateSp
 template <typename _System>
 bool isInfNormLessThan(double _gam, _System _sys){
     constexpr auto continuous = ::jacl::traits::is_continuous_system_v<_System>;
-    bool ok(true);
-    if(continuous){
+    auto ok(true);
+    if constexpr(continuous){
         arma::mat temp;
         temp = arma::trans(_sys.D())*_sys.D();
         arma::mat R = (_gam*_gam)*arma::eye(_System::n_inputs, _System::n_inputs) - temp;
@@ -381,6 +425,7 @@ bool isInfNormLessThan(double _gam, _System _sys){
 
         if(linear_algebra::largestSV(_sys.D()) < _gam){
             for(const auto& _p:p){
+                // std::cout << "C : " << _p << std::endl;
                 if(std::abs(std::real(_p)) < 1e-6){
                     ok = false;
                     break;
@@ -416,9 +461,11 @@ bool isInfNormLessThan(double _gam, _System _sys){
         );
         arma::mat I(arma::size(_sys.A()), arma::fill::eye);
         temp = arma::inv(I - _sys.A());
+
         if(arma::norm(_sys.C()*temp*B+D,2) < 1){
             arma::cx_vec p( detail::poles(S) );
             for(const auto& _p:p){
+                // std::cout << "D : "<< _p << std::endl;
                 if(std::fabs(std::abs(_p) - 1.0) < 1e-6){
                     ok = false;
                     break;
@@ -426,8 +473,7 @@ bool isInfNormLessThan(double _gam, _System _sys){
             }
         }else{
             ok = false;
-        } 
-        
+        }       
     }    
     
     return ok;
@@ -435,7 +481,7 @@ bool isInfNormLessThan(double _gam, _System _sys){
 
 template <typename _System>
 auto approxInfNorm(_System _sys){    
-    return numerical_methods::bisection(_sys, isInfNormLessThan<_System>, 100., .1);
+    return numerical_methods::bisection(_sys, isInfNormLessThan<_System> ,100., .1);
 }
 
-} }
+}

@@ -8,7 +8,7 @@
 #include <jacl/traits.hpp>
 #include <jacl/plotter.hpp>
 
-namespace jacl{ namespace analysis{
+namespace jacl::analysis{
 
 using transient_data_t = std::tuple<double,double,double,double>;
 
@@ -146,4 +146,4 @@ static auto transient(std::vector<Scalar>& _response,
     return std::make_tuple(tr,tp,overshoot,ts);
 }
 
-} }
+}

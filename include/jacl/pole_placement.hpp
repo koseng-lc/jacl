@@ -11,10 +11,10 @@
 
 #include <boost/thread.hpp>
 
-#include <jacl/state_space/linear.hpp>
 #include <jacl/lti_common.hpp>
+#include <jacl/state_space/linear.hpp>
 
-namespace jacl{ namespace pole_placement{
+namespace jacl::pole_placement{
 
 namespace detail{
     using namespace std::complex_literals;
@@ -208,4 +208,4 @@ static auto BassGura(_StateSpace* _ss, const arma::vec& _poles, arma::mat* _gain
     *_gain = term1 * term2;  
 }
 
-} } // namespace jacl::pole_placement
+} // namespace jacl::pole_placement
