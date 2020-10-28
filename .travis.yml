@@ -15,7 +15,7 @@ install:
   #- sudo ./b2 -d0
   #- sudo ./b2 install -d0
   #- cd ..
-  - sudo apt install libboost-dev-all
+  - sudo apt install libboost-all-dev
   - sudo apt install python-numpy
   - sudo apt install libblas-dev
   - sudo apt install liblapack-dev
