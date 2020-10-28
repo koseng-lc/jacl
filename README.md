@@ -1,7 +1,7 @@
-# Just Another Control Library
+# Just Another Control Library [![Travis Status](https://api.travis-ci.com/koseng-lc/jacl.svg?branch=master)](https://travis-ci.com/github/koseng-lc/jacl)
 ![Logo](logo_JACL_resized.png)
 
-Nothing to be described, JACL only an ordinary control library as in general. At first this library was made for personal use only, hence continuous development must exist due to only several methods available that related to author work in capstone project called MICRON.
+Nothing to be described, JACL only an ordinary control library as in general. At first this library was made for personal use only, hence further development must exist, due to only several methods available that related to author's work in capstone project called MICRON.
 
 ## Installation
 Clone the repository first.
@@ -30,4 +30,4 @@ target_link_libraries(your_target jacl_lib)
 * Armadillo
 * Scipy
 * Matplotlib
-* Qt (for example)
+* Qt (for example project)
