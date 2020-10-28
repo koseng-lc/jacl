@@ -31,14 +31,14 @@ install:
   - source /opt/qt512/bin/qt512-env.sh
 
 before_script:
-  #- sudo unlink /usr/local/lib/libboost_python.so
-  #- sudo ln -s /usr/lib/x86_64-linux-gnu/libboost_python-py36.so /usr/local/lib/libboost_python.so
-  #- sudo unlink /usr/local/lib/libboost_python.a
-  #- sudo ln -s /usr/lib/x86_64-linux-gnu/libboost_python-py36.a /usr/local/lib/libboost_python.a
+  - sudo unlink /usr/lib/x86_64-linux-gnu/libboost_python.so
+  - sudo ln -s /usr/lib/x86_64-linux-gnu/libboost_python-py36.so /usr/lib/x86_64-linux-gnu/libboost_python.so
+  - sudo unlink /usr/lib/x86_64-linux-gnu/libboost_python.a
+  - sudo ln -s /usr/lib/x86_64-linux-gnu/libboost_python-py36.a /usr/lib/x86_64-linux-gnu/libboost_python.a
   - mkdir build
   - cd build
   - cmake ..
-  - cat example/CMakeFiles/control_sim.dir/build.make
+  # - cat example/CMakeFiles/control_sim.dir/build.make
 
 script:
   - make -j2 --trace
