@@ -109,6 +109,16 @@ namespace jacl::traits{
     template <typename T>
     constexpr bool is_siso_v = is_siso<T>::value;
 
+    //--
+    template <typename T>
+    struct is_complex:std::false_type{};
+
+    template <typename T>
+    struct is_complex<std::complex<T>>:std::true_type{};
+
+    template <typename T>
+    constexpr bool is_complex_v = is_complex<T>::value;
+
     //-- convert to underlying type
     //-- the use of function instead of struct to prevent explicitly write the T
     template <typename T>

@@ -37,7 +37,7 @@ public:
 
     ~DHinf();
 
-    auto solve() -> ::jacl::lti_common::StateSpacePack;
+    auto solve() -> ::jacl::lti_common::state_space_pack_t;
 
 private:
     using scalar_t = typename _System::scalar_t;
@@ -176,7 +176,7 @@ template <typename _System,
           std::size_t perturbation_size>
 auto DHinf<_System,
     performance_size,
-    perturbation_size>::solve() -> ::jacl::lti_common::StateSpacePack{        
+    perturbation_size>::solve() -> ::jacl::lti_common::state_space_pack_t{        
 
 #ifdef DHINF_VERBOSE
     std::cout << "[DHinf] Interconnection matrix assumptions : " << std::endl;

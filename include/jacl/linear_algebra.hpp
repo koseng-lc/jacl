@@ -16,27 +16,47 @@
 
 namespace jacl::linear_algebra{
 
+using default_scalar_t = double;
+using size_t = std::size_t;
+
 namespace detail{
 
-    template <typename Matrix>
-    static auto toCx(const Matrix& m){
+    template <typename _Matrix>
+    inline auto toCx(const _Matrix& m){
         return arma::cx_mat(m, arma::zeros<arma::mat>( arma::size(m) ));
     }
 
-    template <typename Matrix>
-    static auto toCx(Matrix&& m){   
-        std::cout << "Move it !!!" << std::endl;
+    template <typename _Matrix>
+    inline auto toCx(_Matrix&& m){   
         return arma::cx_mat(m, arma::zeros<arma::mat>( arma::size(m) ));
     }
 
-    template <typename Matrix>
-    static inline auto toReal(const Matrix& m){
+    template <typename _Matrix>
+    inline auto toReal(const _Matrix& m){
         return arma::real(m);
     }
 
-    template <typename Matrix>
-    static inline auto toReal(Matrix&& m){
+    template <typename _Matrix>
+    inline auto toReal(_Matrix&& m){
         return arma::real(m);
+    }
+
+    template <std::size_t rows, std::size_t cols, typename Scalar>
+    constexpr auto diagonalize(Scalar s) -> typename arma::Mat<Scalar>::template fixed<rows, cols>{
+        return s*typename arma::Mat<Scalar>::template fixed<rows, cols>(arma::fill::eye);
+    }
+
+    template <typename T>
+    constexpr auto abs(T t){
+        if constexpr(traits::is_complex_v<T>){
+            return std::sqrt(std::real(t)*std::real(t) + std::imag(t)*std::imag(t));
+        }else{
+            if constexpr(t<0){
+                return -1*t;
+            }else{
+                return t;
+            }
+        }
     }
 
     template <typename Type>
@@ -140,20 +160,182 @@ namespace detail{
     }
 }
 
-template <typename Matrix>
-static inline auto toCx(Matrix&& m){
+template <size_t rows, size_t cols, typename Scalar=default_scalar_t>
+class Matrix{
+public:
+    using scalar_t = Scalar;
+    using ref_t = scalar_t&;
+    using const_ref_t = const scalar_t&;
+    using move_t = scalar_t&&;
 
-    static_assert(arma::is_arma_type<std::decay_t<Matrix>>::value, "Please input arma_type only!");
+    static constexpr auto n_rows{rows};
+    static constexpr auto n_cols{cols};
+    static constexpr auto n_elems{n_rows*n_cols};
 
-    return detail::toCx(std::forward<Matrix>(m));
+    using data_t = std::array<scalar_t, n_rows*n_cols>;
+
+public:
+
+    template <typename ...Es>
+    constexpr Matrix(Es... _elements)
+        : data_{{std::forward<Es>(_elements)...}}{
+
+    }
+
+    constexpr Matrix()
+        : data_{}{
+
+    }
+
+    constexpr Matrix(const Matrix& _m){
+        copy<0>(_m);
+        std::cout << "Copy constructor !" << std::endl;
+    }
+
+    constexpr Matrix(Matrix&& _m){
+        move<0>(_m);
+        std::cout << "Move constructor !" << std::endl;
+    }
+
+    template <typename _Matrix>
+    constexpr auto operator *(_Matrix&& _m) const{        
+        return mul<0>(std::forward<_Matrix>(_m));
+    }
+
+    template <typename _Matrix>
+    constexpr Matrix& operator =(const _Matrix& _m){
+        copy<0>(_m);
+        std::cout << "Copy assignment !" << std::endl;
+        return *this;
+    }
+
+    template <typename _Matrix>
+    constexpr Matrix& operator =(_Matrix&& _m){
+        std::cout << "Move assignment !" << std::endl;
+        move<0>(_m);
+        return *this;
+    }
+
+    constexpr ref_t operator ()(size_t _idx){
+        return data_[_idx];
+    }
+
+    constexpr ref_t operator ()(size_t _row, size_t _col){
+        return data_[_row*n_cols+_col];
+    }
+
+    constexpr const_ref_t operator ()(size_t _idx) const{
+        return data_[_idx];
+    }
+
+    constexpr const_ref_t operator ()(size_t _row, size_t _col) const{
+        return data_[_row*n_cols+_col];
+    }
+
+    template <size_t idx>
+    constexpr move_t operator ()(size_t a=0){
+        return std::get<idx>(std::move(data_));
+    }
+
+    constexpr auto zeros(){
+        for(size_t i(0); i < n_elems; i++){
+            data_[i] = 0.;
+        }
+    }
+
+private:
+    template <size_t idx, typename _Matrix>
+    constexpr auto copy(const _Matrix& _m){
+        if constexpr(idx < n_elems){
+            (*this)(idx) = _m(idx);
+            copy<idx+1>(_m);
+        }
+    }
+
+    template <size_t idx, typename _Matrix>
+    constexpr auto move(_Matrix&& _m){
+        if constexpr(idx < n_elems){
+            (*this)(idx) = std::move(_m.template operator()<idx>(0));
+            move<idx+1>(_m);
+        }
+    }
+
+    template <size_t start, size_t end, typename _Scalar>
+    constexpr auto fill(_Scalar s){
+        if constexpr(start < end){
+            return fill<start+1, end>(s, s);
+        }else{
+            return {s};
+        }
+    }
+
+    template <size_t start, size_t end, typename _Scalar, typename ...Rest>
+    constexpr auto fill(Scalar s, Rest... rest){
+        if constexpr(start < end){
+            return fill<start+1, end>(s, s, rest...);
+        }else{
+            return {s,rest...};
+        }
+    }    
+
+    template<size_t idx, typename _Matrix>
+    constexpr auto mul(const _Matrix& _m) const{
+        // std::cout << "Copy !" << std::endl;
+        Matrix<n_rows, _Matrix::n_cols> res{};
+        res.zeros();
+        for(size_t r(0); r < n_rows; r++){
+            for(size_t c(0); c < _Matrix::n_cols; c++){
+                for(size_t i(0); i < n_cols; i++){
+                        res(r,c) += (*this)(r,i)*_m(i,c);
+                }
+            }
+        }
+        return res;       
+    }
+
+    template<size_t idx, typename _Matrix>
+    constexpr auto mul(_Matrix&& _m) const{
+        // std::cout << "Move !" << std::endl;
+        Matrix<n_rows, _Matrix::n_cols> res{};
+        res.zeros();
+        for(size_t r(0); r < n_rows; r++){
+            for(size_t c(0); c < _Matrix::n_cols; c++){
+                for(size_t i(0); i < n_cols; i++){
+                        res(r,c) += (*this)(r,i)*_m(i,c);
+                }
+            }
+        }
+        return res;       
+    }
+
+private:
+    data_t data_;
+};
+
+template <typename _Matrix>
+inline auto toCx(_Matrix&& m){
+
+    static_assert(arma::is_arma_type<std::decay_t<_Matrix>>::value, "Please input arma_type only!");
+
+    return detail::toCx(std::forward<_Matrix>(m));
 }
 
-template <typename Matrix>
-static inline auto toReal(Matrix&& m){
+template <typename _Matrix>
+inline auto toReal(_Matrix&& m){
 
-    static_assert(arma::is_arma_type<std::decay_t<Matrix>>::value, "Please input arma_type only!");
+    static_assert(arma::is_arma_type<std::decay_t<_Matrix>>::value, "Please input arma_type only!");
     
-    return detail::toReal(std::forward<Matrix>(m));
+    return detail::toReal(std::forward<_Matrix>(m));
+}
+
+template <std::size_t rows, std::size_t cols=rows, typename Scalar>
+constexpr auto diagonalize(Scalar s){
+    return detail::diagonalize<rows,cols>(s);
+}
+
+template <typename T>
+constexpr auto abs(T t){
+    return detail::abs(t);
 }
 
 template <typename I, typename Q, typename R>
@@ -176,28 +358,28 @@ static auto QRDecomp(const I& in, Q* q, R* r){
 
 //-- using universal reference
 
-template <typename Matrix>
-static auto isPosSemiDefinite(Matrix&& in){
+template <typename _Matrix>
+static auto isPosSemiDefinite(_Matrix&& in){
 
-    static_assert(arma::is_arma_type<std::decay_t<Matrix>>::value, "Please input arma_type only!");
+    static_assert(arma::is_arma_type<std::decay_t<_Matrix>>::value, "Please input arma_type only!");
 
-    return detail::isPosSemiDefinite(std::forward<Matrix>(in));
+    return detail::isPosSemiDefinite(std::forward<_Matrix>(in));
 }
 
-template <typename Matrix>
-static auto spectralRadius(Matrix&& in){
+template <typename _Matrix>
+static auto spectralRadius(_Matrix&& in){
 
-    static_assert(arma::is_arma_type<std::decay_t<Matrix>>::value, "Please input arma_type only!");
+    static_assert(arma::is_arma_type<std::decay_t<_Matrix>>::value, "Please input arma_type only!");
 
-    return detail::spectralRadius(std::forward<Matrix>(in));
+    return detail::spectralRadius(std::forward<_Matrix>(in));
 }
 
-template <typename Matrix>
-static auto largestSV(Matrix&& in){
+template <typename _Matrix>
+static auto largestSV(_Matrix&& in){
 
-    static_assert(arma::is_arma_type<std::decay_t<Matrix>>::value, "Please input arma_type only!");
+    static_assert(arma::is_arma_type<std::decay_t<_Matrix>>::value, "Please input arma_type only!");
 
-    return detail::largestSV(std::forward<Matrix>(in));
+    return detail::largestSV(std::forward<_Matrix>(in));
 }
 
 namespace{ //-- private namespace

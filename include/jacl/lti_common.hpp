@@ -16,6 +16,9 @@
 
 namespace jacl::lti_common{
 
+using jacl::linear_algebra::toCx;
+using jacl::linear_algebra::diagonalize;
+
 namespace detail{
 
     template <std::size_t idx, std::size_t order, std::size_t input_size, typename C, typename A>
@@ -51,56 +54,72 @@ namespace detail{
         return arma::rank(ctrb) == system_order;
     }
 
-    template <typename A, typename B>
-    constexpr auto stabilizable_c_iter(A, B){
-
+    template <std::size_t idx, std::size_t system_order, typename E, typename A, typename B>
+    auto stabilizable_c_iter(const E& e, A&& a, B&& b){
+        if (idx < system_order){
+            if (std::real(e(idx)) > .0){
+                std::decay_t<A> temp = a - diagonalize<system_order>(e(idx));
+                if (arma::rank( arma::join_horiz(temp, b) ) < system_order){
+                    return false;
+                }
+            }
+            return stabilizable_c_iter<idx+1, system_order>(e, a, b);
+        }else{
+            return true;
+        }        
     }
 
-    template <typename A, typename B>
-    constexpr auto stabilizable_d_iter(A, B){
-
+    template <std::size_t idx, std::size_t system_order, typename E, typename A, typename B>
+    auto stabilizable_d_iter(E&& e, A&& a, B&& b){
+        if (idx < system_order){
+            if (linear_algebra::abs(e(idx)) - 1. > 1e-4){
+                std::decay_t<A> temp = a - diagonalize<system_order>(e(idx));
+                if (arma::rank( arma::join_horiz(temp, b) ) < system_order){
+                    return false;
+                }
+            }
+            return stabilizable_d_iter<idx+1, system_order>(e, a, b);
+        }else{
+            return true;
+        }
     }
 
     template <bool continuous, typename StateMatrix, typename InputMatrix>
-    auto stabilizable(const StateMatrix& _A, const InputMatrix& _B){
+    auto stabilizable(const StateMatrix& a, const InputMatrix& b){
 
         //-- must be square matrix
         static_assert(StateMatrix::n_rows == StateMatrix::n_cols, "StateMatrix must be square!");
         //-- must be compatible with A
         static_assert(InputMatrix::n_rows == StateMatrix::n_rows, "InputMatrix and StateMatrix are not compatible!");
 
-        arma::cx_vec eigval;
-        arma::cx_mat eigvec;
-        arma::eig_gen(eigval, eigvec, _A);
+        constexpr auto system_order = StateMatrix::n_rows;
 
-        arma::cx_mat temp;
-        arma::cx_mat eye(arma::size(_A), arma::fill::eye);
-        arma::cx_mat cx_B( arma::size(_B) );
-        cx_B.set_real(_B);
-        auto ok(true);
+        typename arma::Col<std::complex<double>>::template fixed<system_order> eigval;
+        typename arma::cx_mat::template fixed<system_order,system_order> eigvec;
+        arma::eig_gen(eigval, eigvec, a);
+
         if constexpr(continuous){
-            for(int i(0); i < eigval.n_rows; i++){
-                if(std::real(eigval(i)) > .0){
-                    temp = _A - eigval(i)*eye;
-                    if(arma::rank( arma::join_horiz(temp, cx_B) ) < _A.n_rows){
-                        ~ok;
-                        break;
+            for(auto idx(0); idx < system_order; idx++){
+                if (std::real(eigval(idx)) > .0){
+                    arma::cx_mat temp = toCx(a) - diagonalize<system_order>(eigval(idx));
+                    if (arma::rank( arma::join_horiz(temp, toCx(b)) ) < system_order){
+                        return false;
                     }
                 }
             }
+            
+            // return stabilizable_c_iter<0, system_order>(eigval, toCx(a), toCx(b));
         }else{
-            for(int i(0); i < eigval.n_rows; i++){
-                if(std::abs(eigval(i)) - 1. > 1e-4){
-                    temp = _A - eigval(i)*eye;
-                    if(arma::rank( arma::join_horiz(temp, cx_B) ) < _A.n_rows){
-                        ~ok;
-                        break;
+            for(auto idx(0); idx < system_order; idx++){
+                if (linear_algebra::abs(eigval(idx)) - 1. > 1e-4){
+                    arma::cx_mat temp = toCx(a) - diagonalize<system_order>(eigval(idx));
+                    if (arma::rank( arma::join_horiz(temp, toCx(b)) ) < system_order){
+                        return false;
                     }
                 }
             }
+            // return stabilizable_d_iter<0, system_order>(eigval, toCx(a), toCx(b));
         }     
-
-        return ok;
     }
 
     template <std::size_t idx, std::size_t order, std::size_t output_size, typename O, typename A>
@@ -209,7 +228,7 @@ namespace detail{
     }
 }
 
-using StateSpacePack = std::tuple<arma::mat, arma::mat, arma::mat, arma::mat >;
+using state_space_pack_t = std::tuple<arma::mat, arma::mat, arma::mat, arma::mat >;
 
 template <typename StateMatrix, typename InputMatrix>
 constexpr auto controllable(const StateMatrix& _A, const InputMatrix& _B){
@@ -222,12 +241,12 @@ constexpr auto controllable(const _StateSpace& _ss){
 }
 
 template <bool continuous, typename StateMatrix, typename InputMatrix>
-auto stabilizable(const StateMatrix& _A, const InputMatrix& _B){
+constexpr auto stabilizable(const StateMatrix& _A, const InputMatrix& _B){
     return detail::stabilizable<continuous>(_A, _B);
 }
 
 template <bool continuous, typename _StateSpace>
-auto stabilizable(const _StateSpace& _ss){
+constexpr auto stabilizable(const _StateSpace& _ss){
     return detail::stabilizable<continuous>(_ss.A(), _ss.B());
 }
 
@@ -390,7 +409,7 @@ auto isStable(const _StateMatrix& _A){
 }
 
 template <typename _StateSpace>
-auto discretize(const _StateSpace& _ss, double _sampling_time) -> StateSpacePack{
+auto discretize(const _StateSpace& _ss, double _sampling_time) -> state_space_pack_t{
     arma::mat aug = arma::join_cols(arma::join_rows(_ss.A(), _ss.B()),
                                     arma::zeros(_StateSpace::n_inputs, _StateSpace::n_states + _StateSpace::n_inputs));
     arma::mat expmAB = arma::expmat(aug*_sampling_time);

@@ -68,6 +68,8 @@ MainWindow::MainWindow(double _bias,
     QString style_sheet(style_file.readAll());
     this->setStyleSheet(style_sheet);
 
+    test2();
+
     //-- DC Motor Open-Loop
     std::cout << "Preparing system ..." << std::endl;
     {
@@ -679,7 +681,7 @@ void MainWindow::setupSIMODCMotor(){
         simo_.setC(fC);
         simo_.setD(fD);
     }    
-    jacl::lti_common::StateSpacePack dsimo = jacl::lti_common::discretize(simo_, SAMPLING_PERIOD);    
+    jacl::lti_common::state_space_pack_t dsimo = jacl::lti_common::discretize(simo_, SAMPLING_PERIOD);    
     dsimo_.setA(std::get<0>(dsimo)); dsimo_.setB(std::get<1>(dsimo));
     dsimo_.setC(std::get<2>(dsimo)); dsimo_.setD(std::get<3>(dsimo));
     dsimo_.A().print("Ad : "); dsimo_.B().print("Bd : ");
@@ -761,7 +763,7 @@ void MainWindow::setupSIMODCMotor(){
         m_real_.setC(fC);
         m_real_.setD(fD);
     }
-    jacl::lti_common::StateSpacePack dm_real_ = jacl::lti_common::discretize(m_real_, SAMPLING_PERIOD);
+    jacl::lti_common::state_space_pack_t dm_real_ = jacl::lti_common::discretize(m_real_, SAMPLING_PERIOD);
     {
         arma::mat temp1, temp2, temp3;
         arma::mat zeros9x1(9,1,arma::fill::zeros);
@@ -851,10 +853,11 @@ void MainWindow::setupDiscreteController(){
         pos_icm_.A().print("[Pos] A_icm : ");
         pos_icm_.B().print("[Pos] B_icm : ");
         pos_icm_.C().print("[Pos] C_icm : ");
-        pos_icm_.D().print("[Pos] D_icm : ");
-        pos_dhinf_ = new jacl::synthesis::DHinf<decltype(pos_sys_), 2, 3>
-                        (&pos_sys_, gamma_pos_, {1e-4,1e-4,1e-4}, {1e-4,1e-4,1e-4});
-        auto K( pos_dhinf_->solve() );
+        pos_icm_.D().print("[Pos] D_icm : "); 
+
+        jacl::synthesis::DHinf<decltype(pos_sys_), 2, 3> pos_dhinf_(&pos_sys_, gamma_pos_, {1e-4,1e-4,1e-4}, {1e-4,1e-4,1e-4});
+        auto K( pos_dhinf_.solve() );
+
         pos_dctrl_.setA(std::get<0>(K)); pos_dctrl_.setB(std::get<1>(K));
         pos_dctrl_.setC(std::get<2>(K)); pos_dctrl_.setD(std::get<3>(K));
         jacl::parser::saveStateSpace(pos_dctrl_, "position_controller.jacl");
@@ -951,7 +954,7 @@ void MainWindow::setupDiscreteController(){
         spd.setC({1.,0.});
         spd.setD(arma::zeros(1,1));
 
-        jacl::lti_common::StateSpacePack dspd = jacl::lti_common::discretize(spd, SPD_SP);
+        jacl::lti_common::state_space_pack_t dspd = jacl::lti_common::discretize(spd, SPD_SP);
 
         spd_real_.setA(std::get<0>(dspd));
         spd_real_.setB(std::get<1>(dspd));
@@ -1000,8 +1003,10 @@ void MainWindow::setupDiscreteController(){
         spd_icm_.B().print("[Spd] B_icm : ");
         spd_icm_.C().print("[Spd] C_icm : ");
         spd_icm_.D().print("[Spd] D_icm : ");
-        spd_dhinf_ = new jacl::synthesis::DHinf<decltype(spd_sys_), 2, 3>(&spd_sys_, gamma_spd_, {1e-4,1e-4}, {1e-4,1e-4});
-        auto K( spd_dhinf_->solve() );
+
+        jacl::synthesis::DHinf<decltype(spd_sys_), 2, 3> spd_dhinf_(&spd_sys_, gamma_spd_, {1e-4,1e-4}, {1e-4,1e-4});
+        auto K( spd_dhinf_.solve() );
+
         spd_dctrl_.setA(std::get<0>(K)); spd_dctrl_.setB(std::get<1>(K));
         spd_dctrl_.setC(std::get<2>(K)); spd_dctrl_.setD(std::get<3>(K));
         jacl::parser::saveStateSpace(spd_dctrl_, "speed_controller.jacl");
@@ -1141,8 +1146,9 @@ void MainWindow::setupContinuousController(){
         c_pos_icm_.C().print("[CPos] LLFT C : ");
         c_pos_icm_.D().print("[CPos] LLFT D : ");
 
-        pos_hinf_ = new jacl::synthesis::Hinf<decltype(c_pos_sys_), 2, 3>(&c_pos_sys_, 4.7);//2.7882);
-        jacl::lti_common::StateSpacePack K( pos_hinf_->solve() );
+        jacl::synthesis::Hinf<decltype(c_pos_sys_), 2, 3> pos_hinf_(&c_pos_sys_, 4.7);//2.7882);
+        jacl::lti_common::state_space_pack_t K( pos_hinf_.solve() );
+
         c_pos_ctrl_.setA(std::get<0>(K));
         c_pos_ctrl_.setB(std::get<1>(K));
         c_pos_ctrl_.setC(std::get<2>(K));
@@ -1299,8 +1305,9 @@ void MainWindow::setupContinuousController(){
         c_spd_icm_.setC(C);
         c_spd_icm_.setD(D);
 
-        spd_hinf_ = new jacl::synthesis::Hinf<decltype(c_spd_sys_), 2, 3>(&c_spd_sys_, 6.0);
-        jacl::lti_common::StateSpacePack K( spd_hinf_->solve() );
+        jacl::synthesis::Hinf<decltype(c_spd_sys_), 2, 3> spd_hinf_(&c_spd_sys_, 6.0);
+        jacl::lti_common::state_space_pack_t K( spd_hinf_.solve() );
+
         c_spd_ctrl_.setA(std::get<0>(K));
         c_spd_ctrl_.setB(std::get<1>(K));
         c_spd_ctrl_.setC(std::get<2>(K));
