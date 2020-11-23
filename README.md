@@ -30,4 +30,4 @@ target_link_libraries(your_target jacl_lib)
 * Armadillo
 * Scipy
 * Matplotlib
-* Qt (for example project)
+* Qt (for examples project)

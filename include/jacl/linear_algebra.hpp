@@ -158,6 +158,15 @@ namespace detail{
             QRDecomp_row_iter<row+1>(in, q, r);
         }
     }
+
+    template <typename _Matrix, std::size_t... Is>
+    auto show_impl(const _Matrix& _m, std::index_sequence<Is...>){
+        std::cout << std::setprecision(6);
+        ((std::cout << (((_Matrix::n_cols- Is%_Matrix::n_cols) == 1)
+                        ?(std::to_string(_m(Is))+"\n"):(std::to_string(_m(Is))+" "))), ...);
+        std::cout << std::endl;
+    }
+
 }
 
 template <size_t rows, size_t cols, typename Scalar=default_scalar_t>
@@ -179,35 +188,46 @@ public:
     template <typename ...Es>
     constexpr Matrix(Es... _elements)
         : data_{{std::forward<Es>(_elements)...}}{
-
+        
     }
 
     constexpr Matrix()
         : data_{}{
-
+        
     }
 
-    template <typename _Matrix, typename Idx=std::make_index_sequence<n_elems>>
+    //-- Does the copy is elided?
+    /*template <typename _Matrix, typename Idx=std::make_index_sequence<n_elems>>
     constexpr Matrix(const _Matrix& _m){
+        // std::cout << "[Matrix] Copy constructor !" << std::endl;
         static_assert(n_rows == _Matrix::n_rows
                         & n_cols == _Matrix::n_cols,
                         "[Matrix] Constructing must be in same dimension");
-        copy(_m, Idx{});
-        std::cout << "[Matrix] Copy constructor !" << std::endl;
-    }
+        copy_impl(_m, Idx{});        
+    }*/
 
-    template <typename _Matrix, typename Idx=std::make_index_sequence<n_elems>>
+    /*template <typename _Matrix, typename Idx=std::make_index_sequence<n_elems>>
     constexpr Matrix(_Matrix&& _m){
+        // std::cout << "[Matrix] Move constructor !" << std::endl;
         static_assert(n_rows == _Matrix::n_rows
                         & n_cols == _Matrix::n_cols,
                         "[Matrix] Constructing must be in same dimension");
-        move(_m, Idx{});
-        std::cout << "[Matrix] Move constructor !" << std::endl;
-    }
+        move_impl(_m, Idx{});        
+    }*/
 
     template <typename _Matrix>
     constexpr auto operator *(_Matrix&& _m) const{        
-        return mul(std::forward<_Matrix>(_m));
+        return mul_impl(std::forward<_Matrix>(_m));
+    }
+
+    template <typename _Matrix, typename Idx=std::make_index_sequence<n_elems>>
+    constexpr auto operator +(_Matrix&& _m) const{
+        return add_impl(std::forward<_Matrix>(_m), Idx{});
+    }
+
+    template <typename _Matrix, typename Idx=std::make_index_sequence<n_elems>>
+    constexpr auto operator -(_Matrix&& _m) const{
+        return sub_impl(std::forward<_Matrix>(_m), Idx{});
     }
 
     template <typename _Matrix, typename Idx = std::make_index_sequence<n_elems>>
@@ -260,19 +280,11 @@ private:
     template <typename _Matrix, size_t... Is>
     constexpr auto copy_impl(const _Matrix& _m, std::index_sequence<Is...>){
         (((*this)(Is) = _m(Is)), ...);
-        // if constexpr(idx < n_elems){
-        //     (*this)(idx) = _m(idx);
-        //     copy<idx+1>(_m);
-        // }
     }
 
     template <typename _Matrix, size_t... Is>
     constexpr auto move_impl(_Matrix&& _m, std::index_sequence<Is...>){
         (((*this)(Is) = std::move(_m.template operator()<Is>(0))), ...);
-        // if constexpr(idx < n_elems){
-        //     (*this)(idx) = std::move(_m.template operator()<idx>(0));
-        //     move<idx+1>(_m);
-        // }
     }
 
     template <size_t start, size_t end, typename _Scalar>
@@ -293,9 +305,25 @@ private:
         }
     }
 
-    template<typename _Matrix>
-    constexpr auto mul(const _Matrix& _m) const{
-        // std::cout << "Copy !" << std::endl;
+    template <typename _Matrix, size_t... Is>
+    constexpr auto add_impl(const _Matrix& _m, std::index_sequence<Is...>) const{
+        Matrix<n_rows, n_cols> res{};
+        res.zeros();
+        ((res(Is) = data_[Is] + _m(Is)), ...);
+        return res;
+    }
+
+    template <typename _Matrix, size_t... Is>
+    constexpr auto sub_impl(const _Matrix& _m, std::index_sequence<Is...>) const{
+        Matrix<n_rows, n_cols> res{};
+        res.zeros();
+        ((res(Is) = data_[Is] - _m(Is)), ...);
+        return res;
+    }
+
+    template <typename _Matrix>
+    constexpr auto mul_impl(const _Matrix& _m) const{
+        // std::cout << "[Matrix] Copy !" << std::endl;
         Matrix<n_rows, _Matrix::n_cols> res{};
         res.zeros();
         for(size_t r(0); r < n_rows; r++){
@@ -310,7 +338,7 @@ private:
 
     template <typename _Matrix>
     constexpr auto mul_impl(_Matrix&& _m) const{
-        // std::cout << "Move !" << std::endl;
+        // std::cout << "[Matrix] Move !" << std::endl;
         Matrix<n_rows, _Matrix::n_cols> res{};
         res.zeros();
         for(size_t r(0); r < n_rows; r++){
@@ -331,6 +359,12 @@ private:
 private:
     data_t data_;
 };
+
+template <typename _Matrix, typename Idx=std::make_index_sequence<_Matrix::n_elems>>
+auto show(const _Matrix& _m, std::string&& _alias){
+    std::cout << _alias << std::endl;
+    detail::show_impl(_m, Idx{});
+}
 
 template <typename _Matrix>
 inline auto toCx(_Matrix&& m){
