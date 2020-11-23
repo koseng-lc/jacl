@@ -68,8 +68,6 @@ MainWindow::MainWindow(double _bias,
     QString style_sheet(style_file.readAll());
     this->setStyleSheet(style_sheet);
 
-    test2();
-
     //-- DC Motor Open-Loop
     std::cout << "Preparing system ..." << std::endl;
     {

@@ -20,7 +20,7 @@ set(JACL_HEADER_PATH "${JACL_INCLUDE_PATH}/jacl")
 set(JACL_LIB_PATH "${JACL_MAIN_INSTALL_PATH}/lib/jacl")
 set(JACL_CMAKE_CONFIG_INSTALL_PATH "${JACL_MAIN_INSTALL_PATH}/share/jacl/cmake")
 
-add_subdirectory(example)
+add_subdirectory(examples)
 add_subdirectory(include)
 
 #-- for build-tree

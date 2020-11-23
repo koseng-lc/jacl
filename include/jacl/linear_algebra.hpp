@@ -187,32 +187,46 @@ public:
 
     }
 
-    constexpr Matrix(const Matrix& _m){
-        copy<0>(_m);
-        std::cout << "Copy constructor !" << std::endl;
+    template <typename _Matrix, typename Idx=std::make_index_sequence<n_elems>>
+    constexpr Matrix(const _Matrix& _m){
+        static_assert(n_rows == _Matrix::n_rows
+                        & n_cols == _Matrix::n_cols,
+                        "[Matrix] Constructing must be in same dimension");
+        copy(_m, Idx{});
+        std::cout << "[Matrix] Copy constructor !" << std::endl;
     }
 
-    constexpr Matrix(Matrix&& _m){
-        move<0>(_m);
-        std::cout << "Move constructor !" << std::endl;
+    template <typename _Matrix, typename Idx=std::make_index_sequence<n_elems>>
+    constexpr Matrix(_Matrix&& _m){
+        static_assert(n_rows == _Matrix::n_rows
+                        & n_cols == _Matrix::n_cols,
+                        "[Matrix] Constructing must be in same dimension");
+        move(_m, Idx{});
+        std::cout << "[Matrix] Move constructor !" << std::endl;
     }
 
     template <typename _Matrix>
     constexpr auto operator *(_Matrix&& _m) const{        
-        return mul<0>(std::forward<_Matrix>(_m));
+        return mul(std::forward<_Matrix>(_m));
     }
 
-    template <typename _Matrix>
+    template <typename _Matrix, typename Idx = std::make_index_sequence<n_elems>>
     constexpr Matrix& operator =(const _Matrix& _m){
-        copy<0>(_m);
-        std::cout << "Copy assignment !" << std::endl;
+        static_assert(n_rows == _Matrix::n_rows
+                        & n_cols == _Matrix::n_cols,
+                        "[Matrix] Assignment must be in the same dimension");
+        std::cout << "[Matrix] Copy assignment !" << std::endl;
+        copy_impl(_m, Idx{});        
         return *this;
     }
 
-    template <typename _Matrix>
+    template <typename _Matrix, typename Idx = std::make_index_sequence<n_elems>>
     constexpr Matrix& operator =(_Matrix&& _m){
-        std::cout << "Move assignment !" << std::endl;
-        move<0>(_m);
+        static_assert(n_rows == _Matrix::n_rows
+                        & n_cols == _Matrix::n_cols,
+                        "[Matrix] Assignment must be in the same dimension");
+        std::cout << "[Matrix] Move assignment !" << std::endl;
+        move_impl(_m, Idx{});
         return *this;
     }
 
@@ -237,48 +251,49 @@ public:
         return std::get<idx>(std::move(data_));
     }
 
+    template <typename Idx=std::make_index_sequence<n_elems>>
     constexpr auto zeros(){
-        for(size_t i(0); i < n_elems; i++){
-            data_[i] = 0.;
-        }
+        zeros_impl(Idx{});
     }
 
 private:
-    template <size_t idx, typename _Matrix>
-    constexpr auto copy(const _Matrix& _m){
-        if constexpr(idx < n_elems){
-            (*this)(idx) = _m(idx);
-            copy<idx+1>(_m);
-        }
+    template <typename _Matrix, size_t... Is>
+    constexpr auto copy_impl(const _Matrix& _m, std::index_sequence<Is...>){
+        (((*this)(Is) = _m(Is)), ...);
+        // if constexpr(idx < n_elems){
+        //     (*this)(idx) = _m(idx);
+        //     copy<idx+1>(_m);
+        // }
     }
 
-    template <size_t idx, typename _Matrix>
-    constexpr auto move(_Matrix&& _m){
-        if constexpr(idx < n_elems){
-            (*this)(idx) = std::move(_m.template operator()<idx>(0));
-            move<idx+1>(_m);
-        }
+    template <typename _Matrix, size_t... Is>
+    constexpr auto move_impl(_Matrix&& _m, std::index_sequence<Is...>){
+        (((*this)(Is) = std::move(_m.template operator()<Is>(0))), ...);
+        // if constexpr(idx < n_elems){
+        //     (*this)(idx) = std::move(_m.template operator()<idx>(0));
+        //     move<idx+1>(_m);
+        // }
     }
 
     template <size_t start, size_t end, typename _Scalar>
     constexpr auto fill(_Scalar s){
         if constexpr(start < end){
-            return fill<start+1, end>(s, s);
+            return fill_impl<start+1, end>(s, s);
         }else{
             return {s};
         }
     }
 
     template <size_t start, size_t end, typename _Scalar, typename ...Rest>
-    constexpr auto fill(Scalar s, Rest... rest){
+    constexpr auto fill_impl(Scalar s, Rest... rest){
         if constexpr(start < end){
-            return fill<start+1, end>(s, s, rest...);
+            return fill_impl<start+1, end>(s, s, rest...);
         }else{
             return {s,rest...};
         }
-    }    
+    }
 
-    template<size_t idx, typename _Matrix>
+    template<typename _Matrix>
     constexpr auto mul(const _Matrix& _m) const{
         // std::cout << "Copy !" << std::endl;
         Matrix<n_rows, _Matrix::n_cols> res{};
@@ -293,8 +308,8 @@ private:
         return res;       
     }
 
-    template<size_t idx, typename _Matrix>
-    constexpr auto mul(_Matrix&& _m) const{
+    template <typename _Matrix>
+    constexpr auto mul_impl(_Matrix&& _m) const{
         // std::cout << "Move !" << std::endl;
         Matrix<n_rows, _Matrix::n_cols> res{};
         res.zeros();
@@ -306,6 +321,11 @@ private:
             }
         }
         return res;       
+    }
+
+    template <size_t... Is>
+    constexpr auto zeros_impl(std::index_sequence<Is...>){
+        ((data_[Is] = 0.), ...);
     }
 
 private:

@@ -247,29 +247,7 @@ private:
     void setupNLP();                        
 
     arma::mat ref_;
-    int control_mode_;        
-
-    static auto test(){
-        using cek_t = jacl::linear_algebra::Matrix<3,3>;
-        using cek2_t = jacl::linear_algebra::Matrix<3,4>;
-        constexpr cek_t cek(1.,2.,3.,4.,5.,6.,7.,8.,9.);
-        constexpr cek2_t cek2(1.,2.,3.,4.,5.,6.,7.,8.,9.,10.,11.,12.);
-        constexpr cek2_t cek3(cek*cek2);
-        if constexpr(cek(0)){
-            
-        }
-        for(int i(0); i < cek2_t::n_elems; i++){
-            std::cout << cek3(i) << "\t" << std::endl;
-        }
-        for(int i(0); i < cek_t::n_elems; i++){
-            std::cout << cek(i) << "\t" << std::endl;
-        }     
-        return 0;
-    }
-
-    auto test2(){
-        auto ret = test();
-    }
+    int control_mode_;    
 
 Q_SIGNALS:
     void setDataMonitor(arma::vec _data);
