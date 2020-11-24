@@ -21,10 +21,21 @@ int main(int argc, char** argv){
     constexpr a_t add_res(a1+a2);
     constexpr a_t sub_res(a2-a1);
 
+    using c_t = jacl::linear_algebra::Matrix<3,1>;
+    using d_t = jacl::linear_algebra::Matrix<1,4>;
+    constexpr c_t pos2_col(jacl::linear_algebra::getCol<2>(mul_res));
+    constexpr d_t pos1_row(jacl::linear_algebra::getRow<1>(mul_res));
+
+    using e_t = b_t::transpose_t;
+    constexpr e_t transpose_res(jacl::linear_algebra::transpose(mul_res));
+
     jacl::linear_algebra::show(a1, "A1 : ");
     jacl::linear_algebra::show(mul_res, "Mult. Res : ");
     jacl::linear_algebra::show(add_res, "Add. Res : ");
     jacl::linear_algebra::show(sub_res, "Sub. Res : ");
+    jacl::linear_algebra::show(pos2_col, "Pos.2 Col : ");
+    jacl::linear_algebra::show(pos1_row, "Pos.1 Row : ");
+    jacl::linear_algebra::show(transpose_res, "Transpose of Mult. Res : ");
 
     return 0.;
 }
