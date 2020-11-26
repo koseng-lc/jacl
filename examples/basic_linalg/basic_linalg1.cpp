@@ -6,6 +6,7 @@
 #include <jacl/jacl.hpp>
 
 int main(int argc, char** argv){
+
     using a_t = jacl::linear_algebra::Matrix<3,3>;
     using b_t = jacl::linear_algebra::Matrix<3,4>;
     constexpr a_t a1(1.,2.,3.,
@@ -19,12 +20,14 @@ int main(int argc, char** argv){
                     9.,10.,11.,12.);
     constexpr b_t mul_res(a1*b);
     constexpr a_t add_res(a1+a2);
-    constexpr a_t sub_res(a2-a1);
+    constexpr a_t sub_res(a2-a1);    
 
     using c_t = jacl::linear_algebra::Matrix<3,1>;
     using d_t = jacl::linear_algebra::Matrix<1,4>;
     constexpr c_t pos2_col(jacl::linear_algebra::getCol<2>(mul_res));
     constexpr d_t pos1_row(jacl::linear_algebra::getRow<1>(mul_res));
+
+    constexpr auto split_res = jacl::linear_algebra::split<0,1,1,3>(mul_res);
 
     using e_t = b_t::transpose_t;
     constexpr e_t transpose_res(jacl::linear_algebra::transpose(mul_res));
@@ -35,6 +38,7 @@ int main(int argc, char** argv){
     jacl::linear_algebra::show(sub_res, "Sub. Res : ");
     jacl::linear_algebra::show(pos2_col, "Pos.2 Col : ");
     jacl::linear_algebra::show(pos1_row, "Pos.1 Row : ");
+    jacl::linear_algebra::show(split_res, "Split Res : ");
     jacl::linear_algebra::show(transpose_res, "Transpose of Mult. Res : ");
 
     return 0.;

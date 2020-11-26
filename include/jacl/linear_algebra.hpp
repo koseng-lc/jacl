@@ -393,11 +393,48 @@ namespace detail{
         constexpr auto n_cols{_Matrix::n_cols};
         return typename _Matrix::transpose_t(_m((Is%n_rows)*n_cols + (Is/n_rows))...);
     }
+    
+    template <typename, typename>
+    struct cat_index_seq;
+
+    template <std::size_t... I1s, std::size_t... I2s>
+    struct cat_index_seq<std::index_sequence<I1s...>, std::index_sequence<I2s...>>{
+        using type = std::index_sequence<I1s..., I2s...>;
+    };
+
+    template <typename Seq1, typename Seq2>
+    using cat_index_seq_t = typename cat_index_seq<Seq1, Seq2>::type;
+
+    template <std::size_t rows, std::size_t cols, typename _Matrix, std::size_t... I1s, std::size_t... I2s>
+    constexpr auto split_impl(const _Matrix& _m, std::index_sequence<I1s...>, std::index_sequence<I2s...>){
+        return Matrix<rows, cols>(_m(I1s*_Matrix::n_cols + I2s)...);
+    }
 }
 
 template <std::size_t _first_num, std::size_t _step, std::size_t _num_step>
 using make_specific_index_sequence = std::decay_t<
         decltype(detail::gen_specific_index_sequence<_first_num+_step, _step, _num_step>())>;
+
+template <std::size_t, std::size_t, std::size_t, std::size_t, std::size_t, typename>
+struct seq_of_seq;
+
+template <std::size_t first_num, std::size_t step_seq, std::size_t step,
+            std::size_t num_step, std::size_t num_of_seq,
+            std::size_t... Is>
+struct seq_of_seq<first_num, step_seq, step, num_step, num_of_seq, std::index_sequence<Is...>>{
+    using type = typename seq_of_seq<first_num-step_seq, step_seq, step, num_step, num_of_seq-1,
+                                        detail::cat_index_seq_t<make_specific_index_sequence<first_num-step_seq, step, num_step>,
+                                                            std::index_sequence<Is...>>>::type;
+};
+
+template <std::size_t first_num, std::size_t step_seq, std::size_t step, std::size_t num_step,
+            std::size_t... Is>
+struct seq_of_seq<first_num, step_seq, step, num_step, 0, std::index_sequence<Is...>>{
+    using type = std::index_sequence<Is...>;
+};
+
+template <std::size_t first_num, std::size_t step_seq, std::size_t step, std::size_t num_step, std::size_t num_of_seq, typename Seq>
+using seq_of_seq_t = typename seq_of_seq<first_num, step_seq, step, num_step, num_of_seq, Seq>::type;
 
 template <std::size_t col, typename _Matrix,
           typename Idx = make_specific_index_sequence<
@@ -415,6 +452,17 @@ template <std::size_t row, typename _Matrix,
 constexpr auto getRow(const _Matrix& _m){
     static_assert(row < _Matrix::n_rows, "[linear_algebra] The row is nothing!");
     return detail::getRow_impl(_m, Idx{});
+}
+
+template <std::size_t row_start, std::size_t row_end,
+          std::size_t col_start, std::size_t col_end,
+          typename _Matrix,
+          std::size_t rows = (row_end-row_start)+1,
+          std::size_t cols = (col_end-col_start)+1,
+          typename RowIdx = seq_of_seq_t<row_end,1,0,cols,rows-1,make_specific_index_sequence<row_end,0,cols>>,
+          typename ColIdx = seq_of_seq_t<col_end,0,1,cols,rows-1,make_specific_index_sequence<col_end,1,cols>>>
+constexpr auto split(const _Matrix& _m){
+    return detail::split_impl<rows, cols>(_m, RowIdx{}, ColIdx{});
 }
 
 template <typename _Matrix, typename Idx = std::make_index_sequence<_Matrix::n_elems>>
